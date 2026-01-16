@@ -1,9 +1,24 @@
 #!/bin/bash
 # /dev 完成度检查脚本
-# 用法: bash scripts/check.sh [BRANCH_NAME] [FEATURE_BRANCH]
+# 用法: bash scripts/check.sh <BRANCH_NAME> [FEATURE_BRANCH]
+#
+# BRANCH_NAME 必须是 cp-* 格式的分支名
 
-BRANCH_NAME="${1:-$(git rev-parse --abbrev-ref HEAD)}"
+BRANCH_NAME="${1:-}"
 FEATURE_BRANCH="${2:-}"
+
+# 参数验证
+if [[ -z "$BRANCH_NAME" ]]; then
+  echo "❌ 用法: bash scripts/check.sh <cp-分支名> [feature-分支名]"
+  echo "   示例: bash scripts/check.sh cp-20260116-fix-bug feature/zenith-engine"
+  exit 1
+fi
+
+if [[ ! "$BRANCH_NAME" == cp-* ]]; then
+  echo "❌ BRANCH_NAME 必须是 cp-* 格式"
+  echo "   收到: $BRANCH_NAME"
+  exit 1
+fi
 
 ZENITHJOY_ENGINE="${ZENITHJOY_ENGINE:-/home/xx/dev/zenithjoy-engine}"
 SKILL_FILE="$ZENITHJOY_ENGINE/skills/dev/SKILL.md"

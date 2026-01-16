@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.9.3] - 2026-01-16
+
+### Fixed
+- check.sh: 添加参数验证，防止无参数时误用当前分支名
+
 ## [7.9.2] - 2026-01-16
 
 ### Changed
