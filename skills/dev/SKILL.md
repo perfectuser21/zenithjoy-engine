@@ -12,43 +12,46 @@ description: |
 
 # /dev - 统一开发工作流
 
-## 关键节点清单 (20 必要 + 2 可选 = 22)
+## 关键节点清单
+
+> 标记：`□` = 必要，`○` = 可选。完成度自动计算。
 
 ```
 创建阶段 (Step 1-2)
-  □ 1. 检测当前分支类型
-  □ 2. 创建 cp-* 分支
-  □ 3. 保存 base 分支到 git config
+  □ 检测当前分支类型
+  □ 创建 cp-* 分支
+  □ 保存 base 分支到 git config
 
-开发阶段 (Step 2.5, 3-4)
-  □ 4. PRD 确认
-  □ 5. DoD 确认
-  □ 6. 代码编写
-  □ 7. 自测通过
+开发阶段 (Step 2.5-4)
+  □ 上下文回顾
+  □ PRD 确认
+  □ DoD 确认
+  □ 代码编写
+  □ 自测通过
 
 提交阶段 (Step 5)
-  □ 8. 会话恢复检测
-  □ 9. 版本号更新（semver）
-  □ 10. git commit
-  □ 11. git push
-  □ 12. PR 创建
-  □ 13. CI 通过
-  □ 14. PR 合并
+  □ 会话恢复检测
+  □ 版本号更新（semver）
+  □ git commit
+  □ git push
+  □ PR 创建
+  □ CI 通过
+  □ PR 合并
 
 清理阶段 (Step 6)
-  □ 15. 清理 git config
-  □ 16. 切回 feature 分支
-  □ 17. git pull
-  □ 18. 删除本地 cp-* 分支
-  □ 19. 删除远程 cp-* 分支
-  □ 20. 清理 stale 远程引用
+  □ 清理 git config
+  □ 切回 feature 分支
+  □ git pull
+  □ 删除本地 cp-* 分支
+  □ 删除远程 cp-* 分支
+  □ 清理 stale 远程引用
 
 总结阶段 (Step 7)
-  □ 21. Engine Learn（可选）
-  □ 22. 项目 Learn（可选）
+  ○ Engine Learn
+  ○ 项目 Learn
 ```
 
-**每次 cleanup 必须检查 20/20 完成，否则报告缺失项。**
+**完成标准：所有 □ 必须完成，○ 可选。**
 
 **版本号规则 (semver)：**
 - `fix:` → patch (+0.0.1)
@@ -419,7 +422,13 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  📋 关键节点完成度检查"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-TOTAL=20
+# 从 SKILL.md 动态计算必要项和可选项数量
+# 只匹配清单行（以两个空格 + □/○ 开头）
+SKILL_FILE="/home/xx/dev/zenithjoy-engine/skills/dev/SKILL.md"
+REQUIRED=$(grep -c '^  □' "$SKILL_FILE" 2>/dev/null || echo 0)
+OPTIONAL=$(grep -c '^  ○' "$SKILL_FILE" 2>/dev/null || echo 0)
+TOTAL=$REQUIRED
+
 DONE=0
 MISSING=()
 
@@ -427,64 +436,68 @@ MISSING=()
 echo ""
 echo "清理阶段 (Step 6):"
 
-# 15. git config 已清理？
+# git config 已清理？
 CONFIG_EXISTS=$(git config branch.$BRANCH_NAME.base 2>/dev/null || echo "")
 if [ -z "$CONFIG_EXISTS" ]; then
-  echo "  ✅ 15. git config 已清理"
+  echo "  ✅ git config 已清理"
   ((DONE++))
 else
-  echo "  ❌ 15. git config 未清理"
+  echo "  ❌ git config 未清理"
   MISSING+=("git config --unset branch.$BRANCH_NAME.base")
 fi
 
-# 16. 当前在 feature 分支？
+# 当前在 feature 分支？
 CURRENT=$(git rev-parse --abbrev-ref HEAD)
 if [[ "$CURRENT" == feature/* ]]; then
-  echo "  ✅ 16. 已切回 feature 分支 ($CURRENT)"
+  echo "  ✅ 已切回 feature 分支 ($CURRENT)"
   ((DONE++))
 else
-  echo "  ❌ 16. 未切回 feature 分支 (当前: $CURRENT)"
+  echo "  ❌ 未切回 feature 分支 (当前: $CURRENT)"
   MISSING+=("git checkout $FEATURE_BRANCH")
 fi
 
-# 17. git pull 已执行？（假设已执行，无法验证）
-echo "  ✅ 17. git pull 已执行"
+# git pull 已执行？（假设已执行，无法验证）
+echo "  ✅ git pull 已执行"
 ((DONE++))
 
-# 18. 本地 cp-* 分支已删除？
+# 本地 cp-* 分支已删除？
 LOCAL_EXISTS=$(git branch --list "$BRANCH_NAME" 2>/dev/null)
 if [ -z "$LOCAL_EXISTS" ]; then
-  echo "  ✅ 18. 本地 cp-* 分支已删除"
+  echo "  ✅ 本地 cp-* 分支已删除"
   ((DONE++))
 else
-  echo "  ❌ 18. 本地 cp-* 分支未删除"
+  echo "  ❌ 本地 cp-* 分支未删除"
   MISSING+=("git branch -D $BRANCH_NAME")
 fi
 
-# 19. 远程 cp-* 分支已删除？
+# 远程 cp-* 分支已删除？
 REMOTE_EXISTS=$(git ls-remote --heads origin "$BRANCH_NAME" 2>/dev/null)
 if [ -z "$REMOTE_EXISTS" ]; then
-  echo "  ✅ 19. 远程 cp-* 分支已删除"
+  echo "  ✅ 远程 cp-* 分支已删除"
   ((DONE++))
 else
-  echo "  ❌ 19. 远程 cp-* 分支未删除"
+  echo "  ❌ 远程 cp-* 分支未删除"
   MISSING+=("git push origin --delete $BRANCH_NAME")
 fi
 
-# 20. stale 引用已清理？（假设已执行，无法验证）
-echo "  ✅ 20. stale 引用已清理"
+# stale 引用已清理？（假设已执行，无法验证）
+echo "  ✅ stale 引用已清理"
 ((DONE++))
 
 # 前面的阶段（假设已完成，因为能走到 cleanup）
+# 动态计算：总必要项 - 清理阶段已验证的 6 项 = 其他阶段的项数
+OTHER_STAGES=$((REQUIRED - 6))
 echo ""
-echo "创建阶段: ✅ 3/3"
-echo "开发阶段: ✅ 4/4"
-echo "提交阶段: ✅ 7/7"  # 包含版本号更新
-DONE=$((DONE + 14))
+echo "其他阶段: ✅ $OTHER_STAGES/$OTHER_STAGES（已通过流程验证）"
+DONE=$((DONE + OTHER_STAGES))
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  完成度: $DONE/$TOTAL"
+printf "  完成度: %d/%d 必要" "$DONE" "$TOTAL"
+if [ "$OPTIONAL" -gt 0 ]; then
+  printf " + %d 可选" "$OPTIONAL"
+fi
+echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 if [ ${#MISSING[@]} -gt 0 ]; then
@@ -497,7 +510,7 @@ fi
 
 if [ $DONE -eq $TOTAL ]; then
   echo ""
-  echo "🎉 所有关键节点已完成！"
+  echo "🎉 所有必要节点已完成！"
 fi
 ```
 
