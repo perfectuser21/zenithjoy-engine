@@ -53,6 +53,7 @@ git checkout -b "$BRANCH_NAME"
   "feature_branch": "feature/xxx",
   "created_at": "2026-01-16T12:00:00Z",
   "description": "用户输入的任务描述",
+  "phase": "TASK_CREATED",
   "checkpoints": {
     "prd_confirmed": false,
     "dod_defined": false,

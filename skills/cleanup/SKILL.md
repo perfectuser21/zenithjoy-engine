@@ -122,7 +122,19 @@ description: |
 
 2. 询问是否删除已完成任务的状态文件
 
-### 第六步：显示清理报告
+### 第六步：更新状态
+
+```bash
+# 更新状态：phase = CLEANUP_DONE
+STATE_FILE=~/.ai-factory/state/current-task.json
+if [ -f "$STATE_FILE" ]; then
+  jq '.phase = "CLEANUP_DONE"' "$STATE_FILE" > "${STATE_FILE}.tmp" \
+    && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+  echo "✅ 状态已更新: phase=CLEANUP_DONE"
+fi
+```
+
+### 第七步：显示清理报告
 
 ```
 ✅ 清理完成
@@ -143,11 +155,10 @@ description: |
   - 备份文件: 0 个
   - 日志文件: 5 个 (跳过)
 
-状态文件：
-  - 已完成任务: 2 个 (已删除)
-
 💾 节省空间: 约 2.3 MB
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+下一步: 运行 /learn 记录经验
 ```
 
 ## 选项参数

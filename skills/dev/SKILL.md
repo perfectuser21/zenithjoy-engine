@@ -152,23 +152,22 @@ fi
 
 用户说"可以"、"没问题"、"开始" → 继续
 
-### ⚠️ 用户确认后，必须更新 checkpoints！
+### ⚠️ 用户确认后，必须更新状态！
 
 ```bash
-# 更新状态文件，设置 prd_confirmed 和 dod_defined 为 true
+# 更新状态文件：phase + checkpoints
 STATE_FILE=~/.ai-factory/state/current-task.json
 
 if [ -f "$STATE_FILE" ]; then
-  # 使用 jq 更新 checkpoints
-  jq '.checkpoints.prd_confirmed = true | .checkpoints.dod_defined = true' "$STATE_FILE" > "${STATE_FILE}.tmp" \
+  jq '.phase = "EXECUTING" | .checkpoints.prd_confirmed = true | .checkpoints.dod_defined = true' "$STATE_FILE" > "${STATE_FILE}.tmp" \
     && mv "${STATE_FILE}.tmp" "$STATE_FILE"
-  echo "✅ Checkpoints 已更新: prd_confirmed=true, dod_defined=true"
+  echo "✅ 状态已更新: phase=EXECUTING, checkpoints=true"
 else
   echo "❌ 状态文件不存在，请先运行 /new-task"
 fi
 ```
 
-**不更新 checkpoints → Hook 会阻止写代码！**
+**不更新 → Hook 会阻止写代码！**
 
 ---
 
@@ -407,3 +406,5 @@ main (强保护)
 ```
 
 **循环直到全过，不能跳过。**
+
+**当前版本**: 见 VERSION 文件
