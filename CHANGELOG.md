@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.7.2] - 2026-01-16
+
+### Fixed
+- SKILL.md: 依赖检查移至 Step 0，确保在 cp-* 分支恢复时也会执行
+
 ## [7.7.1] - 2026-01-16
 
 ### Fixed
@@ -144,7 +149,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Previous iterations were experimental development versions leading up to the 7.0.0 stable release.
 
-[Unreleased]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.7.1...HEAD
+[Unreleased]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.7.2...HEAD
+[7.7.2]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.7.1...v7.7.2
 [7.7.1]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.7.0...v7.7.1
 [7.7.0]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.6.1...v7.7.0
 [7.6.1]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.6.0...v7.6.1
