@@ -16,6 +16,27 @@ description: |
 1. **用户说的话 → 我自动生成 PRD + DoD**
 2. **新开发 vs 迭代开发自动判断**
 3. **我自己测试，DoD 全过才算完成**
+4. **必须更新 checkpoints，否则 Hook 会阻止写代码**
+
+---
+
+## Checkpoint 状态管理（关键！）
+
+状态文件: `~/.ai-factory/state/current-task.json`
+
+```json
+{
+  "checkpoints": {
+    "prd_confirmed": false,   ← Step 2 后设为 true
+    "dod_defined": false,     ← Step 2 后设为 true
+    "self_test_passed": false ← Step 4 后设为 true
+  }
+}
+```
+
+**Hook 会检查**:
+- 写代码前必须 `prd_confirmed == true` 且 `dod_defined == true`
+- 否则阻止写操作
 
 ---
 
@@ -131,6 +152,24 @@ fi
 
 用户说"可以"、"没问题"、"开始" → 继续
 
+### ⚠️ 用户确认后，必须更新 checkpoints！
+
+```bash
+# 更新状态文件，设置 prd_confirmed 和 dod_defined 为 true
+STATE_FILE=~/.ai-factory/state/current-task.json
+
+if [ -f "$STATE_FILE" ]; then
+  # 使用 jq 更新 checkpoints
+  jq '.checkpoints.prd_confirmed = true | .checkpoints.dod_defined = true' "$STATE_FILE" > "${STATE_FILE}.tmp" \
+    && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+  echo "✅ Checkpoints 已更新: prd_confirmed=true, dod_defined=true"
+else
+  echo "❌ 状态文件不存在，请先运行 /new-task"
+fi
+```
+
+**不更新 checkpoints → Hook 会阻止写代码！**
+
 ---
 
 ## Step 3: 写代码
@@ -165,6 +204,19 @@ fi
 ```
 
 **自测不过 → 修复 → 重新自测 → 循环直到全过**
+
+### ⚠️ 自测全部通过后，必须更新 checkpoint！
+
+```bash
+# 更新状态文件，设置 self_test_passed 为 true
+STATE_FILE=~/.ai-factory/state/current-task.json
+
+if [ -f "$STATE_FILE" ]; then
+  jq '.checkpoints.self_test_passed = true' "$STATE_FILE" > "${STATE_FILE}.tmp" \
+    && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+  echo "✅ Checkpoint 已更新: self_test_passed=true"
+fi
+```
 
 ---
 

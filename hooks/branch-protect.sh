@@ -1,6 +1,6 @@
 #!/bin/bash
-# ZenithJoy Core - 分支保护 Hook v4.0 (简化版)
-# 只检查：必须在 cp-* 分支才能写代码
+# ZenithJoy Core - 分支保护 Hook v5.0 (Checkpoint 强制版)
+# 检查：1. 必须在 cp-* 分支 2. 必须有状态文件 3. 必须完成 PRD 确认
 
 set -e
 
@@ -40,7 +40,7 @@ if [[ -z "$CURRENT_BRANCH" ]]; then
     exit 0
 fi
 
-# Must be on cp-* branch to write code
+# ===== 检查 1: 必须在 cp-* 分支 =====
 if [[ ! "$CURRENT_BRANCH" =~ ^cp- ]]; then
     echo "" >&2
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
@@ -59,5 +59,60 @@ if [[ ! "$CURRENT_BRANCH" =~ ^cp- ]]; then
     exit 2
 fi
 
-# On cp-* branch = allow
+# ===== 检查 2: 必须有状态文件 =====
+STATE_FILE=~/.ai-factory/state/current-task.json
+
+if [[ ! -f "$STATE_FILE" ]]; then
+    echo "" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    echo "  ❌ 缺少状态文件" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    echo "" >&2
+    echo "状态文件不存在: $STATE_FILE" >&2
+    echo "" >&2
+    echo "请先运行 /new-task 创建任务" >&2
+    echo "" >&2
+    echo "[SKILL_REQUIRED: new-task]" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    exit 2
+fi
+
+# ===== 检查 3: PRD 必须已确认 =====
+PRD_CONFIRMED=$(jq -r '.checkpoints.prd_confirmed // false' "$STATE_FILE" 2>/dev/null)
+
+if [[ "$PRD_CONFIRMED" != "true" ]]; then
+    echo "" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    echo "  ❌ PRD 未确认" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    echo "" >&2
+    echo "必须先完成 PRD 确认才能写代码" >&2
+    echo "" >&2
+    echo "正确流程:" >&2
+    echo "  1. /dev → 生成 PRD + DoD" >&2
+    echo "  2. 用户确认 PRD" >&2
+    echo "  3. 然后才能写代码" >&2
+    echo "" >&2
+    echo "[SKILL_REQUIRED: dev]" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    exit 2
+fi
+
+# ===== 检查 4: DoD 必须已定义 =====
+DOD_DEFINED=$(jq -r '.checkpoints.dod_defined // false' "$STATE_FILE" 2>/dev/null)
+
+if [[ "$DOD_DEFINED" != "true" ]]; then
+    echo "" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    echo "  ❌ DoD 未定义" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    echo "" >&2
+    echo "必须先定义 DoD (验收标准) 才能写代码" >&2
+    echo "" >&2
+    echo "[SKILL_REQUIRED: dev]" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    exit 2
+fi
+
+# All checks passed
 exit 0
