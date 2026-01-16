@@ -70,6 +70,47 @@ main (受保护)
 
 ---
 
+## ⚠️ 对话开始时必须检查
+
+**每次对话开始，先检查状态文件：**
+
+```bash
+STATE_FILE=~/.ai-factory/state/current-task.json
+if [ -f "$STATE_FILE" ]; then
+  PHASE=$(jq -r '.phase' "$STATE_FILE")
+  TASK_ID=$(jq -r '.task_id' "$STATE_FILE")
+  PR_URL=$(jq -r '.pr_url // empty' "$STATE_FILE")
+
+  echo "📋 发现未完成任务："
+  echo "   任务: $TASK_ID"
+  echo "   阶段: $PHASE"
+  [ -n "$PR_URL" ] && echo "   PR: $PR_URL"
+fi
+```
+
+**根据 phase 决定下一步：**
+
+| phase | 状态 | 下一步 |
+|-------|------|--------|
+| `TASK_CREATED` | 刚创建分支 | 运行 /dev 生成 PRD + DoD |
+| `EXECUTING` | 开发中 | 继续写代码或自测 |
+| `PR_CREATED` | PR 已创建 | 检查 CI 状态，通过则 /cleanup |
+| `CLEANUP_DONE` | 已清理 | 运行 /learn 记录经验 |
+| (无文件) | 干净状态 | 可以开始新任务 |
+
+**如果 phase = PR_CREATED，检查 CI 状态：**
+
+```bash
+gh pr status
+# 或
+gh pr view <PR_URL> --json state,statusCheckRollup
+```
+
+- CI 通过 + 已合并 → /cleanup → /learn
+- CI 失败 → 修复 → 重新 push
+
+---
+
 ## 状态存储
 
 - **本地**: `.ai-factory/state.json`
