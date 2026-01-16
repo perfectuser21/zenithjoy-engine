@@ -28,7 +28,7 @@ description: |
 
 提交阶段 (Step 5)
   □ 8. 会话恢复检测
-  □ 9. 版本号更新（semver）  ← 新增！
+  □ 9. 版本号更新（semver）
   □ 10. git commit
   □ 11. git push
   □ 12. PR 创建
