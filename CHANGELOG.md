@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.13.0] - 2026-01-16
+
+### Added
+- Pre-PR Hook: 创建 PR 前强制检查 test 和 typecheck
+- hooks/pre-pr-check.sh: 拦截 gh pr create，检查失败则阻止 PR
+
 ## [7.12.1] - 2026-01-16
 
 ### Improved
