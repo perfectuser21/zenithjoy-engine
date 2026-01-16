@@ -1,152 +1,210 @@
 ---
 name: dev
 description: |
-  开发工作流。用户说任何开发需求时自动触发。
-  自动生成 PRD + DoD，区分新开发/迭代开发，自测通过后才算完成。
+  统一开发工作流入口。每次对话开始自动触发。
+  检查状态 → 根据阶段决定下一步 → 执行到下一个暂停点。
 
   触发条件：
+  - 对话开始时自动触发
   - 用户说任何开发相关的需求
   - 用户说 /dev
 ---
 
-# /dev - 开发工作流
+# /dev - 统一开发工作流
 
-## 核心原则
+## 核心逻辑
 
-1. **用户说的话 → 我自动生成 PRD + DoD**
-2. **新开发 vs 迭代开发自动判断**
-3. **我自己测试，DoD 全过才算完成**
+**每次对话开始，执行一次，根据状态决定做什么：**
+
+```
+对话开始
+    │
+    ▼
+检查状态文件 (~/.ai-factory/state/current-task.json)
+    │
+    ├─ 有未完成任务？
+    │     │
+    │     ├─ PR_CREATED → 检查 CI → cleanup → learn → 删除状态
+    │     ├─ EXECUTING → 继续写代码/自测
+    │     ├─ CLEANUP_DONE → learn → 删除状态
+    │     └─ TASK_CREATED → 生成 PRD/DoD
+    │
+    └─ 没有未完成任务？
+          │
+          ▼
+      新任务流程
+          │
+          ├─ 检查 Branch/Worktree
+          ├─ 创建 cp-* 分支
+          ├─ 生成 PRD + DoD
+          ├─ 写代码
+          ├─ 自测
+          └─ 创建 PR → 暂停（等 CI）
+```
 
 ---
 
-## Step 0: 检测项目状态
+## Step 0: 检查状态（每次对话必做！）
 
 ```bash
-# 检测 git 和 remote
-if [ ! -d .git ]; then
-  echo "PROJECT_STATUS=NEW"
-elif ! git remote get-url origin >/dev/null 2>&1; then
-  echo "PROJECT_STATUS=NEW"
-else
-  echo "PROJECT_STATUS=EXISTING"
-  CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  echo "BRANCH=$CURRENT_BRANCH"
+STATE_FILE=~/.ai-factory/state/current-task.json
 
-  # 检测是否在 cp-* 分支
-  if [[ $CURRENT_BRANCH != cp-* ]]; then
-    # 检测是否在 feature 分支
-    if [[ $CURRENT_BRANCH == feature/* ]]; then
-      echo "ON_FEATURE_BRANCH=true"
-    else
-      echo "ON_FEATURE_BRANCH=false"
-    fi
-  else
-    echo "ON_CHECKPOINT_BRANCH=true"
-  fi
+if [ -f "$STATE_FILE" ]; then
+  PHASE=$(jq -r '.phase' "$STATE_FILE")
+  TASK_ID=$(jq -r '.task_id' "$STATE_FILE")
+  PR_URL=$(jq -r '.pr_url // empty' "$STATE_FILE")
+  FEATURE_BRANCH=$(jq -r '.feature_branch // empty' "$STATE_FILE")
+
+  echo "📋 发现未完成任务："
+  echo "   任务: $TASK_ID"
+  echo "   阶段: $PHASE"
+  echo "   Feature: $FEATURE_BRANCH"
+  [ -n "$PR_URL" ] && echo "   PR: $PR_URL"
+else
+  echo "✅ 没有未完成任务，可以开始新任务"
+  PHASE="NONE"
 fi
 ```
 
-**新项目 (PROJECT_STATUS=NEW)**：
-1. 询问项目名称
-2. `gh repo create` 创建 GitHub 仓库
-3. 配置分支保护
-4. 复制 ci.yml 模板
-5. 创建 feature 分支
+**根据 PHASE 跳转：**
 
-**老项目 (PROJECT_STATUS=EXISTING)**：
-1. 检测当前分支
-2. 如果在 main → 先创建/切换到 feature 分支
-3. 如果在 feature 分支 → 创建 cp-* 分支
-4. 如果在 cp-* 分支 → 直接开始
+| PHASE | 跳转到 |
+|-------|--------|
+| `NONE` | Step 1: 新任务 |
+| `TASK_CREATED` | Step 2: 生成 PRD/DoD |
+| `EXECUTING` | Step 3: 继续写代码 |
+| `PR_CREATED` | Step 5: 检查 CI |
+| `CLEANUP_DONE` | Step 7: Learn |
 
 ---
 
-## Step 1: 自动生成 PRD + DoD
+## Step 1: 新任务 - 检查 Branch/Worktree
 
-**不需要用户写 PRD！我根据用户说的话自动生成。**
+**只有 PHASE=NONE 时执行**
 
-### 判断开发类型
+```bash
+# 检查当前位置
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+echo "📍 当前位置："
+echo "   目录: $REPO_ROOT"
+echo "   分支: $CURRENT_BRANCH"
+
+# 检查是否在 feature 分支
+if [[ "$CURRENT_BRANCH" == feature/* ]]; then
+  FEATURE_BRANCH="$CURRENT_BRANCH"
+  echo "   ✅ 在 feature 分支上"
+elif [[ "$CURRENT_BRANCH" == "main" ]]; then
+  echo "   ⚠️ 在 main 分支，需要先切到 feature 分支"
+  # 列出可用的 feature 分支
+  echo ""
+  echo "可用的 feature 分支："
+  git branch -r | grep 'feature/' | sed 's|origin/||'
+  echo ""
+  echo "请选择或创建 feature 分支"
+  exit 1
+elif [[ "$CURRENT_BRANCH" == cp-* ]]; then
+  echo "   ⚠️ 已在 cp-* 分支上，检查是否有未完成任务..."
+fi
+
+# 检查现有 worktree
+echo ""
+echo "📂 Worktree 检查："
+git worktree list
+
+# 如果用户想在不同 feature 上工作，需要 worktree
+```
+
+**询问用户（如果需要）：**
 
 ```
-用户说的需求
-      ↓
-搜索相关代码/文件
-      ↓
-┌─────┴─────┐
-↓           ↓
-找到相关代码  没找到
-↓           ↓
-迭代开发     新开发
+检测到当前在 feature/zenith-engine
+
+你想：
+1. 在 zenith-engine 上开新任务（创建 cp-* 分支）
+2. 切换到其他 feature（可能需要 worktree）
+3. 创建新的 feature 分支
 ```
+
+---
+
+## Step 2: 创建 cp-* 分支 + 状态文件
+
+```bash
+# 生成分支名
+TIMESTAMP=$(date +%Y%m%d-%H%M)
+TASK_NAME="<根据用户需求生成>"
+BRANCH_NAME="cp-${TIMESTAMP}-${TASK_NAME}"
+
+# 创建分支
+git checkout -b "$BRANCH_NAME"
+
+# 创建状态文件
+STATE_FILE=~/.ai-factory/state/current-task.json
+mkdir -p ~/.ai-factory/state
+
+cat > "$STATE_FILE" << EOF
+{
+  "task_id": "$BRANCH_NAME",
+  "branch": "$BRANCH_NAME",
+  "feature_branch": "$FEATURE_BRANCH",
+  "phase": "TASK_CREATED",
+  "checkpoints": {
+    "prd_confirmed": false,
+    "dod_defined": false,
+    "self_test_passed": false
+  },
+  "created_at": "$(date -Iseconds)"
+}
+EOF
+
+echo "✅ 分支已创建: $BRANCH_NAME"
+```
+
+---
+
+## Step 3: 生成 PRD + DoD
+
+**根据用户需求自动生成：**
 
 ### 新开发 PRD 模板
 
 ```markdown
 ## PRD - 新功能
 
-**需求来源**: 用户原话
-**功能描述**: 我理解后的一句话总结
-**涉及文件**: 需要创建的新文件列表
-**依赖**: 需要的依赖包/服务
+**需求来源**: <用户原话>
+**功能描述**: <我理解的功能>
+**涉及文件**: <需要创建/修改的文件>
 
 ## DoD - 验收标准
 
-### 自动测试（CI 必须全过）
-- TEST: <可执行命令，返回 0=通过>
-- TEST: <可执行命令>
-- TEST: <可执行命令>
+### 自动测试（必须全过）
+- TEST: <测试命令 1>
+- TEST: <测试命令 2>
 
 ### 人工确认
 - CHECK: <需要用户确认的点>
 ```
 
-### 迭代开发 PRD 模板
+### 用户确认后更新状态
 
-```markdown
-## PRD - 功能迭代
-
-**需求来源**: 用户原话
-**现有功能**: 已有的相关代码/文件
-**改动描述**: 需要修改/添加什么
-**影响范围**: 可能影响的其他模块
-
-## DoD - 验收标准
-
-### 自动测试（CI 必须全过）
-- TEST: <原有测试仍通过>
-- TEST: <新功能测试>
-- TEST: <回归测试>
-
-### 人工确认
-- CHECK: <需要用户确认的点>
+```bash
+jq '.checkpoints.prd_confirmed = true | .checkpoints.dod_defined = true | .phase = "EXECUTING"' \
+  "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
 ```
 
 ---
 
-## Step 2: 用户确认 PRD + DoD
+## Step 4: 写代码 + 自测
 
-展示生成的 PRD + DoD，问用户：
-- 这个理解对吗？
-- DoD 够不够？要加什么？
-
-用户说"可以"、"没问题"、"开始" → 继续
-
----
-
-## Step 3: 写代码
-
-按 DoD 逐项实现。
-
----
-
-## Step 4: 自测（关键！）
-
-**写完代码后，我必须自己跑 DoD 里的每个 TEST。**
+**写完代码后，跑 DoD 里的每个 TEST：**
 
 ```bash
 echo "=== 开始自测 ==="
 
 # 逐个执行 TEST
+FAILED=false
 for test in "${TESTS[@]}"; do
   echo "运行: $test"
   if eval "$test"; then
@@ -158,63 +216,130 @@ for test in "${TESTS[@]}"; do
 done
 
 if [ "$FAILED" = true ]; then
-  echo "❌ 自测未通过，需要修复"
+  echo "❌ 自测未通过，继续修复"
 else
-  echo "✅ 自测全部通过，可以提交"
+  echo "✅ 自测全部通过"
+  # 更新状态
+  jq '.checkpoints.self_test_passed = true' "$STATE_FILE" > "${STATE_FILE}.tmp" \
+    && mv "${STATE_FILE}.tmp" "$STATE_FILE"
 fi
 ```
 
-**自测不过 → 修复 → 重新自测 → 循环直到全过**
-
 ---
 
-## Step 5: 完成 (/finish)
-
-只有自测全过才能执行：
+## Step 5: 创建 PR（暂停点）
 
 ```bash
 # 提交
 git add -A
-git commit -m "feat: 功能描述
+git commit -m "feat: <功能描述>
 
-DoD:
-$(for test in "${TESTS[@]}"; do echo "- [x] $test"; done)
+Workflow: /dev → PRD → DoD → self-test → PR ✅
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
 
 # 推送
 git push -u origin HEAD
 
-# 检测当前分支，确定 PR base 分支
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-
-# cp-* 分支 → 提取所属的 feature 分支名
-if [[ $CURRENT_BRANCH == cp-* ]]; then
-  # cp-xxx-01 → feature/xxx
-  FEATURE_BRANCH=$(echo "$CURRENT_BRANCH" | sed 's/^cp-\([^-]*\)-.*/feature\/\1/')
-
-  # 检查 feature 分支是否存在
-  if ! git show-ref --verify --quiet "refs/heads/$FEATURE_BRANCH"; then
-    echo "⚠️  Feature 分支 $FEATURE_BRANCH 不存在，自动创建"
-    git checkout -b "$FEATURE_BRANCH" origin/main
-    git push -u origin "$FEATURE_BRANCH"
-    git checkout "$CURRENT_BRANCH"
-  fi
-
-  BASE_BRANCH="$FEATURE_BRANCH"
-else
-  # 非 cp-* 分支，默认 PR 到 main
-  BASE_BRANCH="main"
-fi
+# 检测 PR base 分支（从状态文件读取！）
+BASE_BRANCH=$(jq -r '.feature_branch' "$STATE_FILE")
+echo "📌 PR base 分支: $BASE_BRANCH"
 
 # 创建 PR
-gh pr create \
-  --base "$BASE_BRANCH" \
-  --title "feat: 功能描述" \
-  --body "..."
+PR_URL=$(gh pr create --base "$BASE_BRANCH" --title "feat: <功能描述>" --body "...")
 
-echo "✅ PR 已创建 (base: $BASE_BRANCH)，等待 CI"
-echo "CI 通过后自动合并到 $BASE_BRANCH"
+# 更新状态
+jq --arg url "$PR_URL" '.phase = "PR_CREATED" | .pr_url = $url' "$STATE_FILE" > "${STATE_FILE}.tmp" \
+  && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+
+echo "✅ PR 已创建: $PR_URL"
+echo "⏸️  等待 CI，下次对话继续..."
+```
+
+**此时对话结束，等待 CI。**
+
+---
+
+## Step 6: 检查 CI（下次对话）
+
+**PHASE=PR_CREATED 时执行：**
+
+```bash
+PR_URL=$(jq -r '.pr_url' "$STATE_FILE")
+
+# 检查 PR 状态
+PR_STATE=$(gh pr view "$PR_URL" --json state,mergedAt)
+MERGED=$(echo "$PR_STATE" | jq -r '.mergedAt // empty')
+
+if [ -n "$MERGED" ]; then
+  echo "✅ PR 已合并！"
+  # 继续 cleanup
+else
+  # 检查 CI 状态
+  CI_STATUS=$(gh pr checks "$PR_URL" 2>/dev/null || echo "pending")
+
+  if [[ "$CI_STATUS" == *"fail"* ]]; then
+    echo "❌ CI 失败，需要修复"
+    echo "切回分支继续修复..."
+    BRANCH=$(jq -r '.branch' "$STATE_FILE")
+    git checkout "$BRANCH"
+    jq '.phase = "EXECUTING"' "$STATE_FILE" > "${STATE_FILE}.tmp" \
+      && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+  else
+    echo "⏳ CI 进行中或等待中..."
+  fi
+fi
+```
+
+---
+
+## Step 7: Cleanup
+
+**PR 合并后执行：**
+
+```bash
+echo "🧹 清理分支..."
+
+# 切回 feature 分支
+FEATURE_BRANCH=$(jq -r '.feature_branch' "$STATE_FILE")
+git checkout "$FEATURE_BRANCH"
+git pull
+
+# 删除本地 cp-* 分支
+TASK_BRANCH=$(jq -r '.branch' "$STATE_FILE")
+git branch -D "$TASK_BRANCH" 2>/dev/null || true
+
+# 更新状态
+jq '.phase = "CLEANUP_DONE"' "$STATE_FILE" > "${STATE_FILE}.tmp" \
+  && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+
+echo "✅ 清理完成"
+```
+
+---
+
+## Step 8: Learn + 完成
+
+**PHASE=CLEANUP_DONE 时执行：**
+
+```
+这次开发学到了什么？
+
+1. 踩的坑
+2. 学到的
+3. 最佳实践
+
+（输入内容，或说"跳过"）
+```
+
+**记录到 LEARNINGS.md 后：**
+
+```bash
+# 删除状态文件，本轮完成
+rm "$STATE_FILE"
+
+echo "🎉 本轮开发完成！"
+echo "下次对话可以开始新任务。"
 ```
 
 ---
@@ -222,136 +347,36 @@ echo "CI 通过后自动合并到 $BASE_BRANCH"
 ## 完整流程图
 
 ```
-用户说需求（任何形式）
-         │
-         ▼
-┌─────────────────────────┐
-│ Step 0: 检测项目状态     │
-│ 新项目？→ 创建 repo      │
-│ 老项目？→ 创建 cp-* 分支 │
-└───────────┬─────────────┘
-            │
-            ▼
-┌─────────────────────────┐
-│ Step 1: 自动生成 PRD+DoD │
-│ 搜索相关代码             │
-│ 判断新开发/迭代          │
-│ 生成 TEST 命令           │
-└───────────┬─────────────┘
-            │
-            ▼
-┌─────────────────────────┐
-│ Step 2: 用户确认         │
-│ "这个理解对吗？"         │
-└───────────┬─────────────┘
-            │ 用户确认
-            ▼
-┌─────────────────────────┐
-│ Step 3: 写代码           │
-└───────────┬─────────────┘
-            │
-            ▼
-┌─────────────────────────┐
-│ Step 4: 自测             │←──┐
-│ 跑每个 TEST              │   │
-│ 失败？→ 修复 ────────────┼───┘
-│ 全过？→ 继续             │
-└───────────┬─────────────┘
-            │
-            ▼
-┌─────────────────────────┐
-│ Step 5: /finish          │
-│ commit → push            │
-│ PR → feature 分支        │
-│ CI 通过 → 自动合并       │
-└─────────────────────────┘
-```
-
-## 分支层级
-
-```
-main (强保护)
-  │
-  └── feature/xxx (功能分支)
-        │
-        ├── cp-xxx-01 → PR → feature/xxx ✅
-        ├── cp-xxx-02 → PR → feature/xxx ✅
-        └── cp-xxx-03 → PR → feature/xxx ✅
-              │
-              └── feature 完成 → PR → main
+┌─────────────────────────────────────────────────────────────┐
+│                    对话 1                                   │
+├─────────────────────────────────────────────────────────────┤
+│ /dev → 检查状态(无) → 新任务 → cp-* 分支 → PRD → DoD       │
+│      → 写代码 → 自测 → PR → 状态=PR_CREATED               │
+│      → 对话结束，等 CI                                      │
+└─────────────────────────────────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    对话 2                                   │
+├─────────────────────────────────────────────────────────────┤
+│ /dev → 检查状态(PR_CREATED) → 检查 CI                      │
+│      → CI 过了 → cleanup → 状态=CLEANUP_DONE               │
+│      → learn → 删除状态文件 → 完成                         │
+└─────────────────────────────────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    对话 3                                   │
+├─────────────────────────────────────────────────────────────┤
+│ /dev → 检查状态(无) → 新任务...                            │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 示例
+## 暂停点总结
 
-### 示例 1: 新开发
-
-**用户说**: "给项目加个 README"
-
-**我自动生成**:
-
-```markdown
-## PRD - 新功能
-
-**需求来源**: 给项目加个 README
-**功能描述**: 创建 README.md，说明项目用途、安装、使用方法
-**涉及文件**: README.md (新建)
-
-## DoD
-
-### 自动测试
-- TEST: test -f README.md
-- TEST: grep -q "zenithjoy-core" README.md
-- TEST: grep -q "安装\|install\|Installation" README.md
-- TEST: grep -q "使用\|usage\|Usage" README.md
-
-### 人工确认
-- CHECK: 内容准确、格式清晰
-```
-
-### 示例 2: 迭代开发
-
-**用户说**: "README 里加上 CI 的说明"
-
-**我自动生成**:
-
-```markdown
-## PRD - 功能迭代
-
-**需求来源**: README 里加上 CI 的说明
-**现有功能**: README.md 已存在
-**改动描述**: 添加 CI/CD 使用说明章节
-**影响范围**: 只影响 README.md
-
-## DoD
-
-### 自动测试
-- TEST: test -f README.md（原文件仍存在）
-- TEST: grep -q "CI" README.md（新增 CI 内容）
-- TEST: grep -q "workflow\|GitHub Actions" README.md
-
-### 人工确认
-- CHECK: CI 说明准确、步骤清晰
-```
-
----
-
-## 自测失败处理
-
-如果自测失败：
-
-```
-❌ TEST 失败: grep -q "CI" README.md
-
-分析原因:
-- README.md 里没有 "CI" 这个词
-
-修复:
-- 在 README.md 中添加 CI 章节
-
-重新自测...
-✅ PASS
-```
-
-**循环直到全过，不能跳过。**
+| 暂停点 | 状态 | 下次对话做什么 |
+|--------|------|---------------|
+| PR 创建后 | PR_CREATED | 检查 CI |
+| CI 失败 | EXECUTING | 继续修复 |
+| Cleanup 后 | CLEANUP_DONE | Learn |
+| Learn 后 | (删除文件) | 新任务 |
