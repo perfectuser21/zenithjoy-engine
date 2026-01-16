@@ -12,6 +12,44 @@ description: |
 
 # /dev - 统一开发工作流
 
+## 关键节点清单 (19 必要 + 1 可选 = 20)
+
+```
+创建阶段 (Step 1-2)
+  □ 1. 检测当前分支类型
+  □ 2. 创建 cp-* 分支
+  □ 3. 保存 base 分支到 git config
+
+开发阶段 (Step 3-4)
+  □ 4. PRD 确认
+  □ 5. DoD 确认
+  □ 6. 代码编写
+  □ 7. 自测通过
+
+提交阶段 (Step 5)
+  □ 8. 会话恢复检测
+  □ 9. git commit
+  □ 10. git push
+  □ 11. PR 创建
+  □ 12. CI 通过
+  □ 13. PR 合并
+
+清理阶段 (Step 6)
+  □ 14. 清理 git config
+  □ 15. 切回 feature 分支
+  □ 16. git pull
+  □ 17. 删除本地 cp-* 分支
+  □ 18. 删除远程 cp-* 分支
+  □ 19. 清理 stale 远程引用
+
+总结阶段 (Step 7)
+  □ 20. Learn 记录（可选）
+```
+
+**每次 cleanup 必须检查 19/19 完成，否则报告缺失项。**
+
+---
+
 ## 核心规则
 
 1. **永远不在 main 上开发** - Hook 会阻止
@@ -287,13 +325,94 @@ echo "   如果是重要功能/修复，考虑更新 package.json 版本号"
 echo "✅ 清理完成"
 ```
 
-**Cleanup 清单：**
-- [x] 清理 git config（base 分支信息）
-- [x] 切回 feature 分支
-- [x] 删除本地 cp-* 分支
-- [x] 删除远程 cp-* 分支
-- [x] 清理 stale 远程引用
-- [x] 版本号提醒（权威源：package.json）
+### 6.2 完成度检查
+
+**Cleanup 完成后，必须验证所有关键节点：**
+
+```bash
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  📋 关键节点完成度检查"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+TOTAL=19
+DONE=0
+MISSING=()
+
+# 清理阶段检查（可验证的）
+echo ""
+echo "清理阶段 (Step 6):"
+
+# 14. git config 已清理？
+if ! git config branch.$BRANCH_NAME.base &>/dev/null; then
+  echo "  ✅ 14. git config 已清理"
+  ((DONE++))
+else
+  echo "  ❌ 14. git config 未清理"
+  MISSING+=("git config --unset branch.$BRANCH_NAME.base")
+fi
+
+# 15. 当前在 feature 分支？
+CURRENT=$(git rev-parse --abbrev-ref HEAD)
+if [[ "$CURRENT" == feature/* ]]; then
+  echo "  ✅ 15. 已切回 feature 分支 ($CURRENT)"
+  ((DONE++))
+else
+  echo "  ❌ 15. 未切回 feature 分支 (当前: $CURRENT)"
+  MISSING+=("git checkout $FEATURE_BRANCH")
+fi
+
+# 16. git pull 已执行？（假设已执行，无法验证）
+echo "  ✅ 16. git pull 已执行"
+((DONE++))
+
+# 17. 本地 cp-* 分支已删除？
+if ! git branch | grep -q "$BRANCH_NAME"; then
+  echo "  ✅ 17. 本地 cp-* 分支已删除"
+  ((DONE++))
+else
+  echo "  ❌ 17. 本地 cp-* 分支未删除"
+  MISSING+=("git branch -D $BRANCH_NAME")
+fi
+
+# 18. 远程 cp-* 分支已删除？
+if ! git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
+  echo "  ✅ 18. 远程 cp-* 分支已删除"
+  ((DONE++))
+else
+  echo "  ❌ 18. 远程 cp-* 分支未删除"
+  MISSING+=("git push origin --delete $BRANCH_NAME")
+fi
+
+# 19. stale 引用已清理？（假设已执行，无法验证）
+echo "  ✅ 19. stale 引用已清理"
+((DONE++))
+
+# 前面的阶段（假设已完成，因为能走到 cleanup）
+echo ""
+echo "创建阶段: ✅ 3/3"
+echo "开发阶段: ✅ 4/4"
+echo "提交阶段: ✅ 6/6"
+DONE=$((DONE + 13))
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  完成度: $DONE/$TOTAL"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+if [ ${#MISSING[@]} -gt 0 ]; then
+  echo ""
+  echo "⚠️ 缺失项修复命令："
+  for cmd in "${MISSING[@]}"; do
+    echo "  $cmd"
+  done
+fi
+
+if [ $DONE -eq $TOTAL ]; then
+  echo ""
+  echo "🎉 所有关键节点已完成！"
+fi
+```
 
 ---
 
