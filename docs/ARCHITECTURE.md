@@ -23,7 +23,7 @@
 │                 │ │                 │ │                 │
 │ docs/:          │ │ docs/:          │ │ docs/:          │
 │ - LEARNINGS.md  │ │ - 项目经验      │ │ - 项目经验      │
-│ - ARCHITECTURE.md││                 │ │                 │
+│ - ARCHITECTURE.md│ │                 │ │                 │
 │                 │ │                 │ │                 │
 │ CHANGELOG.md    │ │                 │ │                 │
 └─────────────────┘ └─────────────────┘ └─────────────────┘
@@ -48,8 +48,8 @@
 | 版本记录 | `CHANGELOG.md` | 版本更新、PR 摘要 |
 | 项目特定规则 | 项目的 `CLAUDE.md` | 简洁入口 |
 | 项目开发经验 | 项目的 `docs/` | 详细记录 |
-| 跨项目通用经验 | `~/.claude/CLAUDE.md` | 全局规则 |
-| 长期知识库 | Notion（可选） | 会话摘要、搜索 |
+| 跨项目通用规则 | `~/.claude/CLAUDE.md` | 全局配置 |
+| 会话摘要 | Notion（可选） | 长期保存、搜索 |
 
 ---
 
@@ -79,5 +79,3 @@
 
 1. **Engine 相关** → 追加到 `docs/LEARNINGS.md`
 2. **项目相关** → 追加到项目的 docs/
-3. **通用经验** → 追加到 `~/.claude/CLAUDE.md`
-4. **长期保存** → 同步到 Notion

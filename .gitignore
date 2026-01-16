@@ -19,8 +19,13 @@ Thumbs.db
 *.swo
 
 # Environment
-.env
-.env.local
+.env*
+
+# TypeScript
+*.tsbuildinfo
+
+# Coverage
+coverage/
 
 # Skill validation (temporary)
 skills/dev/SKILL.md.backup

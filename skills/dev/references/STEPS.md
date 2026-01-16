@@ -3,7 +3,7 @@
 > 此文档包含 /dev 工作流的完整实现细节。
 > 仅在需要时按步骤加载，减少上下文开销。
 >
-> 最后更新: 2026-01-16 v7.9.2
+> 最后更新: 2026-01-16 v7.9.7
 
 ---
 
@@ -41,7 +41,7 @@ echo "✅ 依赖检查通过"
 
 ```bash
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
-REPO=$(basename $(git rev-parse --show-toplevel))
+REPO=$(basename "$(git rev-parse --show-toplevel)")
 
 echo "📍 当前位置："
 echo "   Repo: $REPO"
@@ -258,7 +258,7 @@ echo "   请更新 package.json 版本号后继续"
 git add -A
 git commit -m "feat: <功能描述>
 
-Co-Authored-By: Claude <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 
 # 推送
 git push -u origin HEAD
@@ -410,9 +410,9 @@ echo "<用户输入的内容>" >> "$ZENITHJOY_ENGINE/docs/LEARNINGS.md"
 ```bash
 # 追加到目标项目的 LEARNINGS
 PROJECT_ROOT=$(git rev-parse --show-toplevel)
-echo "" >> $PROJECT_ROOT/docs/LEARNINGS.md
-echo "## $(date +%Y-%m-%d) - <任务名>" >> $PROJECT_ROOT/docs/LEARNINGS.md
-echo "<用户输入的内容>" >> $PROJECT_ROOT/docs/LEARNINGS.md
+echo "" >> "$PROJECT_ROOT/docs/LEARNINGS.md"
+echo "## $(date +%Y-%m-%d) - <任务名>" >> "$PROJECT_ROOT/docs/LEARNINGS.md"
+echo "<用户输入的内容>" >> "$PROJECT_ROOT/docs/LEARNINGS.md"
 ```
 
 ### 7.3 完成

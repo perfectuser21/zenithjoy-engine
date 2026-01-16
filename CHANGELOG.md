@@ -7,6 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.9.8] - 2026-01-16
+
+### Fixed
+- ci.yml: auto-merge needs 加入 version-check 依赖
+- ci.yml: BASE_VERSION 空值检查防止版本比较失效
+- ci.yml: bash -n 显示错误输出便于调试
+- ci.yml: 添加 workflow 并发控制和 job timeout
+- calculator.ts: chain() 初始值 NaN/Infinity 验证
+- LEARNINGS.md: 标记描述完整 (□/□⏭/○)
+
+## [7.9.7] - 2026-01-16
+
+### Fixed
+- SKILL.md: 锚点链接修复（双破折号→单破折号）
+- tsconfig.json: 排除测试文件 (*.test.ts) 编译到 dist
+- .gitignore: 添加 .env*, *.tsbuildinfo, coverage/
+- check.sh: 添加 -h/--help 帮助支持
+- check.sh: 添加 git 仓库检查
+- check.sh: FEATURE_BRANCH 为空时显示占位符
+- branch-protect.sh: 添加 .sh 文件保护
+
+### Removed
+- skills/dev/SKILL.md.backup 临时文件（违反规范）
+
+## [7.9.6] - 2026-01-16
+
+### Fixed
+- README.md: License MIT → ISC（与 package.json 一致）
+- README.md: Node.js 版本说明改为 "18+ (CI 使用 20)"
+- README.md: branch-protect.sh 描述补充重要目录保护
+- STEPS.md: 变量引用加双引号（行44, 413-415）
+- STEPS.md: Co-Authored-By 统一为 "Claude Opus 4.5"
+- ARCHITECTURE.md: ASCII 图表格式修复
+- ARCHITECTURE.md: Step 7 描述与实际流程同步（2 层而非 4 层）
+- ARCHITECTURE.md: 记录规则表格语义修正
+- project-detect.sh: 删除未使用的 RED 变量
+- project-detect.sh: git 检测改用 git rev-parse
+- check.sh: 正则计算逻辑修复（先统计 □⏭ 再计算）
+- SKILL.md: "清理 git config" 改为 □⏭（与创建时一致）
+- DOD-TEMPLATE.md: 添加"通用模板"说明
+- DOD-TEMPLATE.md: type-check → typecheck
+- DOD-TEMPLATE.md: 添加 semver 规则说明
+- DOD-TEMPLATE.md: 分支命名格式统一
+
+## [7.9.5] - 2026-01-16
+
+### Fixed
+- package-lock.json: 版本号同步 (7.8.1/7.7.0 → 7.9.5)
+- CHANGELOG.md: 补充 7.9.0-7.9.4 版本链接
+- ci.yml: auto-merge 依赖逻辑修复，避免 version-check skip 时失败
+- ci.yml: notify-failure 改为监听 version-check 和 test 两个 job
+- ci.yml: Python 测试改为显式检测，避免静默错误
+- ci.yml: shell 脚本检查改用 while read 处理含空格路径
+- SKILL.md: 统一脚本路径为 skills/dev/scripts/check.sh
+- DOD-TEMPLATE.md: 术语统一 Checkpoint → cp-*
+- check.sh: 变量引用加双引号
+
 ## [7.9.4] - 2026-01-16
 
 ### Fixed
@@ -190,7 +247,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Previous iterations were experimental development versions leading up to the 7.0.0 stable release.
 
-[Unreleased]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.8.1...HEAD
+[Unreleased]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.9.8...HEAD
+[7.9.8]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.9.7...v7.9.8
+[7.9.7]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.9.6...v7.9.7
+[7.9.6]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.9.5...v7.9.6
+[7.9.5]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.9.4...v7.9.5
+[7.9.4]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.9.3...v7.9.4
+[7.9.3]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.9.2...v7.9.3
+[7.9.2]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.9.1...v7.9.2
+[7.9.1]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.9.0...v7.9.1
+[7.9.0]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.8.1...v7.9.0
 [7.8.1]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.8.0...v7.8.1
 [7.8.0]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.7.2...v7.8.0
 [7.7.2]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.7.1...v7.7.2

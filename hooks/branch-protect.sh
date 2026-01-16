@@ -37,7 +37,7 @@ fi
 # 2. 代码文件：根据扩展名判断
 EXT="${FILE_PATH##*.}"
 case "$EXT" in
-    ts|tsx|js|jsx|py|go|rs|java|c|cpp|h|hpp|rb|php|swift|kt)
+    ts|tsx|js|jsx|py|go|rs|java|c|cpp|h|hpp|rb|php|swift|kt|sh)
         NEEDS_PROTECTION=true
         ;;
 esac

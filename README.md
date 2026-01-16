@@ -12,7 +12,7 @@ AI 开发工作流核心组件。提供 Hooks、Skills 和 CI 模板，实现强
 
 - **gh CLI**: GitHub CLI (`gh auth login` 已完成)
 - **jq**: JSON 处理工具 (`apt install jq`)
-- **Node.js**: 20+ (用于 npm 项目)
+- **Node.js**: 18+ (CI 使用 20)
 
 ## Environment Variables
 
@@ -71,7 +71,7 @@ cp $ZENITHJOY_ENGINE/.github/workflows/ci.yml your-project/.github/workflows/
 
 | Hook | 触发时机 | 用途 |
 |------|----------|------|
-| branch-protect.sh | PreToolUse (Write/Edit) | 强制在 cp-* 分支写代码 |
+| branch-protect.sh | PreToolUse (Write/Edit) | 强制在 cp-* 分支修改代码及重要目录 (skills/, hooks/, .github/) |
 | project-detect.sh | PostToolUse (Bash) | 检测项目初始化状态 |
 
 ## Usage
@@ -104,4 +104,4 @@ GitHub 层面的强制保护：
 
 ## License
 
-MIT
+ISC

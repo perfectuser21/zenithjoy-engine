@@ -84,6 +84,11 @@ export function chain(initialValue: number): ChainableCalculator {
   let currentValue = initialValue;
   let lastError: string | undefined;
 
+  // Validate initial value
+  if (!Number.isFinite(initialValue)) {
+    lastError = 'Initial value is not finite';
+  }
+
   const createChain = (): ChainableCalculator => ({
     get value() {
       return currentValue;

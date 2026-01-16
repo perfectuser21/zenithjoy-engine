@@ -45,7 +45,7 @@ description: |
   □ PR 合并
 
 清理阶段 (Step 6)
-  □ 清理 git config
+  □⏭ 清理 git config（如果创建时保存了）
   □ 切回 feature 分支
   □ git pull
   □ 删除本地 cp-* 分支
@@ -124,11 +124,11 @@ Step 7: Learn（可选）
 |------|------|------|
 | 0 | 检查 gh/jq 依赖和登录状态 | → [STEPS.md#step-0](references/STEPS.md#step-0-依赖检查) |
 | 1 | 检测 main/feature/cp-* 分支 | → [STEPS.md#step-1](references/STEPS.md#step-1-检查分支) |
-| 2 | 创建 cp-{时间戳}-{任务名} 分支 | → [STEPS.md#step-2](references/STEPS.md#step-2-创建-cp--分支) |
+| 2 | 创建 cp-{时间戳}-{任务名} 分支 | → [STEPS.md#step-2](references/STEPS.md#step-2-创建-cp-分支) |
 | 2.5 | 回顾 CHANGELOG/PR/架构/踩坑 | → [STEPS.md#step-25](references/STEPS.md#step-25-上下文回顾) |
-| 3 | 生成 PRD + DoD，等用户确认 | → [STEPS.md#step-3](references/STEPS.md#step-3-prd--dod) |
-| 4 | 写代码，执行 DoD 中的 TEST | → [STEPS.md#step-4](references/STEPS.md#step-4-写代码--自测) |
-| 5 | 会话恢复检测 + 版本号 + PR + CI | → [STEPS.md#step-5](references/STEPS.md#step-5-pr--等待-ci) |
+| 3 | 生成 PRD + DoD，等用户确认 | → [STEPS.md#step-3](references/STEPS.md#step-3-prd-dod) |
+| 4 | 写代码，执行 DoD 中的 TEST | → [STEPS.md#step-4](references/STEPS.md#step-4-写代码-自测) |
+| 5 | 会话恢复检测 + 版本号 + PR + CI | → [STEPS.md#step-5](references/STEPS.md#step-5-pr-等待-ci) |
 | 6 | 清理 config/分支/远程 | → [STEPS.md#step-6](references/STEPS.md#step-6-cleanup) |
 | 7 | 记录 Engine/项目经验 | → [STEPS.md#step-7](references/STEPS.md#step-7-双层-learn) |
 
@@ -163,7 +163,7 @@ skills/dev/
 **加载策略**：
 1. 首次执行：只加载 SKILL.md（本文件）
 2. 需要详情时：Read references/STEPS.md 中相关章节
-3. 完成后：运行 `bash scripts/check.sh` 验证
+3. 完成后：运行 `bash skills/dev/scripts/check.sh` 验证
 
 ---
 

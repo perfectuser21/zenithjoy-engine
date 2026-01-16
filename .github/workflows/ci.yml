@@ -6,6 +6,11 @@ on:
   push:
     branches: [main, 'feature/*']
 
+# 工作流级并发控制：同一 ref 的多次 push 只保留最新
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   version-check:
     if: github.event_name == 'pull_request'
@@ -26,7 +31,12 @@ jobs:
 
           # Get base branch version
           git fetch origin ${{ github.base_ref }}
-          BASE_VERSION=$(git show origin/${{ github.base_ref }}:package.json | grep '"version"' | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
+          BASE_VERSION=$(git show origin/${{ github.base_ref }}:package.json 2>/dev/null | grep '"version"' | head -1 | sed 's/.*"version": "\(.*\)".*/\1/' || echo "")
+
+          if [ -z "$BASE_VERSION" ]; then
+            echo "⚠️ Could not read base branch version, skipping check"
+            exit 0
+          fi
 
           # Get current version
           CURRENT_VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
@@ -44,6 +54,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -85,8 +96,16 @@ jobs:
       - name: Install & Test (python)
         if: steps.detect.outputs.type == 'python'
         run: |
-          pip install -r requirements.txt 2>/dev/null || pip install -e . 2>/dev/null || true
-          pytest -v 2>/dev/null || echo "No tests"
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          elif [ -f pyproject.toml ]; then
+            pip install -e .
+          fi
+          if [ -f pytest.ini ] || [ -d tests ] || [ -d test ]; then
+            pytest -v
+          else
+            echo "ℹ️ No pytest config or tests directory found, skipping tests"
+          fi
 
       # Go
       - name: Setup Go
@@ -102,28 +121,28 @@ jobs:
       # Shell scripts - always syntax check (hooks exist in all project types)
       - name: Check shell scripts
         run: |
-          shopt -s nullglob
-          files=$(find . -name "*.sh" -type f)
-          if [ -z "$files" ]; then
-            echo "ℹ️ No .sh files found"
-            exit 0
-          fi
           echo "🔍 Checking shell scripts..."
           FAILED=0
-          for f in $files; do
-            if bash -n "$f" 2>/dev/null; then
+          FOUND=0
+          while IFS= read -r -d '' f; do
+            FOUND=1
+            if bash -n "$f" 2>&1; then
               echo "  ✅ $f"
             else
-              echo "  ❌ $f"
+              echo "  ❌ $f (see error above)"
               FAILED=1
             fi
-          done
+          done < <(find . -name "*.sh" -type f -print0)
+          if [ "$FOUND" -eq 0 ]; then
+            echo "ℹ️ No .sh files found"
+          fi
           exit $FAILED
 
   # 自动合并 PR（CI 通过后）
+  # 注意：version-check 只在 PR 时运行，push 时为 skipped
   auto-merge:
     needs: [version-check, test]
-    if: github.event_name == 'pull_request' && !failure() && !cancelled()
+    if: github.event_name == 'pull_request' && !failure() && !cancelled() && (needs.version-check.result == 'success' || needs.version-check.result == 'skipped')
     runs-on: ubuntu-latest
     # 并发保护：同一个 base 分支的 PR 排队合并，避免冲突
     concurrency:
@@ -150,10 +169,10 @@ jobs:
             exit 0  # Don't fail CI, just notify
           fi
 
-  # CI 失败时通知 Notion
+  # CI 失败时通知 Notion（version-check 或 test 失败都通知）
   notify-failure:
-    needs: [test]
-    if: failure()
+    needs: [version-check, test]
+    if: always() && (needs.version-check.result == 'failure' || needs.test.result == 'failure')
     runs-on: ubuntu-latest
     steps:
       - name: Notify Notion
