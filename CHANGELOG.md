@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.8.1] - 2026-01-16
+
+### Fixed
+- SKILL.md: 快速修复模式删除硬编码数字，改为动态描述
+
 ## [7.8.0] - 2026-01-16
 
 ### Added
@@ -154,7 +159,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Previous iterations were experimental development versions leading up to the 7.0.0 stable release.
 
-[Unreleased]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.8.0...HEAD
+[Unreleased]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.8.1...HEAD
+[7.8.1]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.8.0...v7.8.1
 [7.8.0]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.7.2...v7.8.0
 [7.7.2]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.7.1...v7.7.2
 [7.7.1]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.7.0...v7.7.1
