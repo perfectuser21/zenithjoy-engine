@@ -601,11 +601,11 @@ echo "  - 项目经验: <项目>/docs/LEARNINGS.md"
 如果要同时在多个 feature 上工作：
 
 ```bash
-# 当前在 zenithjoy-core，feature/zenith-engine
+# 当前在 zenithjoy-engine，feature/zenith-engine
 # 想同时做 feature/cecilia
 
-git worktree add ../zenithjoy-core-cecilia feature/cecilia
-cd ../zenithjoy-core-cecilia
+git worktree add ../zenithjoy-engine-cecilia feature/cecilia
+cd ../zenithjoy-engine-cecilia
 
 # 在新目录开始 /dev
 ```
