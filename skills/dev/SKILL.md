@@ -344,7 +344,8 @@ echo ""
 echo "清理阶段 (Step 6):"
 
 # 14. git config 已清理？
-if ! git config branch.$BRANCH_NAME.base &>/dev/null; then
+CONFIG_EXISTS=$(git config branch.$BRANCH_NAME.base 2>/dev/null || echo "")
+if [ -z "$CONFIG_EXISTS" ]; then
   echo "  ✅ 14. git config 已清理"
   ((DONE++))
 else
@@ -367,7 +368,8 @@ echo "  ✅ 16. git pull 已执行"
 ((DONE++))
 
 # 17. 本地 cp-* 分支已删除？
-if ! git branch | grep -q "$BRANCH_NAME"; then
+LOCAL_EXISTS=$(git branch --list "$BRANCH_NAME" 2>/dev/null)
+if [ -z "$LOCAL_EXISTS" ]; then
   echo "  ✅ 17. 本地 cp-* 分支已删除"
   ((DONE++))
 else
@@ -376,7 +378,8 @@ else
 fi
 
 # 18. 远程 cp-* 分支已删除？
-if ! git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
+REMOTE_EXISTS=$(git ls-remote --heads origin "$BRANCH_NAME" 2>/dev/null)
+if [ -z "$REMOTE_EXISTS" ]; then
   echo "  ✅ 18. 远程 cp-* 分支已删除"
   ((DONE++))
 else
