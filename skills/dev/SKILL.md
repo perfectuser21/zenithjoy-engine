@@ -162,6 +162,30 @@ echo "=== 自测 ==="
 
 ## Step 5: PR + 等待 CI
 
+### 5.1 会话恢复检测
+
+**先检测是否是中断后恢复的会话：**
+
+```bash
+echo "🔍 检测会话状态..."
+
+# 检查远程是否已有这个分支的 PR
+EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --json number,url -q '.[0]' 2>/dev/null)
+
+if [ ! -z "$EXISTING_PR" ]; then
+  PR_URL=$(echo "$EXISTING_PR" | jq -r '.url')
+  echo "✅ 检测到已存在的 PR: $PR_URL"
+  echo "   跳过创建，直接等待 CI..."
+  # 跳到等待 CI 的循环
+else
+  echo "📝 需要创建新 PR"
+fi
+```
+
+### 5.2 提交和创建 PR
+
+**如果没有已存在的 PR：**
+
 ```bash
 # 提交
 git add -A
@@ -197,6 +221,15 @@ while [ $WAITED -lt $MAX_WAIT ]; do
     break
   elif [ "$STATE" = "CLOSED" ]; then
     echo "❌ PR 被关闭"
+    echo ""
+    echo "可能原因："
+    echo "  - 合并冲突"
+    echo "  - 手动关闭"
+    echo "  - 权限问题"
+    echo ""
+    echo "解决方案："
+    echo "  1. 重新推送并创建 PR: git push && gh pr create --base $FEATURE_BRANCH"
+    echo "  2. 或放弃本次任务"
     break
   elif [ "$CI_STATUS" = "FAILURE" ]; then
     echo "❌ CI 失败，请检查: $PR_URL"
@@ -239,7 +272,13 @@ git pull
 # 3. 删除本地 cp-* 分支
 git branch -D "$BRANCH_NAME" 2>/dev/null || true
 
-# 4. 检查是否需要更新版本号
+# 4. 删除远程 cp-* 分支（如果还存在）
+git push origin --delete "$BRANCH_NAME" 2>/dev/null || true
+
+# 5. 清理远程已删除分支的本地引用
+git remote prune origin 2>/dev/null || true
+
+# 6. 检查是否需要更新版本号
 echo ""
 echo "📦 版本检查："
 echo "   当前版本: $(jq -r '.version' package.json)"
@@ -252,6 +291,8 @@ echo "✅ 清理完成"
 - [x] 清理 git config（base 分支信息）
 - [x] 切回 feature 分支
 - [x] 删除本地 cp-* 分支
+- [x] 删除远程 cp-* 分支
+- [x] 清理 stale 远程引用
 - [x] 版本号提醒（权威源：package.json）
 
 ---

@@ -83,6 +83,10 @@ jobs:
     needs: [test]
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    # 并发保护：同一个 base 分支的 PR 排队合并，避免冲突
+    concurrency:
+      group: merge-${{ github.base_ref }}
+      cancel-in-progress: false
     permissions:
       contents: write
       pull-requests: write
