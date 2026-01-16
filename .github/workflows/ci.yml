@@ -123,7 +123,7 @@ jobs:
   # 自动合并 PR（CI 通过后）
   auto-merge:
     needs: [version-check, test]
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && !failure() && !cancelled()
     runs-on: ubuntu-latest
     # 并发保护：同一个 base 分支的 PR 排队合并，避免冲突
     concurrency:
@@ -152,7 +152,7 @@ jobs:
 
   # CI 失败时通知 Notion
   notify-failure:
-    needs: [version-check, test]
+    needs: [test]
     if: failure()
     runs-on: ubuntu-latest
     steps:
