@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.9.2] - 2026-01-16
+
+### Changed
+- STEPS.md: 添加版本标记（用于会话恢复测试）
+
 ## [7.9.1] - 2026-01-16
 
 ### Fixed
