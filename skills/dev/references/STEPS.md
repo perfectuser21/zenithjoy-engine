@@ -56,7 +56,7 @@ if [[ "$BRANCH" == "main" ]]; then
   echo "请选择或创建 feature 分支"
   # 询问用户选择
 
-elif [[ "$BRANCH" == feature/* ]]; then
+elif [[ "$BRANCH" =~ ^feature/ ]]; then
   FEATURE_BRANCH="$BRANCH"
   echo "✅ 在 feature 分支，可以开始"
 

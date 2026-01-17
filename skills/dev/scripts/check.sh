@@ -55,15 +55,32 @@ LOCAL_BRANCH=$(git branch --list "$BRANCH_NAME" 2>/dev/null || echo "")
 # 检查网络连接和远程分支
 # git ls-remote 输出格式: "abc123  refs/heads/branch-name"
 # 只提取分支名（如果存在）
-REMOTE_CHECK_OUTPUT=$(git ls-remote --heads origin "$BRANCH_NAME" 2>&1)
-REMOTE_CHECK_EXIT=$?
-if [[ $REMOTE_CHECK_EXIT -ne 0 ]]; then
-  echo "⚠️ 无法检查远程分支（网络问题或 origin 不存在）"
-  echo "   错误: $REMOTE_CHECK_OUTPUT"
-  REMOTE_BRANCH=""
+# 使用 timeout 防止网络问题导致脚本挂起（10秒超时）
+if command -v timeout &>/dev/null; then
+  REMOTE_CHECK_OUTPUT=$(timeout 10 git ls-remote --heads origin "$BRANCH_NAME" 2>&1)
+  REMOTE_CHECK_EXIT=$?
+  if [[ $REMOTE_CHECK_EXIT -eq 124 ]]; then
+    echo "⚠️ 检查远程分支超时（网络可能不稳定）"
+    REMOTE_BRANCH=""
+  elif [[ $REMOTE_CHECK_EXIT -ne 0 ]]; then
+    echo "⚠️ 无法检查远程分支（网络问题或 origin 不存在）"
+    echo "   错误: $REMOTE_CHECK_OUTPUT"
+    REMOTE_BRANCH=""
+  else
+    # 提取分支名，去除 hash 和 refs/heads/ 前缀
+    REMOTE_BRANCH=$(echo "$REMOTE_CHECK_OUTPUT" | awk '{print $2}' | sed 's|refs/heads/||')
+  fi
 else
-  # 提取分支名，去除 hash 和 refs/heads/ 前缀
-  REMOTE_BRANCH=$(echo "$REMOTE_CHECK_OUTPUT" | awk '{print $2}' | sed 's|refs/heads/||')
+  # macOS 可能没有 timeout 命令，fallback 到无超时版本
+  REMOTE_CHECK_OUTPUT=$(git ls-remote --heads origin "$BRANCH_NAME" 2>&1)
+  REMOTE_CHECK_EXIT=$?
+  if [[ $REMOTE_CHECK_EXIT -ne 0 ]]; then
+    echo "⚠️ 无法检查远程分支（网络问题或 origin 不存在）"
+    echo "   错误: $REMOTE_CHECK_OUTPUT"
+    REMOTE_BRANCH=""
+  else
+    REMOTE_BRANCH=$(echo "$REMOTE_CHECK_OUTPUT" | awk '{print $2}' | sed 's|refs/heads/||')
+  fi
 fi
 
 if [[ -z "$LOCAL_BRANCH" && -z "$REMOTE_BRANCH" ]]; then
