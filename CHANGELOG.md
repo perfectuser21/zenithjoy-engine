@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.17.0] - 2026-01-17
+
+### Added
+- cleanup.sh 脚本：完整的清理检查（8 项检查）
+- wait-for-merge.sh 脚本：PR 合并轮询（CI + Codex 检查）
+- Hook 测试覆盖检查：PR 前检查是否有新增测试文件
+- vitest 覆盖率配置：50% 阈值（可逐步提高）
+
+### Changed
+- pre-pr-check.sh：加入测试覆盖检查
+- STEPS.md Step 5.5：使用 wait-for-merge.sh 脚本
+- STEPS.md Step 6：使用 cleanup.sh 脚本
+
 ## [7.16.0] - 2026-01-17
 
 ### Added

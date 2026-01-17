@@ -3,7 +3,7 @@
 > 此文档包含 /dev 工作流的完整实现细节。
 > 仅在需要时按步骤加载，减少上下文开销。
 >
-> 最后更新: 2026-01-17 v7.16.0
+> 最后更新: 2026-01-17 v7.17.0
 
 ---
 
@@ -342,54 +342,25 @@ PR 创建
     └── CI 通过 + Codex 没问题 → 等待自动合并
 ```
 
-### 5.5.2 轮询代码
+### 5.5.2 使用轮询脚本
+
+**推荐使用脚本**：
 
 ```bash
-MAX_WAIT=300  # 5 分钟
-WAITED=0
-PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
-
-while [ $WAITED -lt $MAX_WAIT ]; do
-  sleep 30
-  WAITED=$((WAITED + 30))
-
-  # 1. 获取 PR 状态
-  STATE=$(gh pr view "$PR_URL" --json state -q '.state' 2>/dev/null || echo "UNKNOWN")
-
-  if [ "$STATE" = "MERGED" ]; then
-    echo "✅ PR 已合并！(${WAITED}s)"
-    break
-  fi
-
-  # 2. 检查 CI 状态
-  CI_FAILED=$(gh pr checks "$PR_NUMBER" 2>/dev/null | grep -c "fail" || echo "0")
-
-  if [ "$CI_FAILED" -gt 0 ]; then
-    echo "❌ CI 失败，开始修复..."
-    # 读取 CI 错误日志
-    # 修复代码
-    # git add && git commit && git push
-    # 继续轮询
-    continue
-  fi
-
-  # 3. 检查 Codex 评论
-  CODEX_COMMENT=$(gh api repos/:owner/:repo/issues/$PR_NUMBER/comments \
-    --jq '.[] | select(.user.login == "chatgpt-codex-connector[bot]") | .body' \
-    2>/dev/null | tail -1)
-
-  if [[ "$CODEX_COMMENT" == *"issue"* ]] || [[ "$CODEX_COMMENT" == *"problem"* ]]; then
-    echo "⚠️ Codex 发现问题，开始修复..."
-    echo "   评论内容: $CODEX_COMMENT"
-    # 根据 Codex 反馈修复代码
-    # git add && git commit && git push
-    # 继续轮询
-    continue
-  fi
-
-  echo "⏳ 等待中... STATE=$STATE (${WAITED}s)"
-done
+bash skills/dev/scripts/wait-for-merge.sh "$PR_URL"
 ```
+
+**脚本功能**：
+- 每 30 秒轮询 PR 状态
+- 检查 CI 是否失败
+- 检查 Codex 是否发现问题
+- 有问题退出码为 1，需要修复
+- 合并成功退出码为 0
+
+**退出码**：
+- `0` = PR 已合并，进入 cleanup
+- `1` = 需要修复（CI 失败或 Codex 有问题）
+- `2` = 超时，手动检查
 
 ### 5.5.3 修复逻辑
 
@@ -440,6 +411,24 @@ git push
 ## Step 6: Cleanup
 
 **只在 PR 成功合并后执行。**
+
+### 6.1 使用 cleanup 脚本（推荐）
+
+```bash
+bash skills/dev/scripts/cleanup.sh "$BRANCH_NAME" "$FEATURE_BRANCH"
+```
+
+**脚本会检查并清理**：
+1. 切换到 base 分支
+2. 拉取最新代码
+3. 删除本地 cp-* 分支
+4. 删除远程 cp-* 分支
+5. 清理 git config
+6. 清理 stale remote refs
+7. 检查未提交文件
+8. 检查其他遗留 cp-* 分支
+
+### 6.2 手动清理（备用）
 
 ```bash
 echo "🧹 清理..."

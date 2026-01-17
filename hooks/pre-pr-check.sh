@@ -73,6 +73,30 @@ fi
         fi
     fi
 
+    # 3. 检查是否有新增代码但没写测试
+    echo "  → 检查测试覆盖..." >&2
+
+    # 获取本次改动的 .ts 文件（排除 .test.ts 和 .d.ts）
+    CHANGED_TS=$(git diff --cached --name-only --diff-filter=AM 2>/dev/null | grep -E '\.tsx?$' | grep -v '\.test\.' | grep -v '\.d\.ts$' | grep -v 'node_modules' || true)
+
+    if [[ -n "$CHANGED_TS" ]]; then
+        # 检查是否也有对应的测试文件变动
+        CHANGED_TESTS=$(git diff --cached --name-only --diff-filter=AM 2>/dev/null | grep -E '\.test\.tsx?$' || true)
+
+        if [[ -z "$CHANGED_TESTS" ]]; then
+            echo "  ⚠️  有新增/修改的代码但没有测试:" >&2
+            echo "$CHANGED_TS" | head -5 | sed 's/^/     /' >&2
+            echo "" >&2
+            echo "     建议: 为新代码编写测试" >&2
+            echo "     跳过: 如果是配置文件或无需测试的改动，可以继续" >&2
+            # 警告但不阻止（真正的强制在 CI 覆盖率检查）
+        else
+            echo "  ✅ 有测试文件变动" >&2
+        fi
+    else
+        echo "  ✅ 无需检查测试（无新增代码文件）" >&2
+    fi
+
     echo "" >&2
 
     if [[ $FAILED -eq 1 ]]; then

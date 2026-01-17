@@ -1,12 +1,13 @@
 {
   "name": "zenithjoy-engine",
-  "version": "7.16.0",
+  "version": "7.17.0",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
