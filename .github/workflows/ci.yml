@@ -184,10 +184,17 @@ jobs:
             --body "Auto-merged after CI passed"; then
             echo "🎉 PR merged successfully"
           else
-            echo "⚠️ Auto-merge failed (might need manual merge due to conflicts)"
-            echo "::warning::Auto-merge failed, manual intervention may be required"
-            # 不失败 CI，但通过 warning 通知用户
-            exit 0
+            # 合并失败（可能是冲突），使用 error 级别提示但不失败 CI
+            # 因为测试已通过，CI 应保持绿色，但用户需要手动处理合并
+            echo "::error::Auto-merge failed! PR #${{ github.event.pull_request.number }} 需要手动合并"
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "  ⚠️ 自动合并失败"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "  可能原因: 合并冲突或分支保护规则"
+            echo "  请手动检查并合并 PR"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            exit 0  # CI 测试通过，保持绿色状态
           fi
 
   # CI 失败时通知 Notion（version-check 或 test 失败都通知）

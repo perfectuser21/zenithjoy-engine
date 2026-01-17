@@ -20,7 +20,8 @@ NC='\033[0m' # No Color
 
 # 获取所有本地 feature 分支
 get_feature_branches() {
-  git branch | grep 'feature/' | sed 's/^[* ]*//' || true
+  # 使用 grep -F 进行字面匹配，避免分支名中特殊字符被解释为正则
+  git branch | grep -F 'feature/' | sed 's/^[* ]*//' || true
 }
 
 # 获取分支落后 main 的 commit 数

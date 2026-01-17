@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.14.4] - 2026-01-17
+
+### Fixed
+- branch-protect.sh: 添加 jq 解析错误处理
+- CI: 增强 auto-merge 失败提示（使用 ::error::）
+- multi-feature.sh: grep 改用 -F 字面匹配
+- STEPS.md: 修正 glob 模式为正则匹配
+- check.sh: 添加网络超时控制（10 秒）
+
 ## [7.14.3] - 2026-01-17
 
 ### Improved

@@ -16,16 +16,21 @@ fi
 # Read JSON input from stdin
 INPUT=$(cat)
 
-# Extract tool name
-TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // .operation // empty')
+# Extract tool name (with error handling for malformed JSON)
+if ! TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // .operation // empty' 2>/dev/null); then
+    echo "⚠️ branch-protect: 无法解析输入 JSON" >&2
+    exit 0  # 无法解析时放行，避免误阻
+fi
 
 # Only check Write/Edit operations
 if [[ "$TOOL_NAME" != "Write" && "$TOOL_NAME" != "Edit" ]]; then
     exit 0
 fi
 
-# Extract file path
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // .file_path // empty')
+# Extract file path (with error handling)
+if ! FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // .file_path // empty' 2>/dev/null); then
+    exit 0
+fi
 
 if [[ -z "$FILE_PATH" ]]; then
     exit 0
