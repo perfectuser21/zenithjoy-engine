@@ -82,9 +82,9 @@ description: |
 
 ## 核心规则
 
-1. **只在 cp-* 分支写代码** - Hook 强制（main 和 feature/* 都不行）
-2. **feature 是临时的** - 完成就合并回 main 并删除
-3. **频繁回主线** - 保持 main 始终最新，减少分支同步负担
+1. **只在 cp-* 或 feature/* 分支写代码** - Hook 强制（main 和 develop 都不行）
+2. **develop 是主开发线** - 所有 cp-* 完成后合并回 develop
+3. **main 始终稳定** - 只在里程碑时从 develop 合并
 4. **一个对话完成整个流程** - 不需要跨对话状态
 5. **纯 git 检测** - 不需要状态文件
 
@@ -100,7 +100,8 @@ Step 0: 依赖检查
     │
     ▼
 Step 1: 检查当前分支
-    ├─ main？ → 选择/创建 feature → 重新 Step 1
+    ├─ main？ → 切到 develop → 重新 Step 1
+    ├─ develop？ → Step 2 创建 cp-* → Step 2.5 → Step 3
     ├─ feature/*？ → Step 2 创建 cp-* → Step 2.5 → Step 3
     └─ cp-*？ → 跳过 Step 2 → 直接 Step 3（继续任务）
     │
@@ -108,7 +109,7 @@ Step 1: 检查当前分支
 Step 2-4: 分支 → 上下文 → PRD/DoD → 写代码 → 自测
     │
     ▼
-Step 5: 版本号 → commit → push → PR → CI → merge
+Step 5: 版本号 → commit → push → PR(→develop) → CI → merge
     │
     ▼
 Step 6: Cleanup（仅 PR 合并后）

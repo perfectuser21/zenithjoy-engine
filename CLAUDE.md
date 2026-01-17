@@ -49,17 +49,19 @@ zenithjoy-engine/
 
 ---
 
-## 分支策略（频繁回主线）
+## 分支策略（develop 缓冲）
 
 ```
-main (stable, 始终最新)
-  └── feature/* (临时，完成即删)
-        └── cp-* (任务分支，Hook 强制)
+main (稳定发布，里程碑时更新)
+  └── develop (主开发线，日常开发)
+        ├── cp-* (小任务，直接回 develop)
+        └── feature/* (大功能，可选，最终也回 develop)
 ```
 
 **核心原则**：
-- feature 是临时的，完成就合并回 main 并删除
-- 只在 cp-* 分支写代码（Hook 强制）
-- 保持 main 始终最新，减少分支同步负担
+- main 始终稳定，只在里程碑时从 develop 合并
+- develop 是主开发线，所有日常开发都在这里
+- 只在 cp-* 或 feature/* 分支写代码（Hook 强制）
+- cp-* 完成后回 develop，积累够了 develop 回 main
 
 详细文档见 `docs/`。

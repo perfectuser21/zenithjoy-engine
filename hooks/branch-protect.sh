@@ -64,24 +64,27 @@ if [[ -z "$CURRENT_BRANCH" ]]; then
     exit 0
 fi
 
-# ===== 唯一检查: 必须在 cp-* 分支（格式：cp-<name>，name 必须存在）=====
-if [[ ! "$CURRENT_BRANCH" =~ ^cp-[a-zA-Z0-9] ]]; then
-    echo "" >&2
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-    echo "  ❌ 只能在 cp-* 分支修改代码" >&2
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-    echo "" >&2
-    echo "当前分支: $CURRENT_BRANCH" >&2
-    echo "要修改的文件: $FILE_PATH" >&2
-    echo "" >&2
-    echo "正确流程:" >&2
-    echo "  1. 运行 /dev 开始开发工作流" >&2
-    echo "  2. 在 cp-* 分支上开发" >&2
-    echo "" >&2
-    echo "[SKILL_REQUIRED: dev]" >&2
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-    exit 2
+# ===== 检查: 必须在 cp-* 或 feature/* 分支 =====
+# 允许: cp-xxx, feature/xxx
+# 禁止: main, develop, 其他
+if [[ "$CURRENT_BRANCH" =~ ^cp-[a-zA-Z0-9] ]] || [[ "$CURRENT_BRANCH" =~ ^feature/ ]]; then
+    # 允许的分支，放行
+    exit 0
 fi
 
-# All checks passed
-exit 0
+# 禁止的分支
+echo "" >&2
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+echo "  ❌ 只能在 cp-* 或 feature/* 分支修改代码" >&2
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+echo "" >&2
+echo "当前分支: $CURRENT_BRANCH" >&2
+echo "要修改的文件: $FILE_PATH" >&2
+echo "" >&2
+echo "正确流程:" >&2
+echo "  1. 运行 /dev 开始开发工作流" >&2
+echo "  2. 在 cp-* 或 feature/* 分支上开发" >&2
+echo "" >&2
+echo "[SKILL_REQUIRED: dev]" >&2
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+exit 2
