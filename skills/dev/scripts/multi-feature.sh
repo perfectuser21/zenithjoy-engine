@@ -7,6 +7,7 @@
 #   multi-feature.sh list     # 简单列出 feature 分支
 
 set -e
+set -o pipefail  # 管道中任意命令失败都会导致整个管道失败
 
 ACTION=${1:-detect}
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
@@ -43,7 +44,11 @@ get_ahead_commits() {
 # 获取领先的 commits 数量（过滤 auto-backup）
 get_ahead_count_filtered() {
   local branch=$1
-  git log origin/main.."$branch" --oneline 2>/dev/null | grep -v "^[a-f0-9]* auto-backup:" | wc -l | tr -d ' '
+  local count
+  # 使用 grep -c 直接计数，避免管道中的空格问题
+  # || echo 0 处理 grep 无匹配时返回 1 的情况
+  count=$(git log origin/main.."$branch" --oneline 2>/dev/null | grep -cv "^[a-f0-9]* auto-backup:" || echo 0)
+  echo "${count:-0}"
 }
 
 # 获取分支最后更新时间
@@ -71,7 +76,8 @@ case $ACTION in
       exit 0
     fi
 
-    COUNT=$(echo "$BRANCHES" | wc -l | tr -d ' ')
+    COUNT=$(echo "$BRANCHES" | wc -l)
+    COUNT=${COUNT// /}  # 移除空格
     echo "  当前 repo 有 ${COUNT} 个 feature 分支:"
     echo ""
 

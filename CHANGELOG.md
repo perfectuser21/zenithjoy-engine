@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.14.2] - 2026-01-17
+
+### Fixed
+- pre-pr-check.sh: 使用 subshell 避免改变调用者工作目录
+- check.sh: 添加 set -o pipefail 确保管道错误被捕获
+- check.sh: 修复 git ls-remote 输出解析（提取分支名而非原始输出）
+- check.sh: 使用正则 =~ 替代 glob 模式匹配 feature/*
+- multi-feature.sh: 添加 set -o pipefail
+- multi-feature.sh: 改进 get_ahead_count_filtered 空输出处理
+
 ## [7.14.1] - 2026-01-17
 
 ### Fixed

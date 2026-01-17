@@ -37,50 +37,53 @@ if [[ ! -f "$PROJECT_ROOT/package.json" ]]; then
     exit 0
 fi
 
-cd "$PROJECT_ROOT"
+# 使用 subshell 避免改变调用者的工作目录
+(
+    cd "$PROJECT_ROOT" || exit 1
 
-echo "" >&2
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-echo "  🔍 PR 前检查 (Pre-PR Hook)" >&2
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-echo "" >&2
-
-FAILED=0
-
-# 1. 运行 typecheck（如果有这个 script）
-if grep -q '"typecheck"' "$PROJECT_ROOT/package.json"; then
-    echo "  → npm run typecheck..." >&2
-    if ! npm run typecheck >/dev/null 2>&1; then
-        echo "  ❌ typecheck 失败" >&2
-        echo "     运行: npm run typecheck 查看详情" >&2
-        FAILED=1
-    else
-        echo "  ✅ typecheck 通过" >&2
-    fi
-fi
-
-# 2. 运行 test（如果有这个 script）
-if grep -q '"test"' "$PROJECT_ROOT/package.json"; then
-    echo "  → npm test..." >&2
-    if ! npm test >/dev/null 2>&1; then
-        echo "  ❌ test 失败" >&2
-        echo "     运行: npm test 查看详情" >&2
-        FAILED=1
-    else
-        echo "  ✅ test 通过" >&2
-    fi
-fi
-
-echo "" >&2
-
-if [[ $FAILED -eq 1 ]]; then
+    echo "" >&2
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-    echo "  ❌ 检查未通过，PR 创建被阻止" >&2
-    echo "  请先修复问题再创建 PR" >&2
+    echo "  🔍 PR 前检查 (Pre-PR Hook)" >&2
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
     echo "" >&2
-    exit 2  # 阻止操作
-fi
+
+    FAILED=0
+
+    # 1. 运行 typecheck（如果有这个 script）
+    if grep -q '"typecheck"' "$PROJECT_ROOT/package.json"; then
+        echo "  → npm run typecheck..." >&2
+        if ! npm run typecheck >/dev/null 2>&1; then
+            echo "  ❌ typecheck 失败" >&2
+            echo "     运行: npm run typecheck 查看详情" >&2
+            FAILED=1
+        else
+            echo "  ✅ typecheck 通过" >&2
+        fi
+    fi
+
+    # 2. 运行 test（如果有这个 script）
+    if grep -q '"test"' "$PROJECT_ROOT/package.json"; then
+        echo "  → npm test..." >&2
+        if ! npm test >/dev/null 2>&1; then
+            echo "  ❌ test 失败" >&2
+            echo "     运行: npm test 查看详情" >&2
+            FAILED=1
+        else
+            echo "  ✅ test 通过" >&2
+        fi
+    fi
+
+    echo "" >&2
+
+    if [[ $FAILED -eq 1 ]]; then
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+        echo "  ❌ 检查未通过，PR 创建被阻止" >&2
+        echo "  请先修复问题再创建 PR" >&2
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+        echo "" >&2
+        exit 2  # 阻止操作
+    fi
+)
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
 echo "  ✅ 所有检查通过，允许创建 PR" >&2

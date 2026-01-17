@@ -1,4 +1,6 @@
 #!/bin/bash
+set -o pipefail  # 管道中任意命令失败都会导致整个管道失败
+
 # /dev 完成度检查脚本
 # 用法: bash scripts/check.sh <BRANCH_NAME> [FEATURE_BRANCH]
 #
@@ -51,6 +53,8 @@ fi
 # 验证分支是否存在（本地或远程）
 LOCAL_BRANCH=$(git branch --list "$BRANCH_NAME" 2>/dev/null || echo "")
 # 检查网络连接和远程分支
+# git ls-remote 输出格式: "abc123  refs/heads/branch-name"
+# 只提取分支名（如果存在）
 REMOTE_CHECK_OUTPUT=$(git ls-remote --heads origin "$BRANCH_NAME" 2>&1)
 REMOTE_CHECK_EXIT=$?
 if [[ $REMOTE_CHECK_EXIT -ne 0 ]]; then
@@ -58,7 +62,8 @@ if [[ $REMOTE_CHECK_EXIT -ne 0 ]]; then
   echo "   错误: $REMOTE_CHECK_OUTPUT"
   REMOTE_BRANCH=""
 else
-  REMOTE_BRANCH="$REMOTE_CHECK_OUTPUT"
+  # 提取分支名，去除 hash 和 refs/heads/ 前缀
+  REMOTE_BRANCH=$(echo "$REMOTE_CHECK_OUTPUT" | awk '{print $2}' | sed 's|refs/heads/||')
 fi
 
 if [[ -z "$LOCAL_BRANCH" && -z "$REMOTE_BRANCH" ]]; then
@@ -124,7 +129,7 @@ elif [[ -n "$FEATURE_BRANCH" && "$CURRENT_BRANCH" == "$FEATURE_BRANCH" ]]; then
   # 当前分支与指定的 base 分支匹配
   echo "  ✅ 已切回 base 分支 ($CURRENT_BRANCH)"
   ((COMPLETED_COUNT++))
-elif [[ "$CURRENT_BRANCH" == "develop" || "$CURRENT_BRANCH" == feature/* ]]; then
+elif [[ "$CURRENT_BRANCH" == "develop" || "$CURRENT_BRANCH" =~ ^feature/ ]]; then
   # 在合法的 base 分支上，但与指定的不同
   if [[ -n "$FEATURE_BRANCH" ]]; then
     echo "  ⚠️ 当前在 $CURRENT_BRANCH，但指定的 base 分支是 $FEATURE_BRANCH"
