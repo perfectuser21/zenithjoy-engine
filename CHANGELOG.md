@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.22.0] - 2026-01-17
+
+### Added
+- Claude Code Review GitHub Action：替代 Codex 做 PR review
+- 支持 @claude 触发和 PR 自动触发
+
 ## [7.21.0] - 2026-01-17
 
 ### Added
