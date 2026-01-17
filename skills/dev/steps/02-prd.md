@@ -2,6 +2,11 @@
 
 > 生成产品需求文档，等用户确认
 
+**完成后设置状态**：
+```bash
+git config branch."$BRANCH_NAME".step 2
+```
+
 ---
 
 ## PRD 模板
@@ -40,3 +45,13 @@
 - PRD 要简洁，不要写太多
 - 用户确认后才能继续
 - 如果用户有修改意见，更新 PRD 后再确认
+
+---
+
+## 用户确认后
+
+```bash
+BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+git config branch."$BRANCH_NAME".step 2
+echo "✅ Step 2 完成 (PRD 确认)"
+```

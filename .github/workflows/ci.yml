@@ -167,47 +167,26 @@ jobs:
           fi
           exit $FAILED
 
-  # 自动合并 PR（CI 通过后）
-  # 注意：version-check 只在 PR 时运行，push 时为 skipped
-  auto-merge:
+  # CI 通过后通知（不自动合并，需要手动确认）
+  ci-passed:
     needs: [version-check, test]
-    # 必须：test 成功 + (version-check 成功或跳过)
     if: github.event_name == 'pull_request' && needs.test.result == 'success' && (needs.version-check.result == 'success' || needs.version-check.result == 'skipped')
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    # 并发保护：同一个 base 分支的 PR 排队合并，避免冲突
-    concurrency:
-      group: merge-${{ github.base_ref }}
-      cancel-in-progress: false
-    permissions:
-      contents: write
-      pull-requests: write
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Auto merge PR
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: CI Passed
         run: |
-          echo "✅ CI passed, merging PR #${{ github.event.pull_request.number }}"
-          if gh pr merge ${{ github.event.pull_request.number }} \
-            --squash \
-            --delete-branch \
-            --body "Auto-merged after CI passed"; then
-            echo "🎉 PR merged successfully"
-          else
-            # 合并失败（可能是冲突），使用 error 级别提示但不失败 CI
-            # 因为测试已通过，CI 应保持绿色，但用户需要手动处理合并
-            echo "::error::Auto-merge failed! PR #${{ github.event.pull_request.number }} 需要手动合并"
-            echo ""
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "  ⚠️ 自动合并失败"
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "  可能原因: 合并冲突或分支保护规则"
-            echo "  请手动检查并合并 PR"
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            exit 0  # CI 测试通过，保持绿色状态
-          fi
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  ✅ CI 通过"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "PR #${{ github.event.pull_request.number }} CI 检查通过"
+          echo ""
+          echo "下一步："
+          echo "  1. 等待 Codex review（如果配置了）"
+          echo "  2. 手动合并 PR"
+          echo ""
+          echo "不再自动合并，需要确认所有检查通过后手动操作"
 
   # CI 失败时通知 Notion（version-check 或 test 失败都通知）
   notify-failure:

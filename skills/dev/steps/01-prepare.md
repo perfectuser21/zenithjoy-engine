@@ -2,6 +2,11 @@
 
 > 依赖检查 + 分支检查 + 创建分支 + 上下文回顾
 
+**完成后设置状态**：
+```bash
+git config branch."$BRANCH_NAME".step 1
+```
+
 ---
 
 ## 1.1 依赖检查
@@ -70,8 +75,12 @@ git checkout -b "$BRANCH_NAME"
 # 保存 base 分支到 git config
 git config branch.$BRANCH_NAME.base-branch "$BASE_BRANCH"
 
+# 设置步骤状态
+git config branch.$BRANCH_NAME.step 1
+
 echo "✅ 分支已创建: $BRANCH_NAME"
 echo "   Base: $BASE_BRANCH"
+echo "   Step: 1 (准备完成)"
 ```
 
 ---

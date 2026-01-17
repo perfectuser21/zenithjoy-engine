@@ -2,6 +2,12 @@
 
 > 根据 PRD 实现功能代码
 
+**前置条件**：step >= 3
+**完成后设置状态**：
+```bash
+git config branch."$BRANCH_NAME".step 4
+```
+
 ---
 
 ## 原则

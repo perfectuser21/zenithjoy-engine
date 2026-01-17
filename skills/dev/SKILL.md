@@ -63,9 +63,31 @@ Step 10: Cleanup
 ## 核心规则
 
 1. **只在 cp-* 或 feature/* 分支写代码** - Hook 强制
-2. **PRD 确认后才能写代码** - Hook 检查 `git config branch.*.prd-confirmed`
+2. **步骤状态机** - Hook 检查 `git config branch.*.step`，step >= 3 才能写代码
 3. **develop 是主开发线** - PR 合并回 develop
 4. **main 始终稳定** - 只在里程碑时从 develop 合并
+5. **不自动合并** - CI 通过后需要手动确认合并
+
+---
+
+## 步骤状态机
+
+用 `git config branch.cp-xxx.step` 追踪当前步骤：
+
+| step | 状态 | 说明 |
+|------|------|------|
+| 1 | 准备完成 | 分支已创建 |
+| 2 | PRD 完成 | 用户确认 PRD |
+| 3 | DoD 完成 | 用户确认 DoD，**可以写代码** |
+| 4 | 代码完成 | 功能代码写完 |
+| 5 | 测试完成 | 测试代码写完 |
+| 6 | 本地测试通过 | npm test 绿，**可以提交** |
+| 7 | PR 已创建 | 等待 CI |
+| 8 | CI + Codex 通过 | 质检完成 |
+| 9 | 已合并 | PR merged |
+| 10 | 已清理 | 分支删除 |
+
+**Hook 检查**：step >= 3 才能写代码（Write/Edit）
 
 ---
 

@@ -2,6 +2,12 @@
 
 > 清理分支 + 可选 Learn
 
+**前置条件**：step >= 9（已合并）
+**完成后设置状态**：
+```bash
+git config branch."$BRANCH_NAME".step 10
+```
+
 ---
 
 ## 使用 cleanup 脚本（推荐）

@@ -2,6 +2,12 @@
 
 > 必须全绿才能继续
 
+**前置条件**：step >= 5
+**完成后设置状态**：
+```bash
+git config branch."$BRANCH_NAME".step 6
+```
+
 ---
 
 ## 运行测试

@@ -2,6 +2,12 @@
 
 > CI 通过 + Codex 通过 → 合并 PR
 
+**前置条件**：step >= 8（CI + Codex 通过）
+**完成后设置状态**：
+```bash
+git config branch."$BRANCH_NAME".step 9
+```
+
 ---
 
 ## 完成条件

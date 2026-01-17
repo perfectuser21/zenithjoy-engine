@@ -2,6 +2,12 @@
 
 > 质检闭环：CI 通过 + Codex review 通过
 
+**前置条件**：step >= 7（PR 已创建）
+**完成后设置状态**：
+```bash
+git config branch."$BRANCH_NAME".step 8
+```
+
 ---
 
 ## 质检循环

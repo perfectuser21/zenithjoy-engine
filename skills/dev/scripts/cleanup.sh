@@ -104,14 +104,13 @@ fi
 echo ""
 echo "5️⃣  清理 git config..."
 CLEANED=false
-if git config --get "branch.$CP_BRANCH.base" &>/dev/null; then
-    git config --unset "branch.$CP_BRANCH.base" 2>/dev/null || true
-    CLEANED=true
-fi
-if git config --get "branch.$CP_BRANCH.prd-confirmed" &>/dev/null; then
-    git config --unset "branch.$CP_BRANCH.prd-confirmed" 2>/dev/null || true
-    CLEANED=true
-fi
+# 清理所有可能的配置项
+for CONFIG_KEY in "base" "base-branch" "prd-confirmed" "step"; do
+    if git config --get "branch.$CP_BRANCH.$CONFIG_KEY" &>/dev/null; then
+        git config --unset "branch.$CP_BRANCH.$CONFIG_KEY" 2>/dev/null || true
+        CLEANED=true
+    fi
+done
 if [ "$CLEANED" = true ]; then
     echo -e "   ${GREEN}✅ 已清理 git config${NC}"
 else

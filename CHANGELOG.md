@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.20.0] - 2026-01-17
+
+### Added
+- 步骤状态机：用 `git config branch.*.step` 追踪当前步骤
+- Hook 检查：step >= 3 才能写代码
+- 每个步骤文件加入前置条件和状态更新说明
+
+### Changed
+- CI 不再自动合并，需要手动确认
+- cleanup.sh 清理 step 配置
+- check.sh 检查 step 配置
+
+### 强制流程
+- 本地 Hook 强制：步骤不到不能写代码
+- CI 强制：不自动合并，等所有检查通过
+
 ## [7.19.0] - 2026-01-17
 
 ### Changed

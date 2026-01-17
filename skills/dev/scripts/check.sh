@@ -129,14 +129,22 @@ echo ""
 echo "清理阶段 (Step 6):"
 
 # git config 已清理？（可跳过项，不计入 COMPLETED_COUNT）
-CONFIG_BASE=$(git config "branch.$BRANCH_NAME.base" 2>/dev/null || echo "")
-CONFIG_PRD=$(git config "branch.$BRANCH_NAME.prd-confirmed" 2>/dev/null || echo "")
-if [[ -z "$CONFIG_BASE" && -z "$CONFIG_PRD" ]]; then
+CONFIG_EXISTS=false
+for KEY in "base" "base-branch" "prd-confirmed" "step"; do
+  if git config "branch.$BRANCH_NAME.$KEY" &>/dev/null; then
+    CONFIG_EXISTS=true
+    break
+  fi
+done
+if [[ "$CONFIG_EXISTS" == "false" ]]; then
   echo "  ✅ git config 已清理（可跳过）"
 else
   echo "  ⚠️ git config 未清理（可跳过）"
-  [[ -n "$CONFIG_BASE" ]] && echo "     可选修复: git config --unset branch.$BRANCH_NAME.base"
-  [[ -n "$CONFIG_PRD" ]] && echo "     可选修复: git config --unset branch.$BRANCH_NAME.prd-confirmed"
+  for KEY in "base" "base-branch" "prd-confirmed" "step"; do
+    if git config "branch.$BRANCH_NAME.$KEY" &>/dev/null; then
+      echo "     可选修复: git config --unset branch.$BRANCH_NAME.$KEY"
+    fi
+  done
 fi
 
 # 当前在 base 分支？（develop 或 feature/*）

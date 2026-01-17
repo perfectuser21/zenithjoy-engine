@@ -1,25 +1,35 @@
 #!/usr/bin/env bash
 # ZenithJoy Engine - 分支保护 Hook（版本见 package.json）
-# 检查：必须在 cp-* 分支
+# 检查：必须在 cp-* 分支 + 步骤状态机
 # 保护：代码文件 + 重要目录（skills/, hooks/, .github/）
-# 不需要状态文件 — 纯 git 检测
 
 set -euo pipefail
+
+# ===== 步骤定义 =====
+# step=1 → 准备完成
+# step=2 → PRD 完成
+# step=3 → DoD 完成（可以写代码）
+# step=4 → 代码完成
+# step=5 → 测试完成
+# step=6 → 本地测试通过（可以提交）
+# step=7 → PR 已创建
+# step=8 → CI + Codex 通过
+# step=9 → 已合并
+# step=10 → 已清理
 
 # 检查 jq 是否存在
 if ! command -v jq &>/dev/null; then
   echo "⚠️ jq 未安装，分支保护 Hook 无法正常工作" >&2
   echo "   请安装: apt install jq 或 brew install jq" >&2
-  exit 0  # 不阻止操作，但警告用户
+  exit 0
 fi
 
 # Read JSON input from stdin
 INPUT=$(cat)
 
-# Extract tool name (with error handling for malformed JSON)
+# Extract tool name
 if ! TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // .operation // empty' 2>/dev/null); then
-    echo "⚠️ branch-protect: 无法解析输入 JSON" >&2
-    exit 0  # 无法解析时放行，避免误阻
+    exit 0
 fi
 
 # Only check Write/Edit operations
@@ -27,7 +37,7 @@ if [[ "$TOOL_NAME" != "Write" && "$TOOL_NAME" != "Edit" ]]; then
     exit 0
 fi
 
-# Extract file path (with error handling)
+# Extract file path
 if ! FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // .file_path // empty' 2>/dev/null); then
     exit 0
 fi
@@ -39,14 +49,14 @@ fi
 # ===== 判断是否需要保护 =====
 NEEDS_PROTECTION=false
 
-# 1. 重要目录：skills/, hooks/, .github/ 下的所有文件都要保护
+# 1. 重要目录
 if [[ "$FILE_PATH" == *"/skills/"* ]] || \
    [[ "$FILE_PATH" == *"/hooks/"* ]] || \
    [[ "$FILE_PATH" == *"/.github/"* ]]; then
     NEEDS_PROTECTION=true
 fi
 
-# 2. 代码文件：根据扩展名判断
+# 2. 代码文件
 EXT="${FILE_PATH##*.}"
 case "$EXT" in
     ts|tsx|js|jsx|py|go|rs|java|c|cpp|h|hpp|rb|php|swift|kt|sh)
@@ -54,73 +64,71 @@ case "$EXT" in
         ;;
 esac
 
-# 不需要保护的文件直接放行
 if [[ "$NEEDS_PROTECTION" == "false" ]]; then
     exit 0
 fi
 
-# ===== 以下是需要保护的文件，执行检查 =====
+# ===== 以下是需要保护的文件 =====
 
-# Get current git branch
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
 
-# No git = allow
 if [[ -z "$CURRENT_BRANCH" ]]; then
     exit 0
 fi
 
-# 验证文件是否属于当前 git 仓库（防止多项目环境误保护）
+# 验证文件是否属于当前 git 仓库
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
 if [[ -n "$PROJECT_ROOT" && "$FILE_PATH" != "$PROJECT_ROOT"* ]]; then
-    # 文件不在当前 git 仓库中，不需要保护
     exit 0
 fi
 
-# ===== 检查: 必须在 cp-* 或 feature/* 分支 =====
-# 允许: cp-xxx, feature/xxx
-# 禁止: main, develop, 其他
+# ===== 分支检查 =====
 
-# feature/* 分支直接放行（不需要 PRD）
+# feature/* 分支直接放行
 if [[ "$CURRENT_BRANCH" =~ ^feature/ ]]; then
     exit 0
 fi
 
-# cp-* 分支需要额外检查 PRD 是否已确认
+# cp-* 分支检查步骤状态
 if [[ "$CURRENT_BRANCH" =~ ^cp-[a-zA-Z0-9] ]]; then
-    PRD_CONFIRMED=$(git config --get branch."$CURRENT_BRANCH".prd-confirmed 2>/dev/null || echo "")
-    if [[ "$PRD_CONFIRMED" != "true" ]]; then
+    CURRENT_STEP=$(git config --get branch."$CURRENT_BRANCH".step 2>/dev/null || echo "0")
+
+    # 写代码需要 step >= 3 (DoD 完成)
+    if [[ "$CURRENT_STEP" -lt 3 ]]; then
         echo "" >&2
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-        echo "  ❌ PRD 未确认，请先运行 /dev 完成流程" >&2
+        echo "  ❌ 步骤未完成，不能写代码" >&2
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
         echo "" >&2
         echo "当前分支: $CURRENT_BRANCH" >&2
-        echo "要修改的文件: $FILE_PATH" >&2
+        echo "当前步骤: $CURRENT_STEP" >&2
+        echo "需要步骤: >= 3 (DoD 完成)" >&2
         echo "" >&2
-        echo "正确流程:" >&2
-        echo "  1. 运行 /dev 开始开发工作流" >&2
-        echo "  2. 确认 PRD 后才能写代码" >&2
+        echo "步骤说明:" >&2
+        echo "  1 = 准备完成" >&2
+        echo "  2 = PRD 完成" >&2
+        echo "  3 = DoD 完成 ← 需要到这里才能写代码" >&2
+        echo "" >&2
+        echo "请先运行 /dev 完成前置步骤" >&2
         echo "" >&2
         echo "[SKILL_REQUIRED: dev]" >&2
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
         exit 2
     fi
-    # PRD 已确认，放行
+
+    # 步骤检查通过，放行
     exit 0
 fi
 
-# 禁止的分支
+# 禁止的分支（main, develop, 其他）
 echo "" >&2
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
 echo "  ❌ 只能在 cp-* 或 feature/* 分支修改代码" >&2
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
 echo "" >&2
 echo "当前分支: $CURRENT_BRANCH" >&2
-echo "要修改的文件: $FILE_PATH" >&2
 echo "" >&2
-echo "正确流程:" >&2
-echo "  1. 运行 /dev 开始开发工作流" >&2
-echo "  2. 在 cp-* 或 feature/* 分支上开发" >&2
+echo "请先运行 /dev 创建 cp-* 分支" >&2
 echo "" >&2
 echo "[SKILL_REQUIRED: dev]" >&2
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2

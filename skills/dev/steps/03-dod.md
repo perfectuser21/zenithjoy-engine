@@ -2,6 +2,11 @@
 
 > 定义验收标准（Definition of Done）
 
+**完成后设置状态**（这步完成后才能写代码）：
+```bash
+git config branch."$BRANCH_NAME".step 3
+```
+
 ---
 
 ## DoD 模板
@@ -38,12 +43,12 @@
 
 ## PRD + DoD 确认后
 
-**用户确认后，设置 PRD 确认标记**：
+**用户确认后，设置步骤状态**：
 
 ```bash
 BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
-git config branch."$BRANCH_NAME".prd-confirmed true
-echo "✅ PRD 已确认，可以开始写代码"
+git config branch."$BRANCH_NAME".step 3
+echo "✅ Step 3 完成 (DoD 确认)，可以开始写代码"
 ```
 
-**这个标记用于 Hook 检查**：没有确认 PRD 不能写代码。
+**Hook 检查**：step >= 3 才能写代码。
