@@ -68,7 +68,7 @@ if command -v timeout &>/dev/null; then
     REMOTE_BRANCH=""
   else
     # 提取分支名，去除 hash 和 refs/heads/ 前缀
-    REMOTE_BRANCH=$(echo "$REMOTE_CHECK_OUTPUT" | awk '{print $2}' | sed 's|refs/heads/||')
+    REMOTE_BRANCH=$(echo "$REMOTE_CHECK_OUTPUT" | awk 'NR==1 {print $2}' | sed 's|refs/heads/||')
   fi
 else
   # macOS 可能没有 timeout 命令，fallback 到无超时版本
@@ -79,7 +79,7 @@ else
     echo "   错误: $REMOTE_CHECK_OUTPUT"
     REMOTE_BRANCH=""
   else
-    REMOTE_BRANCH=$(echo "$REMOTE_CHECK_OUTPUT" | awk '{print $2}' | sed 's|refs/heads/||')
+    REMOTE_BRANCH=$(echo "$REMOTE_CHECK_OUTPUT" | awk 'NR==1 {print $2}' | sed 's|refs/heads/||')
   fi
 fi
 

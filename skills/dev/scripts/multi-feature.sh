@@ -182,8 +182,16 @@ case $ACTION in
         SYNCED=$((SYNCED + 1))
       else
         echo -e "    ${RED}✗${NC} 有冲突，需要手动解决"
-        echo "      cd $(pwd) && git checkout $branch && git merge origin/main"
-        git merge --abort 2>/dev/null || true
+        # 尝试中止 merge，如果失败则警告用户
+        if ! git merge --abort 2>/dev/null; then
+          echo -e "    ${RED}⚠${NC} 无法自动中止 merge，分支可能处于 MERGING 状态"
+          echo "      手动修复: git merge --abort 或 git reset --hard HEAD"
+        fi
+        echo ""
+        echo "      手动同步步骤:"
+        echo "        1. git checkout $branch"
+        echo "        2. git merge origin/main"
+        echo "        3. 解决冲突后: git add . && git commit"
         FAILED=$((FAILED + 1))
       fi
     done

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.14.5] - 2026-01-17
+
+### Fixed
+- CI: 添加 semver 格式验证（必须是 MAJOR.MINOR.PATCH）
+- CI: Go 版本检测添加 head -1 防止多行匹配
+- project-detect.sh: 合并重复的 git 检查，减少调用
+- multi-feature.sh: 改进 merge 冲突指引，检查 abort 返回值
+- check.sh: awk 添加 NR==1 限制只处理第一行
+
 ## [7.14.4] - 2026-01-17
 
 ### Fixed

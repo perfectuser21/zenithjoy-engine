@@ -18,26 +18,22 @@ PROJECT_ROOT=$(pwd)
 # 检测标志
 MISSING_ITEMS=()
 
-# 1. 检测 git 仓库
-if ! git rev-parse --git-dir &>/dev/null; then
-    MISSING_ITEMS+=("⚠️  缺少 .git 目录 - 项目未初始化为 git 仓库")
-fi
-
-# 2. 检测 remote（仅在 git 仓库中检查）
+# 1. 检测 git 仓库和 remote（合并检查，避免重复调用 git）
 if git rev-parse --git-dir &>/dev/null; then
-    # 使用 git remote 检查是否有配置的远程仓库
-    # 注意：git remote 无输出时返回 0，所以用 grep -q . 检查是否有内容
+    # 是 git 仓库，检查是否有 remote
     if ! git remote 2>/dev/null | grep -q .; then
         MISSING_ITEMS+=("⚠️  缺少 git remote - 没有配置远程仓库")
     fi
+else
+    MISSING_ITEMS+=("⚠️  缺少 .git 目录 - 项目未初始化为 git 仓库")
 fi
 
-# 3. 检测 .github/workflows/ci.yml（使用绝对路径）
+# 2. 检测 .github/workflows/ci.yml（使用绝对路径）
 if [[ ! -f "$PROJECT_ROOT/.github/workflows/ci.yml" ]]; then
     MISSING_ITEMS+=("⚠️  缺少 .github/workflows/ci.yml - 没有配置 CI/CD")
 fi
 
-# 4. 检测 CLAUDE.md（使用绝对路径）
+# 3. 检测 CLAUDE.md（使用绝对路径）
 if [[ ! -f "$PROJECT_ROOT/CLAUDE.md" ]]; then
     MISSING_ITEMS+=("⚠️  缺少 CLAUDE.md - 没有项目说明文档")
 fi
