@@ -112,26 +112,30 @@ else
   echo "     可选修复: git config --unset branch.$BRANCH_NAME.base"
 fi
 
-# 当前在 feature 分支？
+# 当前在 base 分支？（develop 或 feature/*）
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
 if [[ "$CURRENT_BRANCH" == "unknown" ]]; then
   echo "  ❌ 无法获取当前分支名"
   MISSING_COMMANDS+=("检查 git 状态")
-elif [[ "$CURRENT_BRANCH" == feature/* ]]; then
-  # 如果提供了 FEATURE_BRANCH，验证是否匹配
-  if [[ -n "$FEATURE_BRANCH" && "$CURRENT_BRANCH" != "$FEATURE_BRANCH" ]]; then
-    echo "  ⚠️ 当前在 feature 分支 ($CURRENT_BRANCH)，但与指定的 $FEATURE_BRANCH 不同"
+elif [[ -n "$FEATURE_BRANCH" && "$CURRENT_BRANCH" == "$FEATURE_BRANCH" ]]; then
+  # 当前分支与指定的 base 分支匹配
+  echo "  ✅ 已切回 base 分支 ($CURRENT_BRANCH)"
+  ((COMPLETED_COUNT++))
+elif [[ "$CURRENT_BRANCH" == "develop" || "$CURRENT_BRANCH" == feature/* ]]; then
+  # 在合法的 base 分支上，但与指定的不同
+  if [[ -n "$FEATURE_BRANCH" ]]; then
+    echo "  ⚠️ 当前在 $CURRENT_BRANCH，但指定的 base 分支是 $FEATURE_BRANCH"
     ((COMPLETED_COUNT++))
   else
-    echo "  ✅ 已切回 feature 分支 ($CURRENT_BRANCH)"
+    echo "  ✅ 已切回 base 分支 ($CURRENT_BRANCH)"
     ((COMPLETED_COUNT++))
   fi
 else
-  echo "  ❌ 未切回 feature 分支 (当前: $CURRENT_BRANCH)"
+  echo "  ❌ 未切回 base 分支 (当前: $CURRENT_BRANCH)"
   if [[ -n "$FEATURE_BRANCH" ]]; then
     MISSING_COMMANDS+=("git checkout $FEATURE_BRANCH")
   else
-    MISSING_COMMANDS+=("git checkout <your-feature-branch>")
+    MISSING_COMMANDS+=("git checkout develop")
   fi
 fi
 
