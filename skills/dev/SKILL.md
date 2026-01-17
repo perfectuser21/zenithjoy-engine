@@ -129,7 +129,7 @@ Step 7: Learn（可选）
 |------|------|------|
 | 0 | 检查 gh/jq 依赖和登录状态 | → [STEPS.md#step-0](references/STEPS.md#step-0-依赖检查) |
 | 0.5 | (可选) 检测多 feature 分支状态 | `bash scripts/multi-feature.sh detect` |
-| 1 | 检测 main/feature/cp-* 分支 | → [STEPS.md#step-1](references/STEPS.md#step-1-检查分支) |
+| 1 | 检测 main/develop/feature/cp-* 分支 | → [STEPS.md#step-1](references/STEPS.md#step-1-检查分支) |
 | 2 | 创建 cp-{时间戳}-{任务名} 分支 | → [STEPS.md#step-2](references/STEPS.md#step-2-创建-cp-分支) |
 | 2.5 | 回顾 CHANGELOG/PR/架构/踩坑 | → [STEPS.md#step-25](references/STEPS.md#step-25-上下文回顾) |
 | 3 | 生成 PRD + DoD，等用户确认 | → [STEPS.md#step-3](references/STEPS.md#step-3-prd-dod) |
