@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # multi-feature.sh - 多 Feature 分支管理
 #
 # 用法:
@@ -6,8 +6,7 @@
 #   multi-feature.sh sync     # 同步其他 feature 分支到 main
 #   multi-feature.sh list     # 简单列出 feature 分支
 
-set -e
-set -o pipefail  # 管道中任意命令失败都会导致整个管道失败
+set -euo pipefail  # -e: 命令失败时退出; -u: 未定义变量报错; -o pipefail: 管道失败传播
 
 ACTION=${1:-detect}
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")

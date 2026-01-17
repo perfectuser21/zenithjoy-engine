@@ -1,9 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ZenithJoy Engine - PR 前检查 Hook（版本见 package.json）
 # 在 gh pr create 之前，强制运行 test 和 typecheck
 # 检查失败则阻止 PR 创建
 
-set -e
+set -euo pipefail
 
 # 检查 jq 是否存在
 if ! command -v jq &>/dev/null; then
@@ -61,17 +61,8 @@ fi
         fi
     fi
 
-    # 2. 运行 test（如果有这个 script）
-    if grep -q '"test"' "$PROJECT_ROOT/package.json"; then
-        echo "  → npm test..." >&2
-        if ! npm test >/dev/null 2>&1; then
-            echo "  ❌ test 失败" >&2
-            echo "     运行: npm test 查看详情" >&2
-            FAILED=1
-        else
-            echo "  ✅ test 通过" >&2
-        fi
-    fi
+    # 注意：test 交由 CI 负责，Hook 只检查 typecheck
+    # 这样可以加快 PR 创建速度，避免重复检查
 
     echo "" >&2
 

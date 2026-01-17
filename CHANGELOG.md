@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.14.6] - 2026-01-17
+
+### Improved
+- 统一所有脚本 shebang 为 `#!/usr/bin/env bash`（更好的跨平台兼容性）
+- 统一所有脚本使用 `set -euo pipefail` 严格错误处理
+- pre-pr-check.sh: 移除冗余的 npm test（CI 已负责测试）
+
 ## [7.14.5] - 2026-01-17
 
 ### Fixed

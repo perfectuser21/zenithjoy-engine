@@ -1,5 +1,5 @@
-#!/bin/bash
-set -o pipefail  # 管道中任意命令失败都会导致整个管道失败
+#!/usr/bin/env bash
+set -euo pipefail  # -e: 命令失败时退出; -u: 未定义变量报错; -o pipefail: 管道失败传播
 
 # /dev 完成度检查脚本
 # 用法: bash scripts/check.sh <BRANCH_NAME> [FEATURE_BRANCH]

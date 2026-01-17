@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ZenithJoy Engine - 分支保护 Hook（版本见 package.json）
 # 检查：必须在 cp-* 分支
 # 保护：代码文件 + 重要目录（skills/, hooks/, .github/）
 # 不需要状态文件 — 纯 git 检测
 
-set -e
+set -euo pipefail
 
 # 检查 jq 是否存在
 if ! command -v jq &>/dev/null; then
