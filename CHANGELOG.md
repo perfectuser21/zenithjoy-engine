@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.14.7] - 2026-01-17
+
+### Fixed
+- STEPS.md: 更新版本标记从 v7.14.0 到 v7.14.7
+
 ## [7.14.6] - 2026-01-17
 
 ### Improved
