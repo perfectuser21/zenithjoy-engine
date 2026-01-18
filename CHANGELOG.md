@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.35.1] - 2026-01-18
+
+### Fixed
+- Cleanup 机制完善：
+  - cleanup.sh: 添加删除 `.project-info.json` 缓存
+  - cleanup.sh: 添加设置 `step=10` 完成标记
+  - check.sh: 增强验证（缓存+未提交文件警告）
+  - 10-cleanup.md: 更新文档与实现一致
+- 术语统一：所有 "Hook 强制" → "Hook 引导"
+- 删除 Codex 残留引用（INTERFACE-SPEC.md, ci.yml）
+- 修复 Step 描述：Learn 在 Step 10 不是 Step 7
+
 ## [7.35.0] - 2026-01-18
 
 ### Added
