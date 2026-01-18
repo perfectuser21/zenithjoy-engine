@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.32.1] - 2026-01-18
+
+### Fixed
+- 删除不存在的 bash-guard.sh 引用，统一为 pr-gate.sh
+- detect-test-level.sh 空数组输出修复（`[""]` → `[]`）
+- 01-prepare.md 添加 `--save` 参数，确保创建 .test-level.json
+- 更新 README.md hooks 配置（添加 stop-gate.sh）
+- 更新 SKILL.md hook 说明（三个 Gate 架构）
+- 08-ci-review.md 更新 hook 引用
+
 ## [7.32.0] - 2026-01-18
 
 ### Added

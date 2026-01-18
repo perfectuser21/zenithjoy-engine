@@ -31,8 +31,9 @@ export ZENITHJOY_ENGINE="/path/to/zenithjoy-engine"
 
 ```bash
 ln -sf $ZENITHJOY_ENGINE/hooks/branch-protect.sh ~/.claude/hooks/
-ln -sf $ZENITHJOY_ENGINE/hooks/bash-guard.sh ~/.claude/hooks/
+ln -sf $ZENITHJOY_ENGINE/hooks/pr-gate.sh ~/.claude/hooks/
 ln -sf $ZENITHJOY_ENGINE/hooks/project-detect.sh ~/.claude/hooks/
+ln -sf $ZENITHJOY_ENGINE/hooks/stop-gate.sh ~/.claude/hooks/
 ```
 
 ### 2. 链接 Skills
@@ -61,13 +62,19 @@ cp $ZENITHJOY_ENGINE/.github/workflows/ci.yml your-project/.github/workflows/
       },
       {
         "matcher": "Bash",
-        "hooks": [{"type": "command", "command": "~/.claude/hooks/bash-guard.sh"}]
+        "hooks": [{"type": "command", "command": "~/.claude/hooks/pr-gate.sh"}]
       }
     ],
     "PostToolUse": [
       {
         "matcher": "Bash",
         "hooks": [{"type": "command", "command": "~/.claude/hooks/project-detect.sh"}]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [{"type": "command", "command": "~/.claude/hooks/stop-gate.sh"}]
       }
     ]
   }
@@ -77,8 +84,9 @@ cp $ZENITHJOY_ENGINE/.github/workflows/ci.yml your-project/.github/workflows/
 | Hook | 触发时机 | 用途 |
 |------|----------|------|
 | branch-protect.sh | PreToolUse (Write/Edit) | 强制在 cp-* 或 feature/* 分支修改代码 |
-| bash-guard.sh | PreToolUse (Bash) | 步骤状态机守卫 + PR 前检查 |
+| pr-gate.sh | PreToolUse (Bash) | 拦截 gh pr create，检查流程 + 质检 |
 | project-detect.sh | PostToolUse (Bash) | 检测项目初始化状态 |
+| stop-gate.sh | Stop | 退出时检查任务完成度 |
 
 ## Usage
 

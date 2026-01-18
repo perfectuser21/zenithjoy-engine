@@ -114,22 +114,23 @@ head -30 docs/LEARNINGS.md 2>/dev/null || echo "（无踩坑记录）"
 
 ## 1.5 测试层级检测
 
-检测项目当前的测试能力上限。
+检测项目当前的测试能力上限，并保存到 `.test-level.json`。
 
 ```bash
 echo "🔍 检测测试层级..."
 
-# 运行检测脚本
-bash "$ZENITHJOY_ENGINE/skills/dev/scripts/detect-test-level.sh" "$(pwd)"
+# 运行检测脚本并保存结果
+bash "$ZENITHJOY_ENGINE/skills/dev/scripts/detect-test-level.sh" --save "$(pwd)"
 
-# 如果有上次记录，对比显示
+# 显示保存的结果
 if [[ -f ".test-level.json" ]]; then
-    LAST_LEVEL=$(jq -r '.max_level' .test-level.json 2>/dev/null || echo "?")
-    LAST_DATE=$(jq -r '.detected_at' .test-level.json 2>/dev/null || echo "?")
     echo ""
-    echo "📋 上次记录: L$LAST_LEVEL ($LAST_DATE)"
+    echo "📋 已保存到 .test-level.json"
+    echo "   最高层级: L$(jq -r '.max_level' .test-level.json)"
 fi
 ```
+
+**重要**：`--save` 会创建 `.test-level.json`，pr-gate 会检查这个文件是否存在。
 
 **测试层级定义**：
 

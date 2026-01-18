@@ -245,6 +245,20 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 
 # ===== 保存模式 =====
 if [[ "$SAVE_MODE" == "true" ]]; then
+    # 辅助函数：数组转 JSON
+    array_to_json() {
+        local arr=("$@")
+        if [[ ${#arr[@]} -eq 0 ]]; then
+            echo "[]"
+        else
+            printf '["%s"' "${arr[0]}"
+            for ((i=1; i<${#arr[@]}; i++)); do
+                printf ',"%s"' "${arr[$i]}"
+            done
+            printf ']'
+        fi
+    }
+
     cat > "$PROJECT_ROOT/.test-level.json" << EOF
 {
   "detected_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
@@ -258,12 +272,12 @@ if [[ "$SAVE_MODE" == "true" ]]; then
     "L6": $L6
   },
   "details": {
-    "L1": [$(printf '"%s",' "${L1_DETAILS[@]:-}" | sed 's/,$//')],
-    "L2": [$(printf '"%s",' "${L2_DETAILS[@]:-}" | sed 's/,$//')],
-    "L3": [$(printf '"%s",' "${L3_DETAILS[@]:-}" | sed 's/,$//')],
-    "L4": [$(printf '"%s",' "${L4_DETAILS[@]:-}" | sed 's/,$//')],
-    "L5": [$(printf '"%s",' "${L5_DETAILS[@]:-}" | sed 's/,$//')],
-    "L6": [$(printf '"%s",' "${L6_DETAILS[@]:-}" | sed 's/,$//')]
+    "L1": $(array_to_json "${L1_DETAILS[@]}"),
+    "L2": $(array_to_json "${L2_DETAILS[@]}"),
+    "L3": $(array_to_json "${L3_DETAILS[@]}"),
+    "L4": $(array_to_json "${L4_DETAILS[@]}"),
+    "L5": $(array_to_json "${L5_DETAILS[@]}"),
+    "L6": $(array_to_json "${L6_DETAILS[@]}")
   }
 }
 EOF

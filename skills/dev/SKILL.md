@@ -87,30 +87,23 @@ Step 10: Cleanup
 | 9 | 已合并 | PR merged |
 | 10 | 已清理 | 分支删除 |
 
-### Hook 强制执行
+### Hook 保护
 
-**两层 Hook 保护**：
+**branch-protect.sh** (PreToolUse - Write/Edit):
+- step >= 3 才能写代码
+- 只允许 cp-* 或 feature/* 分支
 
-1. **Write/Edit Hook** (`branch-protect.sh`)
-   - step >= 3 才能写代码
-   - 只允许 cp-* 或 feature/* 分支
+**pr-gate.sh** (PreToolUse - Bash):
+- 拦截 `gh pr create`
+- 检查 .test-level.json 存在
+- 检查 step >= 6
+- 运行质检（typecheck, lint, test, build）
 
-2. **Bash Hook** (`bash-guard.sh`) - 步骤守卫
-   - 拦截 `git config branch.*.step N` 命令
-   - 强制顺序递增：N 必须 = current_step + 1
-   - **允许回退到 step 4**（失败后重试）
-   - step 5→6 验证：npm test 必须通过
-   - step 6→7 验证：typecheck + test + Claude review
+**stop-gate.sh** (Stop):
+- 退出时检查任务完成度
+- 显示进度建议（引导不强制）
 
-### 失败回退
-
-```
-Step 6 失败 → 回到 4 → 4→5→6 循环
-Step 7 失败 → 回到 4 → 4→5→6→7 循环
-Step 8 失败 → 回到 4 → 4→5→6→7→8 循环
-```
-
-**不能跳步，但可以回退重试。**
+**注意**：步骤状态是引导性的，CI 是唯一强制检查。
 
 ---
 
