@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.30.0] - 2026-01-18
+
+### Added
+- 测试层级检测系统：detect-test-level.sh 自动检测项目 L1-L6 能力
+- /dev 流程集成：
+  - Step 1 (Prepare): 检测项目能力上限
+  - Step 3 (DoD): 确认任务测试层级下限，触发能力升级
+  - Step 10 (Cleanup): 记录更新项目能力
+
+### Changed
+- DoD 模板：新增测试层级配置部分
+
+### 测试层级定义
+- L1: 静态分析 (typecheck, lint, format)
+- L2: 单元测试 (unit test)
+- L3: 集成测试 (integration test)
+- L4: E2E 测试 (playwright, cypress)
+- L5: 性能测试 (benchmark)
+- L6: 安全测试 (audit)
+
 ## [7.29.0] - 2026-01-18
 
 ### Changed
