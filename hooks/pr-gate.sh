@@ -9,7 +9,7 @@
 # 检查项：
 #   Part 1 - 流程检查：
 #     - .project-info.json 存在（项目已检测）
-#     - step >= 6（本地测试通过）
+#     - step >= 7（质检通过）
 #
 #   Part 2 - 质检报告检查：
 #     - .quality-report.json 存在
@@ -81,11 +81,11 @@ if [[ "${CURRENT_BRANCH:-}" =~ ^cp-[a-zA-Z0-9] ]]; then
     echo -n "  分支步骤... " >&2
     CHECKED=$((CHECKED + 1))
     CURRENT_STEP=$(git config --get branch."$CURRENT_BRANCH".step 2>/dev/null || echo "0")
-    if [[ "$CURRENT_STEP" -ge 6 ]]; then
+    if [[ "$CURRENT_STEP" -ge 7 ]]; then
         echo "✅ (step=$CURRENT_STEP)" >&2
     else
-        echo "❌ (step=$CURRENT_STEP, 需要>=6)" >&2
-        echo "    → 请先完成本地测试 (Step 6)" >&2
+        echo "❌ (step=$CURRENT_STEP, 需要>=7)" >&2
+        echo "    → 请先完成质检 (Step 7)" >&2
         FAILED=1
     fi
 fi
@@ -105,8 +105,8 @@ if [[ -f "$PROJECT_ROOT/.quality-report.json" ]]; then
     L3_STATUS=$(jq -r '.layers.L3_acceptance.status // "missing"' "$PROJECT_ROOT/.quality-report.json" 2>/dev/null || echo "missing")
     OVERALL=$(jq -r '.overall // "missing"' "$PROJECT_ROOT/.quality-report.json" 2>/dev/null || echo "missing")
 
-    # 6.1 自动化测试
-    echo -n "  6.1 自动化测试... " >&2
+    # 7.1 自动化测试
+    echo -n "  7.1 自动化测试... " >&2
     CHECKED=$((CHECKED + 1))
     if [[ "$L1_STATUS" == "pass" ]]; then
         echo "✅" >&2
@@ -118,8 +118,8 @@ if [[ -f "$PROJECT_ROOT/.quality-report.json" ]]; then
         FAILED=1
     fi
 
-    # 6.2 效果验证
-    echo -n "  6.2 效果验证... " >&2
+    # 7.2 效果验证
+    echo -n "  7.2 效果验证... " >&2
     CHECKED=$((CHECKED + 1))
     if [[ "$L2_STATUS" == "pass" ]]; then
         echo "✅" >&2
@@ -131,8 +131,8 @@ if [[ -f "$PROJECT_ROOT/.quality-report.json" ]]; then
         FAILED=1
     fi
 
-    # 6.3 需求验收
-    echo -n "  6.3 需求验收... " >&2
+    # 7.3 需求验收
+    echo -n "  7.3 需求验收... " >&2
     CHECKED=$((CHECKED + 1))
     if [[ "$L3_STATUS" == "pass" ]]; then
         echo "✅" >&2
@@ -295,23 +295,23 @@ if [[ $FAILED -eq 1 ]]; then
     echo "  ❌ 质检未通过，不能提交 PR" >&2
     echo "" >&2
 
-    # 回退到 step 3（DoD 完成），允许从 Step 4 重新开始
-    # 只有 step >= 3 时才回退，否则说明 DoD 还没完成
+    # 回退到 step 4（DoD 完成），允许从 Step 5 重新开始
+    # 只有 step >= 4 时才回退，否则说明 DoD 还没完成
     if [[ -n "${CURRENT_BRANCH:-}" && "${CURRENT_BRANCH:-}" =~ ^cp-[a-zA-Z0-9] ]]; then
         CURRENT_STEP=$(git config --get branch."$CURRENT_BRANCH".step 2>/dev/null || echo "0")
-        if [[ "$CURRENT_STEP" -ge 3 ]]; then
-            git config branch."$CURRENT_BRANCH".step 3
-            echo "  ⟲ step 回退到 3，从 Step 4 重新循环 4→5→6" >&2
+        if [[ "$CURRENT_STEP" -ge 4 ]]; then
+            git config branch."$CURRENT_BRANCH".step 4
+            echo "  ⟲ step 回退到 4，从 Step 5 重新循环 5→6→7" >&2
             echo "" >&2
             echo "  请继续：" >&2
-            echo "    Step 4: 修复代码" >&2
-            echo "    Step 5: 更新测试" >&2
-            echo "    Step 6: 跑三层质检" >&2
+            echo "    Step 5: 修复代码" >&2
+            echo "    Step 6: 更新测试" >&2
+            echo "    Step 7: 跑三层质检" >&2
             echo "    然后再提 PR" >&2
             echo "" >&2
             echo "  注意：DoD 不变，只改代码。" >&2
         else
-            echo "  请先运行 /dev 完成 PRD 和 DoD（Step 1-3）" >&2
+            echo "  请先运行 /dev 完成 PRD 和 DoD（Step 1-4）" >&2
             echo "" >&2
             echo "  [SKILL_REQUIRED: dev]" >&2
         fi

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.39.1] - 2026-01-18
+
+### Fixed
+- `branch-protect.sh`: 更新步骤编号为 11 步（step >= 4 才能写代码）
+- `pr-gate.sh`: 更新步骤编号（step >= 7 才能提 PR，回退到 step 4）
+- `03-branch.md`: 修正 step 说明
+
 ## [7.39.0] - 2026-01-18
 
 ### Changed
