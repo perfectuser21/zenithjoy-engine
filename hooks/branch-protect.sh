@@ -27,20 +27,16 @@ fi
 # Read JSON input from stdin
 INPUT=$(cat)
 
-# Extract tool name
-if ! TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // .operation // empty' 2>/dev/null); then
-    exit 0
-fi
+# Extract tool name（安全提取，避免 jq empty 问题）
+TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // .operation // ""' 2>/dev/null || echo "")
 
 # Only check Write/Edit operations
 if [[ "$TOOL_NAME" != "Write" && "$TOOL_NAME" != "Edit" ]]; then
     exit 0
 fi
 
-# Extract file path
-if ! FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // .file_path // empty' 2>/dev/null); then
-    exit 0
-fi
+# Extract file path（安全提取）
+FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // .file_path // ""' 2>/dev/null || echo "")
 
 if [[ -z "$FILE_PATH" ]]; then
     exit 0

@@ -28,12 +28,15 @@ if [[ -z "$PR_URL" ]]; then
     exit 2
 fi
 
-# 从 URL 提取 PR 号和仓库
-PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
-REPO=$(echo "$PR_URL" | sed -E 's|https://github.com/([^/]+/[^/]+)/.*|\1|')
+# 从 URL 提取 PR 号和仓库（兼容末尾斜杠和查询参数）
+# 先清理 URL：移除末尾斜杠和查询参数
+CLEAN_URL=$(echo "$PR_URL" | sed -E 's|[/?].*$||; s|/pull/([0-9]+).*|/pull/\1|')
+PR_NUMBER=$(echo "$CLEAN_URL" | grep -oE '[0-9]+$' || echo "")
+REPO=$(echo "$CLEAN_URL" | sed -E 's|https://github.com/([^/]+/[^/]+)/.*|\1|' || echo "")
 
-if [[ -z "$PR_NUMBER" ]] || [[ -z "$REPO" ]]; then
+if [[ -z "$PR_NUMBER" ]] || [[ -z "$REPO" ]] || [[ "$REPO" == "$CLEAN_URL" ]]; then
     echo -e "${RED}错误: 无法解析 PR URL${NC}"
+    echo -e "${RED}期望格式: https://github.com/owner/repo/pull/123${NC}"
     exit 2
 fi
 
@@ -75,11 +78,22 @@ while [ $WAITED -lt $MAX_WAIT ]; do
     # ========================================
     # 2. 检查 CI 状态
     # ========================================
-    # 尝试获取 CI 状态（可能因权限失败）
-    HEAD_REF=$(gh pr view "$PR_URL" --json headRefOid -q '.headRefOid' 2>/dev/null || echo "")
-    if [ -n "$HEAD_REF" ]; then
-        CI_CONCLUSION=$(gh api "repos/$REPO/commits/$HEAD_REF/check-runs" \
-            --jq '.check_runs | map(select(.conclusion != null)) | .[0].conclusion // "pending"' 2>/dev/null || echo "unknown")
+    # 使用 gh run list 检查最新的 CI 状态（避免 check-runs API 权限问题）
+    # 通过 PR 的 head branch 获取最新的 workflow run
+    HEAD_BRANCH=$(gh pr view "$PR_URL" --json headRefName -q '.headRefName' 2>/dev/null || echo "")
+    if [ -n "$HEAD_BRANCH" ]; then
+        # 获取该分支最新的 workflow run 状态
+        CI_INFO=$(gh run list --repo "$REPO" --branch "$HEAD_BRANCH" --limit 1 --json status,conclusion 2>/dev/null || echo "")
+        if [ -n "$CI_INFO" ] && [ "$CI_INFO" != "[]" ]; then
+            CI_STATUS=$(echo "$CI_INFO" | jq -r '.[0].status // "unknown"' 2>/dev/null || echo "unknown")
+            CI_CONCLUSION=$(echo "$CI_INFO" | jq -r '.[0].conclusion // "pending"' 2>/dev/null || echo "pending")
+            # 如果 status 是 in_progress/queued，conclusion 会是 null
+            if [ "$CI_STATUS" = "in_progress" ] || [ "$CI_STATUS" = "queued" ]; then
+                CI_CONCLUSION="pending"
+            fi
+        else
+            CI_CONCLUSION="unknown"
+        fi
     else
         CI_CONCLUSION="unknown"
     fi

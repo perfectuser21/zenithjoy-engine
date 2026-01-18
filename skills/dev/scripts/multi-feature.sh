@@ -176,7 +176,12 @@ case $ACTION in
 
       echo -e "  ${YELLOW}→${NC} 同步 $branch (落后 $BEHIND commits)..."
 
-      git checkout "$branch" --quiet 2>/dev/null
+      # 安全切换分支，失败时跳过该分支（避免在错误分支上 merge）
+      if ! git checkout "$branch" --quiet 2>/dev/null; then
+        echo -e "    ${RED}✗${NC} 无法切换到 $branch，跳过"
+        FAILED=$((FAILED + 1))
+        continue
+      fi
 
       if git merge origin/main --no-edit --quiet 2>/dev/null; then
         echo -e "    ${GREEN}✓${NC} 同步成功"

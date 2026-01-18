@@ -30,6 +30,18 @@ INFO_FILE="$PROJECT_ROOT/.project-info.json"
 CURRENT_HASH=""
 NEW_HASH=""
 
+# ===== 跨平台 md5 计算（兼容 Linux/MacOS）=====
+compute_md5() {
+    if command -v md5sum &>/dev/null; then
+        md5sum | cut -d' ' -f1
+    elif command -v md5 &>/dev/null; then
+        md5 -r | cut -d' ' -f1
+    else
+        # fallback: 使用 cksum
+        cksum | cut -d' ' -f1
+    fi
+}
+
 # ===== 计算项目状态哈希（用于判断是否需要重新扫描）=====
 compute_hash() {
     # 基于关键文件的修改时间计算哈希
@@ -41,9 +53,9 @@ compute_hash() {
     done
     # 加入 packages 目录结构
     if [[ -d "$PROJECT_ROOT/packages" ]]; then
-        hash_input+=":packages:$(ls -la "$PROJECT_ROOT/packages" 2>/dev/null | md5sum | cut -d' ' -f1)"
+        hash_input+=":packages:$(ls -la "$PROJECT_ROOT/packages" 2>/dev/null | compute_md5)"
     fi
-    echo "$hash_input" | md5sum | cut -d' ' -f1
+    echo "$hash_input" | compute_md5
 }
 
 # 检查是否需要重新扫描
