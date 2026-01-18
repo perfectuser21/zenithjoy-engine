@@ -72,7 +72,7 @@ A: 先修之前的测试，保证 baseline 是绿的。
 
 ---
 
-## Hook 强制
+## Hook 引导
 
 PR 创建前会自动跑 `npm test`，不过不能提交。
 
