@@ -1,41 +1,35 @@
 {
-  "timestamp": "2026-01-18T11:41:22Z",
-  "branch": "cp-quality-loop-subagent",
-  "results": {
-    "typecheck": true,
-    "test": true,
-    "effect_verify": true,
-    "dod_verify": true
-  },
-  "passed": true,
-  "details": {
-    "feature": "SQRT operation for Calculator",
-    "files_modified": [
-      "src/calculator/types.ts",
-      "src/calculator/calculator.ts",
-      "src/calculator/calculator.test.ts"
-    ],
-    "test_results": {
-      "total_tests": 84,
-      "passed": 84,
-      "failed": 0
+  "version": "1.0",
+  "timestamp": "2026-01-18T20:05:00Z",
+  "branch": "cp-01181958-quality-loop-3layer",
+  "layers": {
+    "L1_automated": {
+      "status": "pass",
+      "checks": [
+        {"name": "typecheck", "status": "pass"},
+        {"name": "test", "status": "pass"},
+        {"name": "lint", "status": "skip"},
+        {"name": "build", "status": "skip"},
+        {"name": "shell", "status": "pass"}
+      ]
     },
-    "effect_verification": {
-      "sqrt_basic": "PASS",
-      "sqrt_error_handling": "PASS",
-      "sqrt_chain": "PASS",
-      "sqrt_mixed_operations": "PASS"
+    "L2_verification": {
+      "status": "pass",
+      "checks": [
+        {"name": "06-local-test.md 有 6.1/6.2/6.3 三个小节", "method": "execute", "status": "pass"},
+        {"name": "03-dod.md 说明 TEST→6.1, CHECK→6.2 推演关系", "method": "execute", "status": "pass"},
+        {"name": "quality-loop.md 按三层顺序执行", "method": "execute", "status": "pass"},
+        {"name": "pr-gate.sh 检查三层结果", "method": "execute", "status": "pass"}
+      ]
     },
-    "dod_items": {
-      "operation_enum": true,
-      "calculate_switch": true,
-      "sqrt_implementation": true,
-      "negative_error_handling": true,
-      "chainable_method": true,
-      "code_style": true,
-      "typecheck": true,
-      "tests": true,
-      "test_coverage": true
+    "L3_acceptance": {
+      "status": "pass",
+      "dod_items": [
+        {"item": "文档编号一致（6.1/6.2/6.3）", "checked": true},
+        {"item": "无冲突引用", "checked": true},
+        {"item": "质检报告格式定义清晰", "checked": true}
+      ]
     }
-  }
+  },
+  "overall": "pass"
 }
