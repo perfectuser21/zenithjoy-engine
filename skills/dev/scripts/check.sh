@@ -206,6 +206,24 @@ fi
 echo "  ✅ stale 引用已清理（假设）"
 ((COMPLETED_COUNT++))
 
+# .project-info.json 已删除？（可选警告）
+if [[ -f ".project-info.json" ]]; then
+  echo "  ⚠️ .project-info.json 未删除（可选）"
+  # 不计入 MISSING_COMMANDS，因为这是可选的
+else
+  echo "  ✅ .project-info.json 已删除"
+fi
+
+# 未提交文件检查（可选警告）
+UNCOMMITTED=$(git status --porcelain 2>/dev/null | grep -v "node_modules" | head -5 || true)
+if [[ -n "$UNCOMMITTED" ]]; then
+  echo "  ⚠️ 有未提交的文件（可选）:"
+  echo "$UNCOMMITTED" | sed 's/^/      /'
+  # 不计入 MISSING_COMMANDS，因为这是可选警告
+else
+  echo "  ✅ 无未提交文件"
+fi
+
 # 前面的阶段（假设已完成，因为能走到 cleanup）
 # 动态计算：总必要项 - 清理阶段已验证的项数 = 其他阶段的项数
 OTHER_STAGES_COUNT=$((REQUIRED_COUNT - CLEANUP_ITEM_COUNT))

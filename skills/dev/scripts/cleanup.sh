@@ -118,6 +118,22 @@ else
 fi
 
 # ========================================
+# 5.5. 删除 .project-info.json 缓存
+# ========================================
+echo ""
+echo "5.5️⃣ 删除 .project-info.json 缓存..."
+if [[ -f ".project-info.json" ]]; then
+    if rm -f ".project-info.json" 2>/dev/null; then
+        echo -e "   ${GREEN}✅ 已删除 .project-info.json${NC}"
+    else
+        echo -e "   ${YELLOW}⚠️  删除 .project-info.json 失败${NC}"
+        WARNINGS=$((WARNINGS + 1))
+    fi
+else
+    echo -e "   ${GREEN}✅ .project-info.json 已不存在${NC}"
+fi
+
+# ========================================
 # 6. 清理 stale remote refs
 # ========================================
 echo ""
@@ -155,6 +171,21 @@ if [[ -n "$OTHER_CP" ]]; then
     WARNINGS=$((WARNINGS + 1))
 else
     echo -e "   ${GREEN}✅ 无其他 cp-* 分支${NC}"
+fi
+
+# ========================================
+# 9. 设置 step=10（标记 cleanup 完成）
+# ========================================
+echo ""
+echo "9️⃣  设置 step=10..."
+# 注意：此时 git config 可能已被清理，所以这里是为外部调用者记录状态
+# 如果分支已删除，则不再需要设置（分支和 config 都已清理）
+if git rev-parse --abbrev-ref HEAD 2>/dev/null | grep -q "^$CP_BRANCH$"; then
+    # 如果仍在 cp 分支（不应该发生），尝试设置
+    git config "branch.$CP_BRANCH.step" 10 2>/dev/null || true
+    echo -e "   ${YELLOW}⚠️  仍在 cp 分支，已设置 step=10${NC}"
+else
+    echo -e "   ${GREEN}✅ step=10（cleanup 完成）${NC}"
 fi
 
 # ========================================
