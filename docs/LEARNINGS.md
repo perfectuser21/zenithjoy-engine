@@ -178,3 +178,49 @@ pr-gate.sh 只检查 `.quality-report.json` 的 `overall: "pass"` 字段，不�
 ### 影响程度
 
 **High** - 可能导致未经质检的代码进入代码库
+
+## 2026-01-18: 深度审计修复 (v7.41.0)
+
+### 任务概述
+
+对 ZenithJoy Engine 进行深度代码审计，发现并修复 P0 + P1 共 9 个问题。
+
+### 踩的坑
+
+1. **jq null 值处理陷阱**
+   - 问题：`jq -r '.[0].conclusion // "pending"'` 无法正确处理 JSON null
+   - 原因：jq `-r` 会将 JSON null 输出为字符串 "null"，`//` 操作符不会触发
+   - 解决：显式检查 `$var = "null"` 或使用 `if . == null then ... end`
+   - 影响程度：Medium
+
+2. **Shell 数组序列化的 JSON 安全性**
+   - 问题：直接拼接 `${PACKAGES[$i]}` 到 JSON，特殊字符会破坏格式
+   - 解决：已有 `json_escape` 函数但没用，改为 `$(json_escape "${PACKAGES[$i]}")`
+   - 经验：已有工具函数要记得用
+   - 影响程度：High
+
+3. **危险操作的前置条件检查**
+   - 问题：cleanup.sh checkout 失败后继续执行 git pull 和删除操作
+   - 解决：用 `$CHECKOUT_FAILED` 标志跳过后续危险操作
+   - 经验：危险操作前必须检查前置条件是否成功
+   - 影响程度：High
+
+### 最佳实践
+
+1. **文档术语一致性**
+   - "三层质检"是 Layer 1/2/3（质检内部）
+   - "步骤"是 Step 5/6/7（流程层面）
+   - 混用会导致用户困惑
+
+2. **分支类型统一处理**
+   - `cp-*` 和 `feature/*` 都是工作分支
+   - 正则匹配用 `^(cp-[a-zA-Z0-9]|feature/)`
+   - 不要只处理一种而忘记另一种
+
+3. **错误信息保留**
+   - `2>/dev/null` 隐藏错误方便调试但不利于用户排查
+   - 用变量捕获错误：`ERROR=$(cmd 2>&1) || echo "$ERROR"`
+
+### 影响程度
+
+**Medium** - 修复多个潜在安全问题和文档不一致
