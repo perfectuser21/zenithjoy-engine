@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.39.4] - 2026-01-18
+
+### Fixed
+- `VALIDATION.md`: 重写步骤映射表，对齐 11 步流程（被 .gitignore 忽略的本地文件）
+- `stop-gate.sh`: 重构为统一的 case 语句，覆盖 step 0-11
+- `03-branch.md`: 修正 L142 "下一步: Step 4 (写代码)" → "Step 4 (DoD)"
+- `cleanup.sh`: 统一步骤编号注释（5.5→6, 6→7, 7→8, 8→9）
+- `02-detect.md`: 修正 L118-127 步骤引用（Step 5/6 → Step 6/7）
+
 ## [7.39.3] - 2026-01-18
 
 ### Fixed
