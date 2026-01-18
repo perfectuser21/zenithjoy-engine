@@ -7,6 +7,417 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.36.1] - 2026-01-18
+
+### Fixed
+- 移除 cleanup.sh 中的自动部署（避免 develop 污染生产环境）
+- deploy.sh 改为手动执行，添加 `--from-main` 参数
+
+## [7.36.0] - 2026-01-18
+
+### Added
+- 部署机制：`scripts/deploy.sh`
+  - 同步 hooks/ → ~/.claude/hooks/
+  - 同步 skills/ → ~/.claude/skills/
+
+## [7.35.1] - 2026-01-18
+
+### Fixed
+- Cleanup 机制完善：
+  - cleanup.sh: 添加删除 `.project-info.json` 缓存
+  - cleanup.sh: 添加设置 `step=10` 完成标记
+  - check.sh: 增强验证（缓存+未提交文件警告）
+  - 10-cleanup.md: 更新文档与实现一致
+- 术语统一：所有 "Hook 强制" → "Hook 引导"
+- 删除 Codex 残留引用（INTERFACE-SPEC.md, ci.yml）
+- 修复 Step 描述：Learn 在 Step 10 不是 Step 7
+
+## [7.35.0] - 2026-01-18
+
+### Added
+- 失败自动回退到 step 3 实现循环引导
+  - pr-gate.sh: 本地质检失败时回退
+  - wait-for-merge.sh: CI 失败时回退
+  - 输出循环路径提示：修代码(4) → 改测试(5) → 跑测试(6) → 再提PR(7)
+
+### Changed
+- 统一用词：Hook "强制" → "引导"（CI 是唯一强制检查）
+- 统一回退目标：pr-gate 和 CI 都回退到 step 3
+- SKILL.md 核心规则更新：明确 CI 是唯一强制检查
+
+### Removed
+- 删除所有 Codex 相关代码和文档引用
+- 删除 DoD 锁定机制（防不住，改为引导）
+
+## [7.34.2] - 2026-01-18
+
+### Fixed
+- 修复自洽性问题（深度检查发现）：
+  - Step 5 前置条件：`>= 3` → `>= 4`（代码完成后才能写测试）
+  - cleanup.sh: 移除从未使用的 `base` 配置项，只清理 `base-branch`
+  - check.sh: git config 从"可跳过"改为必须清理
+  - SKILL.md: pr-gate 质检项 4 → 6（加上 format 和 shell）
+
+### Removed
+- 删除 `detect-test-level.sh`（功能已合并到 `project-detect.sh`）
+
+## [7.34.1] - 2026-01-18
+
+### Fixed
+- 修复文档引用不一致：
+  - SKILL.md: `.test-level.json` → `.project-info.json`
+  - 10-cleanup.md: `detect-test-level.sh` → 删除缓存触发重新检测
+  - DOD-TEMPLATE.md: `detect-test-level.sh` → `project-detect.sh`
+
+## [7.34.0] - 2026-01-18
+
+### Changed
+- 重构 `project-detect.sh`：统一项目检测入口
+  - 自动检测项目类型、Monorepo 结构、包依赖图
+  - 检测测试能力 L1-L6
+  - 基于文件哈希缓存，避免重复扫描
+  - 输出到 `.project-info.json`
+- Step 1 改为只读取 `.project-info.json`，不重复扫描
+- `pr-gate.sh` 改为检查 `.project-info.json`
+
+### 自洽的质检体系
+
+```
+进入项目 → project-detect.sh 自动扫描 → .project-info.json
+    ↓
+Step 1: 读取项目信息（不重复扫描）
+    ↓
+Step 3: scan-change-level.sh --desc 推断层级
+    ↓
+Step 6: scan-change-level.sh 验证改动
+    ↓
+Step 7: pr-gate.sh 检查流程+质检
+    ↓
+CI: 最终验证
+```
+
+## [7.33.0] - 2026-01-18
+
+### Added
+- 自动扫描质检层级脚本 `scan-change-level.sh`
+  - `--desc "描述"`: 根据需求描述推断层级
+  - `--staged`: 扫描已暂存文件
+  - 默认: 扫描 git diff 改动
+- DoD 阶段自动扫描：根据 PRD 描述推断质检层级
+- 本地测试阶段验证：扫描实际改动确认层级
+
+### 自动推断规则
+| 关键词 | 层级 |
+|--------|------|
+| 安全/认证/密码 | L6 |
+| 性能/优化/缓存 | L5 |
+| 页面/组件/UI | L4 |
+| API/接口/数据库 | L3 |
+| 函数/工具/逻辑 | L2 |
+| 文档/配置 | L1 |
+
+## [7.32.1] - 2026-01-18
+
+### Fixed
+- 删除不存在的 bash-guard.sh 引用，统一为 pr-gate.sh
+- detect-test-level.sh 空数组输出修复（`[""]` → `[]`）
+- 01-prepare.md 添加 `--save` 参数，确保创建 .test-level.json
+- 更新 README.md hooks 配置（添加 stop-gate.sh）
+- 更新 SKILL.md hook 说明（三个 Gate 架构）
+- 08-ci-review.md 更新 hook 引用
+
+## [7.32.0] - 2026-01-18
+
+### Added
+- Stop Hook (stop-gate.sh)：Claude 退出时检查任务完成状态
+  - 检测当前 step 进度
+  - 提示还有哪些工作没完成
+  - 建议下一步操作
+
+### 三个 Gate 完成
+1. pr-gate.sh (PreToolUse) - PR 前流程+质检
+2. GitHub CI - PR 后验证
+3. stop-gate.sh (Stop) - 退出时检查
+
+## [7.31.0] - 2026-01-18
+
+### Changed
+- pr-gate.sh 增加流程检查：
+  - 检查 .test-level.json 是否存在（证明跑过检测）
+  - 检查分支 step >= 6（本地测试通过）
+- 现在 PR Gate 分两部分：流程检查 + 质检
+
+## [7.30.0] - 2026-01-18
+
+### Added
+- 测试层级检测系统：detect-test-level.sh 自动检测项目 L1-L6 能力
+- /dev 流程集成：
+  - Step 1 (Prepare): 检测项目能力上限
+  - Step 3 (DoD): 确认任务测试层级下限，触发能力升级
+  - Step 10 (Cleanup): 记录更新项目能力
+
+### Changed
+- DoD 模板：新增测试层级配置部分
+
+### 测试层级定义
+- L1: 静态分析 (typecheck, lint, format)
+- L2: 单元测试 (unit test)
+- L3: 集成测试 (integration test)
+- L4: E2E 测试 (playwright, cypress)
+- L5: 性能测试 (benchmark)
+- L6: 安全测试 (audit)
+
+## [7.29.0] - 2026-01-18
+
+### Changed
+- PR Gate 完整实现 DoD 检查：typecheck → lint → format → test → build → shell
+- CI 补全 DoD 检查：新增 typecheck、lint、format:check
+
+### 质检覆盖
+本地 Gate 和 CI 现在都跑完整的 DoD 检查项，两层保证。
+
+## [7.28.0] - 2026-01-18
+
+### Changed
+- Hooks 架构简化：移除实验性状态机，保留 3 个核心 hook
+- `bash-guard.sh` 重命名为 `pr-gate.sh`，专注 PR 前检查
+- 删除 `hooks/state-machine/` 目录（实验证明不可靠）
+
+### Removed
+- 状态机相关文件：checkpoint.sh, state-tracker.sh, step-gate*.sh, stop-validator.sh
+- 实验性 PRD/DoD 文档
+
+## [7.27.1] - 2026-01-17
+
+### Fixed
+- 修复跨仓库文件写入时 branch-protect hook 检查错误仓库的 bug
+
+## [7.27.0] - 2026-01-17
+
+### Added
+- `validateHooks()` 函数：验证全局 hooks 配置状态
+
+## [7.26.0] - 2026-01-17
+
+### Added
+- `hello()` 函数：/dev 流程验证测试
+
+## [7.25.0] - 2026-01-17
+
+### Fixed
+- 修复 symlink: `~/.claude/skills/dev` 指向正确位置
+- 移除 audit SKILL.md 过时版本号引用
+
+### Changed
+- README.md 添加 bash-guard.sh 文档
+- CLAUDE.md 目录结构更新（添加 hooks 详情、n8n、INTERFACE-SPEC.md）
+
+## [7.24.0] - 2026-01-17
+
+### Fixed
+- 修复并行 subagents 竞态条件：从命令解析分支名，不再依赖 HEAD
+- 修复负数步骤未拦截：正则匹配 `-?[0-9]+`
+
+### Changed
+- Hook 重命名：`pre-pr-check.sh` → `bash-guard.sh`（更准确反映双功能）
+- 统一管理：bash-guard.sh 移入项目 hooks/ 目录并 symlink
+
+## [7.23.0] - 2026-01-17
+
+### Added
+- 步骤回退支持：失败后可回退到 step 4 重试
+- 本地 Claude review：在 `gh pr create` 前自动运行
+
+### Changed
+- 去掉 Codex：改用本地 Claude review（Max 订阅直接用）
+- 更新文档：流程图、状态机、08-ci-review.md
+
+### Fixed
+- 步骤守卫允许回退到 step 4（之前只能递增）
+
+## [7.22.0] - 2026-01-17
+
+### Changed
+- 改用本地 Claude Code review（删除 GitHub Action）
+
+## [7.21.0] - 2026-01-17
+
+### Added
+- 步骤守卫 Hook：拦截 `git config branch.*.step N` 命令
+- 强制顺序递增：N 必须 = current_step + 1，不能跳步
+- 凭据验证：step 5→6 需要 npm test 通过
+
+### Changed
+- pre-pr-check.sh 扩展为 Bash 命令守卫（步骤守卫 + PR 前检查）
+- SKILL.md 更新 Hook 强制执行文档
+
+## [7.20.0] - 2026-01-17
+
+### Added
+- 步骤状态机：用 `git config branch.*.step` 追踪当前步骤
+- Hook 检查：step >= 3 才能写代码
+- 每个步骤文件加入前置条件和状态更新说明
+
+### Changed
+- CI 不再自动合并，需要手动确认
+- cleanup.sh 清理 step 配置
+- check.sh 检查 step 配置
+
+### 强制流程
+- 本地 Hook 强制：步骤不到不能写代码
+- CI 强制：不自动合并，等所有检查通过
+
+## [7.19.0] - 2026-01-17
+
+### Changed
+- /dev 流程重构：步骤编号从小数点改为整数 1-10
+- 每步一个文件：`skills/dev/steps/01-prepare.md` ~ `10-cleanup.md`
+- SKILL.md 精简为入口索引
+- 删除旧的 `references/STEPS.md`
+
+### 架构改进
+- 修改某步骤只需改对应文件
+- 增删步骤只需增删文件
+- 减少上下文开销
+
+## [7.18.0] - 2026-01-17
+
+### Added
+- PRD Gate 机制：cp-* 分支必须确认 PRD 后才能写代码
+- git config branch.*.prd-confirmed 标记追踪 PRD 确认状态
+
+### Changed
+- branch-protect.sh：在 cp-* 分支额外检查 prd-confirmed
+- cleanup.sh：清理时同时清理 prd-confirmed 标记
+- check.sh：检查时同时检查 prd-confirmed 清理状态
+- STEPS.md：Step 3 加设置 prd-confirmed，Step 6 加清理
+
+## [7.17.0] - 2026-01-17
+
+### Added
+- cleanup.sh 脚本：完整的清理检查（8 项检查）
+- wait-for-merge.sh 脚本：PR 合并轮询（CI + Codex 检查）
+- Hook 测试覆盖检查：PR 前检查是否有新增测试文件
+- vitest 覆盖率配置：50% 阈值（可逐步提高）
+
+### Changed
+- pre-pr-check.sh：加入测试覆盖检查
+- STEPS.md Step 5.5：使用 wait-for-merge.sh 脚本
+- STEPS.md Step 6：使用 cleanup.sh 脚本
+
+## [7.16.0] - 2026-01-17
+
+### Added
+- /dev 流程加入写测试步骤（Step 4）：每个功能必须有对应测试
+- /dev 流程加入质检闭环（Step 5.5）：CI + Codex review 自动轮询修复
+- Hook 强制本地测试：PR 创建前必须跑 npm test
+
+### Changed
+- 更新 STEPS.md Step 4 详细说明写测试要求
+- 更新 STEPS.md 新增 Step 5.5 质检闭环逻辑
+
+## [7.15.1] - 2026-01-17
+
+### Fixed
+- audit skill: 添加 YAML front matter 使 Claude Code 能正确发现和加载
+
+## [7.15.0] - 2026-01-17
+
+### Added
+- 新增 `/audit` skill：有边界的代码审计与修复
+  - 分层标准：L1 阻塞性 / L2 功能性 / L3 最佳实践 / L4 过度优化
+  - 明确的完成条件：L1+L2 清零即宣布完成
+  - 防止无限深挖的反模式警告
+
+## [7.14.8] - 2026-01-17
+
+### Fixed
+- multi-feature.sh: 使用 `while read` 替代 `for` 循环避免 word splitting 问题
+- CI: 为 version-check 和 test jobs 添加显式 `permissions: contents: read`
+
+## [7.14.7] - 2026-01-17
+
+### Fixed
+- STEPS.md: 更新版本标记从 v7.14.0 到 v7.14.7
+
+## [7.14.6] - 2026-01-17
+
+### Improved
+- 统一所有脚本 shebang 为 `#!/usr/bin/env bash`（更好的跨平台兼容性）
+- 统一所有脚本使用 `set -euo pipefail` 严格错误处理
+- pre-pr-check.sh: 移除冗余的 npm test（CI 已负责测试）
+
+## [7.14.5] - 2026-01-17
+
+### Fixed
+- CI: 添加 semver 格式验证（必须是 MAJOR.MINOR.PATCH）
+- CI: Go 版本检测添加 head -1 防止多行匹配
+- project-detect.sh: 合并重复的 git 检查，减少调用
+- multi-feature.sh: 改进 merge 冲突指引，检查 abort 返回值
+- check.sh: awk 添加 NR==1 限制只处理第一行
+
+## [7.14.4] - 2026-01-17
+
+### Fixed
+- branch-protect.sh: 添加 jq 解析错误处理
+- CI: 增强 auto-merge 失败提示（使用 ::error::）
+- multi-feature.sh: grep 改用 -F 字面匹配
+- STEPS.md: 修正 glob 模式为正则匹配
+- check.sh: 添加网络超时控制（10 秒）
+
+## [7.14.3] - 2026-01-17
+
+### Improved
+- project-detect.sh: 优化 git remote 检查逻辑
+- SKILL.md: 添加相对路径说明
+- branch-protect.sh: 添加项目边界检查（防止多项目误保护）
+
+## [7.14.2] - 2026-01-17
+
+### Fixed
+- pre-pr-check.sh: 使用 subshell 避免改变调用者工作目录
+- check.sh: 添加 set -o pipefail 确保管道错误被捕获
+- check.sh: 修复 git ls-remote 输出解析（提取分支名而非原始输出）
+- check.sh: 使用正则 =~ 替代 glob 模式匹配 feature/*
+- multi-feature.sh: 添加 set -o pipefail
+- multi-feature.sh: 改进 get_ahead_count_filtered 空输出处理
+
+## [7.14.1] - 2026-01-17
+
+### Fixed
+- CI: 添加 develop 分支支持（之前只有 main 和 feature/*）
+- CI: 用 jq 替换 sed 解析 JSON（更可靠）
+- check.sh: 添加 UTF-8 locale 支持多字节字符
+- check.sh: 支持 develop 作为合法的 base 分支
+- STEPS.md: 更新过期版本号
+
+## [7.14.0] - 2026-01-17
+
+### Improved
+- multi-feature.sh: 过滤 auto-backup 提交，显示更有意义的改动
+- multi-feature.sh: 添加分支最后更新时间显示
+
+## [7.13.0] - 2026-01-16
+
+### Added
+- Pre-PR Hook: 创建 PR 前强制检查 test 和 typecheck
+- hooks/pre-pr-check.sh: 拦截 gh pr create，检查失败则阻止 PR
+
+## [7.12.1] - 2026-01-16
+
+### Improved
+- multi-feature.sh: 显示具体的领先 commits 内容
+- multi-feature.sh: 领先 0 commits 且落后的分支建议删除
+
+## [7.12.0] - 2026-01-16
+
+### Added
+- 多 Feature 并行开发支持
+- scripts/multi-feature.sh: 检测和同步多个 feature 分支
+- Step 0.5: 开始时检测多 feature 状态（可选）
+- Step 6.5: 结束时同步其他 feature 分支（可选）
+- SKILL.md: 并行开发文档更新
+
 ## [7.11.1] - 2026-01-16
 
 ### Removed
@@ -306,7 +717,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Previous iterations were experimental development versions leading up to the 7.0.0 stable release.
 
-[Unreleased]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.11.1...HEAD
+[Unreleased]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.12.1...HEAD
+[7.12.1]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.12.0...v7.12.1
+[7.12.0]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.11.1...v7.12.0
 [7.11.1]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.11.0...v7.11.1
 [7.11.0]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.10.0...v7.11.0
 [7.10.0]: https://github.com/perfectuser21/zenithjoy-engine/compare/v7.9.9...v7.10.0

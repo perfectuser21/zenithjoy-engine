@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail  # -e: 命令失败时退出; -u: 未定义变量报错; -o pipefail: 管道失败传播
+
 # /dev 完成度检查脚本
 # 用法: bash scripts/check.sh <BRANCH_NAME> [FEATURE_BRANCH]
 #
@@ -51,14 +53,34 @@ fi
 # 验证分支是否存在（本地或远程）
 LOCAL_BRANCH=$(git branch --list "$BRANCH_NAME" 2>/dev/null || echo "")
 # 检查网络连接和远程分支
-REMOTE_CHECK_OUTPUT=$(git ls-remote --heads origin "$BRANCH_NAME" 2>&1)
-REMOTE_CHECK_EXIT=$?
-if [[ $REMOTE_CHECK_EXIT -ne 0 ]]; then
-  echo "⚠️ 无法检查远程分支（网络问题或 origin 不存在）"
-  echo "   错误: $REMOTE_CHECK_OUTPUT"
-  REMOTE_BRANCH=""
+# git ls-remote 输出格式: "abc123  refs/heads/branch-name"
+# 只提取分支名（如果存在）
+# 使用 timeout 防止网络问题导致脚本挂起（10秒超时）
+if command -v timeout &>/dev/null; then
+  REMOTE_CHECK_OUTPUT=$(timeout 10 git ls-remote --heads origin "$BRANCH_NAME" 2>&1)
+  REMOTE_CHECK_EXIT=$?
+  if [[ $REMOTE_CHECK_EXIT -eq 124 ]]; then
+    echo "⚠️ 检查远程分支超时（网络可能不稳定）"
+    REMOTE_BRANCH=""
+  elif [[ $REMOTE_CHECK_EXIT -ne 0 ]]; then
+    echo "⚠️ 无法检查远程分支（网络问题或 origin 不存在）"
+    echo "   错误: $REMOTE_CHECK_OUTPUT"
+    REMOTE_BRANCH=""
+  else
+    # 提取分支名，去除 hash 和 refs/heads/ 前缀
+    REMOTE_BRANCH=$(echo "$REMOTE_CHECK_OUTPUT" | awk 'NR==1 {print $2}' | sed 's|refs/heads/||')
+  fi
 else
-  REMOTE_BRANCH="$REMOTE_CHECK_OUTPUT"
+  # macOS 可能没有 timeout 命令，fallback 到无超时版本
+  REMOTE_CHECK_OUTPUT=$(git ls-remote --heads origin "$BRANCH_NAME" 2>&1)
+  REMOTE_CHECK_EXIT=$?
+  if [[ $REMOTE_CHECK_EXIT -ne 0 ]]; then
+    echo "⚠️ 无法检查远程分支（网络问题或 origin 不存在）"
+    echo "   错误: $REMOTE_CHECK_OUTPUT"
+    REMOTE_BRANCH=""
+  else
+    REMOTE_BRANCH=$(echo "$REMOTE_CHECK_OUTPUT" | awk 'NR==1 {print $2}' | sed 's|refs/heads/||')
+  fi
 fi
 
 if [[ -z "$LOCAL_BRANCH" && -z "$REMOTE_BRANCH" ]]; then
@@ -66,8 +88,13 @@ if [[ -z "$LOCAL_BRANCH" && -z "$REMOTE_BRANCH" ]]; then
   echo "   这可能是因为分支已被清理，或者名称拼写错误"
 fi
 
-ZENITHJOY_ENGINE="${ZENITHJOY_ENGINE:-/home/xx/dev/zenithjoy-engine}"
-SKILL_FILE="$ZENITHJOY_ENGINE/skills/dev/SKILL.md"
+# 自动检测项目根目录（优先使用环境变量，其次使用 git）
+if [[ -n "${ZENITHJOY_ENGINE:-}" ]]; then
+  PROJECT_ROOT="$ZENITHJOY_ENGINE"
+else
+  PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
+fi
+SKILL_FILE="$PROJECT_ROOT/skills/dev/SKILL.md"
 
 # SKILL.md 存在性检查
 if [[ ! -f "$SKILL_FILE" ]]; then
@@ -84,13 +111,16 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 # 从 SKILL.md 动态计算必要项和可选项数量
 # □ = 必要（后跟空格，不跟⏭）, □⏭ = 可跳过, ○ = 可选
 # 注意：使用正则排除 □⏭
+# 显式设置 UTF-8 locale 以正确处理多字节字符（如 ⏭）
+export LC_ALL=en_US.UTF-8
+
 SKIPPABLE_COUNT=$(grep -c '^  □⏭' "$SKILL_FILE" 2>/dev/null || echo 0)
 REQUIRED_COUNT=$(grep -E '^  □[^⏭]' "$SKILL_FILE" 2>/dev/null | wc -l || echo 0)
 OPTIONAL_COUNT=$(grep -c '^  ○' "$SKILL_FILE" 2>/dev/null || echo 0)
 
 # 动态计算清理阶段的检查项数量（Step 6 下的 □ 项）
-# 查找 Step 6 到下一个 Step 或文件末尾之间的 □ 数量
-CLEANUP_ITEM_COUNT=$(awk '/^## Step 6/,/^## Step [0-9]|^$/ { if (/^  □[^⏭]/) count++ } END { print count+0 }' "$SKILL_FILE")
+# 查找 "清理阶段 (Step 6)" 到 "总结阶段 (Step 7)" 之间的 □ 数量
+CLEANUP_ITEM_COUNT=$(awk '/清理阶段 \(Step 6\)/,/总结阶段 \(Step 7\)/ { if (/^  □[^⏭]/) count++ } END { print count+0 }' "$SKILL_FILE")
 
 COMPLETED_COUNT=0
 MISSING_COMMANDS=()
@@ -98,36 +128,50 @@ MISSING_COMMANDS=()
 echo ""
 echo "清理阶段 (Step 6):"
 
-# git config 已清理？
-CONFIG_EXISTS=$(git config "branch.$BRANCH_NAME.base" 2>/dev/null || echo "")
-if [[ -z "$CONFIG_EXISTS" ]]; then
+# git config 已清理？（必须清理）
+CONFIG_EXISTS=false
+for KEY in "base-branch" "prd-confirmed" "step"; do
+  if git config "branch.$BRANCH_NAME.$KEY" &>/dev/null; then
+    CONFIG_EXISTS=true
+    break
+  fi
+done
+if [[ "$CONFIG_EXISTS" == "false" ]]; then
   echo "  ✅ git config 已清理"
   ((COMPLETED_COUNT++))
 else
   echo "  ❌ git config 未清理"
-  MISSING_COMMANDS+=("git config --unset branch.$BRANCH_NAME.base")
+  for KEY in "base-branch" "prd-confirmed" "step"; do
+    if git config "branch.$BRANCH_NAME.$KEY" &>/dev/null; then
+      MISSING_COMMANDS+=("git config --unset branch.$BRANCH_NAME.$KEY")
+    fi
+  done
 fi
 
-# 当前在 feature 分支？
+# 当前在 base 分支？（develop 或 feature/*）
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
 if [[ "$CURRENT_BRANCH" == "unknown" ]]; then
   echo "  ❌ 无法获取当前分支名"
   MISSING_COMMANDS+=("检查 git 状态")
-elif [[ "$CURRENT_BRANCH" == feature/* ]]; then
-  # 如果提供了 FEATURE_BRANCH，验证是否匹配
-  if [[ -n "$FEATURE_BRANCH" && "$CURRENT_BRANCH" != "$FEATURE_BRANCH" ]]; then
-    echo "  ⚠️ 当前在 feature 分支 ($CURRENT_BRANCH)，但与指定的 $FEATURE_BRANCH 不同"
+elif [[ -n "$FEATURE_BRANCH" && "$CURRENT_BRANCH" == "$FEATURE_BRANCH" ]]; then
+  # 当前分支与指定的 base 分支匹配
+  echo "  ✅ 已切回 base 分支 ($CURRENT_BRANCH)"
+  ((COMPLETED_COUNT++))
+elif [[ "$CURRENT_BRANCH" == "develop" || "$CURRENT_BRANCH" =~ ^feature/ ]]; then
+  # 在合法的 base 分支上，但与指定的不同
+  if [[ -n "$FEATURE_BRANCH" ]]; then
+    echo "  ⚠️ 当前在 $CURRENT_BRANCH，但指定的 base 分支是 $FEATURE_BRANCH"
     ((COMPLETED_COUNT++))
   else
-    echo "  ✅ 已切回 feature 分支 ($CURRENT_BRANCH)"
+    echo "  ✅ 已切回 base 分支 ($CURRENT_BRANCH)"
     ((COMPLETED_COUNT++))
   fi
 else
-  echo "  ❌ 未切回 feature 分支 (当前: $CURRENT_BRANCH)"
+  echo "  ❌ 未切回 base 分支 (当前: $CURRENT_BRANCH)"
   if [[ -n "$FEATURE_BRANCH" ]]; then
     MISSING_COMMANDS+=("git checkout $FEATURE_BRANCH")
   else
-    MISSING_COMMANDS+=("git checkout <your-feature-branch>")
+    MISSING_COMMANDS+=("git checkout develop")
   fi
 fi
 
@@ -161,6 +205,24 @@ fi
 # stale 引用已清理？（假设已执行，无法验证）
 echo "  ✅ stale 引用已清理（假设）"
 ((COMPLETED_COUNT++))
+
+# .project-info.json 已删除？（可选警告）
+if [[ -f ".project-info.json" ]]; then
+  echo "  ⚠️ .project-info.json 未删除（可选）"
+  # 不计入 MISSING_COMMANDS，因为这是可选的
+else
+  echo "  ✅ .project-info.json 已删除"
+fi
+
+# 未提交文件检查（可选警告）
+UNCOMMITTED=$(git status --porcelain 2>/dev/null | grep -v "node_modules" | head -5 || true)
+if [[ -n "$UNCOMMITTED" ]]; then
+  echo "  ⚠️ 有未提交的文件（可选）:"
+  echo "$UNCOMMITTED" | sed 's/^/      /'
+  # 不计入 MISSING_COMMANDS，因为这是可选警告
+else
+  echo "  ✅ 无未提交文件"
+fi
 
 # 前面的阶段（假设已完成，因为能走到 cleanup）
 # 动态计算：总必要项 - 清理阶段已验证的项数 = 其他阶段的项数
