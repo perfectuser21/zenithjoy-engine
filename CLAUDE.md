@@ -18,7 +18,7 @@ AI 开发工作流引擎。
 
 ## 核心规则
 
-1. **只在 cp-* 或 feature/* 分支写代码** - Hook 强制
+1. **只在 cp-* 或 feature/* 分支写代码** - Hook 引导
 2. **每个 PR 更新版本号** - semver
 3. **完成度检查必须跑** - □ 必要项全部完成
 4. **CI 绿是唯一完成标准**
@@ -70,7 +70,7 @@ main (稳定发布，里程碑时更新)
 **核心原则**：
 - main 始终稳定，只在里程碑时从 develop 合并
 - develop 是主开发线，所有日常开发都在这里
-- 只在 cp-* 或 feature/* 分支写代码（Hook 强制）
+- 只在 cp-* 或 feature/* 分支写代码（Hook 引导）
 - cp-* 完成后回 develop，积累够了 develop 回 main
 
 详细文档见 `docs/`。

@@ -75,7 +75,7 @@
 
 ## 自动化
 
-`/dev` 流程的 Step 7 (Learn) 会询问本次开发学到什么：
+`/dev` 流程的 Step 10 (Cleanup 可选 Learn) 会询问本次开发学到什么：
 
 1. **Engine 相关** → 追加到 `docs/LEARNINGS.md`
 2. **项目相关** → 追加到项目的 docs/

@@ -22,7 +22,11 @@ bash skills/dev/scripts/cleanup.sh "$BRANCH_NAME" "$BASE_BRANCH"
 3. 删除本地 cp-* 分支
 4. 删除远程 cp-* 分支
 5. 清理 git config
-6. 清理 stale remote refs
+6. 删除 .project-info.json 缓存
+7. 清理 stale remote refs
+8. 检查未提交文件
+9. 检查其他遗留 cp-* 分支
+10. 设置 step=10（标记完成）
 
 ---
 
@@ -32,6 +36,10 @@ bash skills/dev/scripts/cleanup.sh "$BRANCH_NAME" "$BASE_BRANCH"
 # 清理 git config
 git config --unset branch.$BRANCH_NAME.base-branch 2>/dev/null || true
 git config --unset branch.$BRANCH_NAME.prd-confirmed 2>/dev/null || true
+git config --unset branch.$BRANCH_NAME.step 2>/dev/null || true
+
+# 删除 .project-info.json 缓存
+rm -f .project-info.json
 
 # 切回 base 分支
 git checkout "$BASE_BRANCH"
@@ -71,19 +79,9 @@ git remote prune origin 2>/dev/null || true
 
 ## 项目信息更新
 
-**任务结束时，强制重新检测项目信息**：
+cleanup 脚本会自动删除 `.project-info.json` 缓存。
 
-```bash
-echo "📊 更新项目信息..."
-
-# 删除旧的缓存，强制重新检测
-rm -f .project-info.json
-
-# 下次执行任何 Bash 命令时，project-detect.sh 会自动重新扫描
-echo "✅ 下次 Bash 命令将触发重新检测"
-```
-
-**如果本次任务升级了项目能力**（比如加了 E2E 测试），重新检测会记录新的能力等级。
+**如果本次任务升级了项目能力**（比如加了 E2E 测试），下次执行 Bash 命令时 `project-detect.sh` 会自动重新扫描并记录新的能力等级。
 
 ---
 

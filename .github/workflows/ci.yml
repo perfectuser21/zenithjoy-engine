@@ -187,7 +187,7 @@ jobs:
           echo "PR #${{ github.event.pull_request.number }} CI 检查通过"
           echo ""
           echo "下一步："
-          echo "  1. 等待 Codex review（如果配置了）"
+          echo "  1. 手动 review（如有需要）"
           echo "  2. 手动合并 PR"
           echo ""
           echo "不再自动合并，需要确认所有检查通过后手动操作"

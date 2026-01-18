@@ -1,10 +1,10 @@
 # zenithjoy-engine
 
-AI 开发工作流核心组件。提供 Hooks、Skills 和 CI 模板，实现强制的开发流程保护。
+AI 开发工作流核心组件。提供 Hooks、Skills 和 CI 模板，实现引导式的开发流程保护。
 
 ## 功能
 
-- **分支保护 Hook**: 强制在 `cp-*` 或 `feature/*` 分支开发
+- **分支保护 Hook**: 引导在 `cp-*` 或 `feature/*` 分支开发
 - **CI 自动合并**: PR 通过 CI 后自动合并
 - **统一开发 Skill**: `/dev` 一个对话完成整个开发流程
 
@@ -83,7 +83,7 @@ cp $ZENITHJOY_ENGINE/.github/workflows/ci.yml your-project/.github/workflows/
 
 | Hook | 触发时机 | 用途 |
 |------|----------|------|
-| branch-protect.sh | PreToolUse (Write/Edit) | 强制在 cp-* 或 feature/* 分支修改代码 |
+| branch-protect.sh | PreToolUse (Write/Edit) | 引导在 cp-* 或 feature/* 分支修改代码 |
 | pr-gate.sh | PreToolUse (Bash) | 拦截 gh pr create，检查流程 + 质检 |
 | project-detect.sh | PostToolUse (Bash) | 检测项目初始化状态 |
 | stop-gate.sh | Stop | 退出时检查任务完成度 |
@@ -111,7 +111,7 @@ cp $ZENITHJOY_ENGINE/.github/workflows/ci.yml your-project/.github/workflows/
 
 ## 分支保护
 
-GitHub 层面的强制保护：
+GitHub 层面的保护：
 - main 禁止直接 push
 - PR 必须过 CI
 - CI 通过后自动合并
