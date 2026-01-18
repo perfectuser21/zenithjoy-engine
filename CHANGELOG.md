@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.37.7] - 2026-01-18
+
+### Fixed
+- `wait-for-merge.sh`: 修复 URL 解析 bug
+  - 之前的 sed 命令会删除 URL 中所有斜杠
+  - 正确处理末尾斜杠和查询参数
+- `multi-feature.sh`: 删除未使用的 `AHEAD` 变量和 `get_ahead_count` 函数
+
 ## [7.37.6] - 2026-01-18
 
 ### Fixed

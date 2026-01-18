@@ -29,12 +29,6 @@ get_behind_count() {
   git rev-list --count "$branch"..origin/main 2>/dev/null || echo "?"
 }
 
-# 获取分支领先 main 的 commit 数
-get_ahead_count() {
-  local branch=$1
-  git rev-list --count origin/main.."$branch" 2>/dev/null || echo "?"
-}
-
 # 获取领先的 commits 列表（过滤 auto-backup）
 get_ahead_commits() {
   local branch=$1
@@ -86,7 +80,6 @@ case $ACTION in
     # 使用 while read 替代 for，避免 word splitting 问题
     while IFS= read -r branch; do
       BEHIND=$(get_behind_count "$branch")
-      AHEAD=$(get_ahead_count "$branch")
 
       # 判断是否是当前分支
       MARKER=""

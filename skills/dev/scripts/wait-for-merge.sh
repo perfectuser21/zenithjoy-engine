@@ -29,9 +29,9 @@ if [[ -z "$PR_URL" ]]; then
 fi
 
 # 从 URL 提取 PR 号和仓库（兼容末尾斜杠和查询参数）
-# 先清理 URL：移除末尾斜杠和查询参数
-CLEAN_URL=$(echo "$PR_URL" | sed -E 's|[/?].*$||; s|/pull/([0-9]+).*|/pull/\1|')
-PR_NUMBER=$(echo "$CLEAN_URL" | grep -oE '[0-9]+$' || echo "")
+# 清理 URL：移除末尾斜杠和查询参数（只处理 URL 末尾）
+CLEAN_URL=$(echo "$PR_URL" | sed -E 's|/+$||; s|\?.*$||')
+PR_NUMBER=$(echo "$CLEAN_URL" | grep -oE '/pull/[0-9]+' | grep -oE '[0-9]+' || echo "")
 REPO=$(echo "$CLEAN_URL" | sed -E 's|https://github.com/([^/]+/[^/]+)/.*|\1|' || echo "")
 
 if [[ -z "$PR_NUMBER" ]] || [[ -z "$REPO" ]] || [[ "$REPO" == "$CLEAN_URL" ]]; then
