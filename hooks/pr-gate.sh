@@ -4,14 +4,19 @@
 # ============================================================================
 #
 # 触发：拦截 gh pr create
-# 作用：提交 PR 前检查流程完成情况 + 跑 DoD 检查
+# 作用：提交 PR 前检查流程完成情况 + 跑三层质检
 #
 # 检查项：
 #   Part 1 - 流程检查：
 #     - .project-info.json 存在（项目已检测）
 #     - step >= 6（本地测试通过）
 #
-#   Part 2 - DoD 检查：
+#   Part 2 - 质检报告检查：
+#     - .quality-report.json 存在
+#     - 包含三层结果（L1_automated, L2_verification, L3_acceptance）
+#     - overall 状态为 pass
+#
+#   Part 3 - 自动化测试（兜底）：
 #     - typecheck, lint, format, test, build, shell
 #
 # ============================================================================
@@ -43,7 +48,7 @@ cd "$PROJECT_ROOT"
 
 echo "" >&2
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-echo "  PR GATE: 流程 + 质检" >&2
+echo "  PR GATE: 流程 + 三层质检" >&2
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
 echo "" >&2
 
@@ -85,8 +90,77 @@ if [[ "${CURRENT_BRANCH:-}" =~ ^cp-[a-zA-Z0-9] ]]; then
     fi
 fi
 
+# ===== Part 2: 质检报告检查 =====
 echo "" >&2
-echo "  [质检]" >&2
+echo "  [质检报告]" >&2
+
+echo -n "  报告文件... " >&2
+CHECKED=$((CHECKED + 1))
+if [[ -f "$PROJECT_ROOT/.quality-report.json" ]]; then
+    echo "✅" >&2
+
+    # 检查三层结果
+    L1_STATUS=$(jq -r '.layers.L1_automated.status // "missing"' "$PROJECT_ROOT/.quality-report.json" 2>/dev/null || echo "missing")
+    L2_STATUS=$(jq -r '.layers.L2_verification.status // "missing"' "$PROJECT_ROOT/.quality-report.json" 2>/dev/null || echo "missing")
+    L3_STATUS=$(jq -r '.layers.L3_acceptance.status // "missing"' "$PROJECT_ROOT/.quality-report.json" 2>/dev/null || echo "missing")
+    OVERALL=$(jq -r '.overall // "missing"' "$PROJECT_ROOT/.quality-report.json" 2>/dev/null || echo "missing")
+
+    # 6.1 自动化测试
+    echo -n "  6.1 自动化测试... " >&2
+    CHECKED=$((CHECKED + 1))
+    if [[ "$L1_STATUS" == "pass" ]]; then
+        echo "✅" >&2
+    elif [[ "$L1_STATUS" == "missing" ]]; then
+        echo "❌ (缺失)" >&2
+        FAILED=1
+    else
+        echo "❌ ($L1_STATUS)" >&2
+        FAILED=1
+    fi
+
+    # 6.2 效果验证
+    echo -n "  6.2 效果验证... " >&2
+    CHECKED=$((CHECKED + 1))
+    if [[ "$L2_STATUS" == "pass" ]]; then
+        echo "✅" >&2
+    elif [[ "$L2_STATUS" == "missing" ]]; then
+        echo "❌ (缺失)" >&2
+        FAILED=1
+    else
+        echo "❌ ($L2_STATUS)" >&2
+        FAILED=1
+    fi
+
+    # 6.3 需求验收
+    echo -n "  6.3 需求验收... " >&2
+    CHECKED=$((CHECKED + 1))
+    if [[ "$L3_STATUS" == "pass" ]]; then
+        echo "✅" >&2
+    elif [[ "$L3_STATUS" == "missing" ]]; then
+        echo "❌ (缺失)" >&2
+        FAILED=1
+    else
+        echo "❌ ($L3_STATUS)" >&2
+        FAILED=1
+    fi
+
+    # 总体状态
+    echo -n "  总体状态... " >&2
+    CHECKED=$((CHECKED + 1))
+    if [[ "$OVERALL" == "pass" ]]; then
+        echo "✅" >&2
+    else
+        echo "❌ ($OVERALL)" >&2
+        FAILED=1
+    fi
+else
+    echo "❌ (不存在)" >&2
+    echo "    → 请先完成三层质检并生成 .quality-report.json" >&2
+    FAILED=1
+fi
+
+echo "" >&2
+echo "  [自动化测试（兜底）]" >&2
 
 # 检测项目类型
 HAS_PACKAGE_JSON=false
@@ -232,7 +306,7 @@ if [[ $FAILED -eq 1 ]]; then
             echo "  请继续：" >&2
             echo "    Step 4: 修复代码" >&2
             echo "    Step 5: 更新测试" >&2
-            echo "    Step 6: 跑测试通过" >&2
+            echo "    Step 6: 跑三层质检" >&2
             echo "    然后再提 PR" >&2
             echo "" >&2
             echo "  注意：DoD 不变，只改代码。" >&2

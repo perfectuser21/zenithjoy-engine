@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.38.0] - 2026-01-18
+
+### Added
+- 三层质检体系：重构 Step 6 本地测试为系统化质检流程
+  - 6.1 自动化测试：机器跑（typecheck, test, lint, build, shell）
+  - 6.2 效果验证：Claude 主动验证（截图/curl/执行）
+  - 6.3 需求验收：对照 DoD 逐项打勾
+- `quality-loop.md`: 新增质检循环 Agent 定义
+- `.quality-report.json`: 三层质检报告格式
+
+### Changed
+- `06-local-test.md`: 重写为三层质检文档
+- `03-dod.md`: 添加 DoD → 质检映射规则（TEST→6.1, CHECK→6.2）
+- `pr-gate.sh`: 新增三层质检报告检查
+
 ## [7.37.7] - 2026-01-18
 
 ### Fixed
