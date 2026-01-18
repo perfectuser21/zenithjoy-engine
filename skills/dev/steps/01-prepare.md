@@ -109,3 +109,50 @@ head -30 docs/LEARNINGS.md 2>/dev/null || echo "（无踩坑记录）"
 - 不违反已有架构
 - 不重复踩坑
 - 与最近改动保持一致
+
+---
+
+## 1.5 测试层级检测
+
+检测项目当前的测试能力上限。
+
+```bash
+echo "🔍 检测测试层级..."
+
+# 运行检测脚本
+bash "$ZENITHJOY_ENGINE/skills/dev/scripts/detect-test-level.sh" "$(pwd)"
+
+# 如果有上次记录，对比显示
+if [[ -f ".test-level.json" ]]; then
+    LAST_LEVEL=$(jq -r '.max_level' .test-level.json 2>/dev/null || echo "?")
+    LAST_DATE=$(jq -r '.detected_at' .test-level.json 2>/dev/null || echo "?")
+    echo ""
+    echo "📋 上次记录: L$LAST_LEVEL ($LAST_DATE)"
+fi
+```
+
+**测试层级定义**：
+
+| 层级 | 名称 | 检测内容 |
+|------|------|----------|
+| L1 | 静态分析 | typecheck, lint, format |
+| L2 | 单元测试 | vitest, jest, pytest |
+| L3 | 集成测试 | API 测试, docker-compose |
+| L4 | E2E 测试 | playwright, cypress |
+| L5 | 性能测试 | benchmark, k6 |
+| L6 | 安全测试 | audit, snyk |
+
+**输出示例**：
+```
+项目: zenithjoy-core
+最高层级: L4
+
+L1 静态分析: ✅ (typecheck, lint)
+L2 单元测试: ✅ (vitest)
+L3 集成测试: ✅ (api routes)
+L4 E2E测试:  ✅ (playwright)
+L5 性能测试: ❌
+L6 安全测试: ❌
+```
+
+这个上限会在 DoD 阶段用到。

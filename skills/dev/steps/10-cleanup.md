@@ -69,6 +69,25 @@ git remote prune origin 2>/dev/null || true
 
 ---
 
+## 测试层级记录
+
+**任务结束时，重新检测并保存项目测试能力**：
+
+```bash
+echo "📊 更新测试层级记录..."
+
+# 重新检测并保存
+bash "$ZENITHJOY_ENGINE/skills/dev/scripts/detect-test-level.sh" --save "$(pwd)"
+
+echo "✅ 已保存到 .test-level.json"
+```
+
+这个记录会在下次 SessionStart 时作为参考。
+
+**如果本次任务升级了项目能力**（比如加了 E2E 测试），这里会记录新的能力等级。
+
+---
+
 ## 完成 🎉
 
 ```bash
