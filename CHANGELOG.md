@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.37.6] - 2026-01-18
+
+### Fixed
+- `wait-for-merge.sh`: 修复 GitHub API 权限问题（L1）
+  - 使用 `gh run list` 替代 `check-runs` API 检查 CI 状态
+  - 避免 403 权限错误导致无法正确判断 CI 状态
+  - 改进 URL 解析，兼容末尾斜杠和查询参数
+- `pr-gate.sh`: 修复 jq empty 导致脚本异常退出（L1）
+  - `jq -r '... // empty'` 改为 `jq -r '... // ""'`
+- `branch-protect.sh`: 同样修复 jq empty 问题（L1）
+- `multi-feature.sh`: 修复分支切换失败后继续 merge 的问题（L1）
+  - 切换失败时跳过该分支，避免在错误分支上执行 merge
+- `project-detect.sh`: 添加跨平台 md5 计算（L2）
+  - 兼容 Linux (md5sum) 和 MacOS (md5)
+- `pr-gate.sh`: 修复 find 命令处理含空格文件名问题（L2）
+  - 使用 `-print0` 和 `read -d ''` 安全处理
+
 ## [7.37.5] - 2026-01-18
 
 ### Fixed

@@ -20,14 +20,16 @@ set -euo pipefail
 
 INPUT=$(cat)
 
-TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null)
+# 安全提取 tool_name（避免 jq empty 导致脚本异常退出）
+TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null || echo "")
 
 # 只处理 Bash 工具
 if [[ "$TOOL_NAME" != "Bash" ]]; then
     exit 0
 fi
 
-COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
+# 安全提取 command
+COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""' 2>/dev/null || echo "")
 
 # 只拦截 gh pr create
 if [[ "$COMMAND" != *"gh pr create"* ]]; then
@@ -186,16 +188,19 @@ if [[ "$HAS_GO" == "true" ]]; then
 fi
 
 # ===== Shell 脚本检查（所有项目）=====
-SHELL_FILES=$(find "$PROJECT_ROOT" -name "*.sh" -type f -not -path "*/node_modules/*" 2>/dev/null || true)
-if [[ -n "${SHELL_FILES:-}" ]]; then
+# 使用 -print0 和 read -d '' 安全处理含空格的文件名
+SHELL_FAILED=0
+SHELL_COUNT=0
+while IFS= read -r -d '' f; do
+    SHELL_COUNT=$((SHELL_COUNT + 1))
+    if ! bash -n "$f" 2>/dev/null; then
+        SHELL_FAILED=1
+    fi
+done < <(find "$PROJECT_ROOT" -name "*.sh" -type f -not -path "*/node_modules/*" -print0 2>/dev/null)
+
+if [[ $SHELL_COUNT -gt 0 ]]; then
     echo -n "  Shell syntax... " >&2
     CHECKED=$((CHECKED + 1))
-    SHELL_FAILED=0
-    while IFS= read -r f; do
-        if ! bash -n "$f" 2>/dev/null; then
-            SHELL_FAILED=1
-        fi
-    done <<< "$SHELL_FILES"
     if [[ $SHELL_FAILED -eq 0 ]]; then
         echo "✅" >&2
     else
