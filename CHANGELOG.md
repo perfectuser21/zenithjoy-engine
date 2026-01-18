@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.35.0] - 2026-01-18
+
+### Added
+- 失败自动回退到 step 3 实现循环引导
+  - pr-gate.sh: 本地质检失败时回退
+  - wait-for-merge.sh: CI 失败时回退
+  - 输出循环路径提示：修代码(4) → 改测试(5) → 跑测试(6) → 再提PR(7)
+
+### Changed
+- 统一用词：Hook "强制" → "引导"（CI 是唯一强制检查）
+- 统一回退目标：pr-gate 和 CI 都回退到 step 3
+- SKILL.md 核心规则更新：明确 CI 是唯一强制检查
+
+### Removed
+- 删除所有 Codex 相关代码和文档引用
+- 删除 DoD 锁定机制（防不住，改为引导）
+
 ## [7.34.2] - 2026-01-18
 
 ### Fixed

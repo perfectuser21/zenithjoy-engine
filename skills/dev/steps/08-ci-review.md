@@ -23,7 +23,7 @@ PR 创建（Step 7 已完成本地 Claude review）
 │    • shell scripts check            │
 └─────────────────────────────────────┘
     │
-    ├── CI 失败 → 回退 step 4 → 修复 → 重新循环
+    ├── CI 失败 → 回退 step 3 → 修复 → 重新循环
     │
     └── CI 通过 → step 8 → 等待合并
 ```
@@ -49,13 +49,13 @@ bash skills/dev/scripts/wait-for-merge.sh "$PR_URL"
 # 1. 读取 CI 错误
 gh run view --log-failed
 
-# 2. 回退到 step 4
-git config branch."$BRANCH_NAME".step 4
+# 2. 回退到 step 3（wait-for-merge.sh 会自动设置）
+git config branch."$BRANCH_NAME".step 3
 
 # 3. 修复代码
 
 # 4. 重新走流程
-# step 4 → 5 → 6 → 7（自动 review）→ 8
+# step 3 → 4 → 5 → 6 → 7 → 8
 ```
 
 ---
@@ -64,4 +64,4 @@ git config branch."$BRANCH_NAME".step 4
 
 - **本地质检在创建 PR 时完成**（pr-gate.sh）
 - CI 只检查 test/typecheck/shell scripts
-- 失败后回退到 step 4，重新循环
+- 失败后回退到 step 3，重新循环

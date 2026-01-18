@@ -13,7 +13,7 @@ set -euo pipefail
 # step=5 → 测试完成
 # step=6 → 本地测试通过（可以提交）
 # step=7 → PR 已创建
-# step=8 → CI + Codex 通过
+# step=8 → CI 通过
 # step=9 → 已合并
 # step=10 → 已清理
 

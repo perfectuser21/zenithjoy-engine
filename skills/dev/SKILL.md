@@ -28,56 +28,70 @@ description: |
 
 ---
 
-## 流程图
+## 流程图（一个对话完成）
 
 ```
-进入项目目录
-    │
-    ▼
-project-detect.sh (PostToolUse)  ← 自动检测
-    → 项目类型、Monorepo、依赖图、测试能力
-    → 缓存到 .project-info.json
-    │
-    ▼
 /dev 开始
     │
     ▼
-Step 1: 准备
-    ├─ 依赖检查
-    ├─ 分支检查/创建
-    └─ 读取 .project-info.json（不重复扫描）
+Step 1-3: 准备 + PRD + DoD（用户确认）
     │
     ▼
-Step 2-3: PRD + DoD
-    └─ scan-change-level.sh --desc  ← 自动推断层级
+┌───────────────────────────────────────────┐
+│  Loop: Step 4-6                           │
+│                                           │
+│  Step 4: 写代码                           │
+│      ↓                                    │
+│  Step 5: 写测试                           │
+│      ↓                                    │
+│  Step 6: 跑测试                           │
+│      │                                    │
+│      ├── 失败 → step=3，回到 Step 4 继续  │
+│      │                                    │
+│      └── 通过 ↓                           │
+└───────────────────────────────────────────┘
     │
     ▼
-Step 4-6: 写代码 → 写测试 → 本地测试
-    └─ scan-change-level.sh  ← 验证实际改动
+Step 7: gh pr create
+    │
+    ├── pr-gate.sh 拦截
+    │       │
+    │       ├── 失败 → step=3，循环 4→5→6
+    │       │
+    │       └── 通过 → PR 创建成功
     │
     ▼
-Step 7: 提交 PR
-    └─ pr-gate.sh  ← 流程+质检
+┌───────────────────────────────────────────┐
+│  Loop: Step 8                             │
+│                                           │
+│  等 CI                                    │
+│      │                                    │
+│      ├── 失败 → step=3，修复 → push        │
+│      │                                    │
+│      └── 通过 ↓                           │
+└───────────────────────────────────────────┘
     │
     ▼
-Step 8-9: CI 通过 → 合并
+Step 9: 合并
     │
     ▼
 Step 10: Cleanup
     │
     ▼
-完成
+完成 🎉
 ```
+
+**关键**：整个流程在一个对话中完成，失败时自动循环，不断开。
 
 ---
 
 ## 核心规则
 
-1. **只在 cp-* 或 feature/* 分支写代码** - Hook 强制
+1. **只在 cp-* 或 feature/* 分支写代码** - Hook 引导
 2. **步骤状态机** - Hook 检查 `git config branch.*.step`，step >= 3 才能写代码
 3. **develop 是主开发线** - PR 合并回 develop
 4. **main 始终稳定** - 只在里程碑时从 develop 合并
-5. **不自动合并** - CI 通过后需要手动确认合并
+5. **CI 是唯一强制检查** - 其他都是引导
 
 ---
 
@@ -98,23 +112,21 @@ Step 10: Cleanup
 | 9 | 已合并 | PR merged |
 | 10 | 已清理 | 分支删除 |
 
-### Hook 保护
+### Hook 引导
 
 **branch-protect.sh** (PreToolUse - Write/Edit):
-- step >= 3 才能写代码
-- 只允许 cp-* 或 feature/* 分支
+- 引导 step >= 3 才能写代码
+- 引导只在 cp-* 或 feature/* 分支写代码
 
 **pr-gate.sh** (PreToolUse - Bash):
-- 拦截 `gh pr create`
-- 检查 .project-info.json 存在
-- 检查 step >= 6
-- 运行质检（typecheck, lint, format, test, build, shell）
+- 拦截 `gh pr create`，运行质检
+- 失败时回退到 step 3，引导修复后重试
 
 **stop-gate.sh** (Stop):
 - 退出时检查任务完成度
-- 显示进度建议（引导不强制）
+- 显示进度建议
 
-**注意**：步骤状态是引导性的，CI 是唯一强制检查。
+**注意**：所有 Hook 都是引导性的，CI 是唯一强制检查。
 
 ---
 

@@ -72,6 +72,5 @@ describe('login', () => {
 
 ## 不写测试的后果
 
-- Hook 会检查是否有新增测试文件
 - 没有测试可能被 CI 拦截
-- Codex review 会指出缺少测试
+- PR review 时会被指出缺少测试

@@ -7,7 +7,7 @@
 #
 # 退出码:
 #   0 = PR 已合并
-#   1 = 需要修复（CI 失败或 Codex 有问题）
+#   1 = 需要修复（CI 失败）
 #   2 = 超时
 
 set -euo pipefail
@@ -50,9 +50,6 @@ MAX_WAIT=600  # 10 分钟
 INTERVAL=30   # 30 秒轮询一次
 WAITED=0
 
-# 上次检查的 Codex 评论 ID（避免重复报告）
-LAST_CODEX_COMMENT_ID=""
-
 while [ $WAITED -lt $MAX_WAIT ]; do
     # ========================================
     # 1. 检查 PR 状态
@@ -91,51 +88,33 @@ while [ $WAITED -lt $MAX_WAIT ]; do
         echo "CI 错误日志:"
         gh run list --repo "$REPO" --limit 1 --json databaseId,conclusion -q '.[0].databaseId' | xargs -I {} gh run view {} --repo "$REPO" --log-failed 2>/dev/null | tail -50 || echo "(无法获取日志)"
         echo ""
-        echo -e "${YELLOW}请修复后重新 push${NC}"
+
+        # 回退到 step 3（DoD 完成），允许从 Step 4 重新开始
+        CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+        if [[ "$CURRENT_BRANCH" =~ ^cp-[a-zA-Z0-9] ]]; then
+            git config branch."$CURRENT_BRANCH".step 3
+            echo -e "${YELLOW}  ⟲ step 回退到 3，从 Step 4 重新循环 4→5→6${NC}"
+            echo ""
+            echo -e "${YELLOW}  请继续：${NC}"
+            echo -e "${YELLOW}    Step 4: 修复代码${NC}"
+            echo -e "${YELLOW}    Step 5: 更新测试${NC}"
+            echo -e "${YELLOW}    Step 6: 跑测试通过${NC}"
+            echo -e "${YELLOW}    然后 push 触发 CI${NC}"
+            echo ""
+            echo -e "${YELLOW}  注意：DoD 不变，只改代码。${NC}"
+        fi
+
         exit 1
     fi
 
     # ========================================
-    # 3. 检查 Codex 评论
-    # ========================================
-    CODEX_COMMENT=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
-        --jq 'map(select(.user.login == "chatgpt-codex-connector[bot]")) | .[-1] // empty' 2>/dev/null || echo "")
-
-    if [[ -n "$CODEX_COMMENT" ]]; then
-        CODEX_COMMENT_ID=$(echo "$CODEX_COMMENT" | jq -r '.id // empty')
-        CODEX_BODY=$(echo "$CODEX_COMMENT" | jq -r '.body // empty')
-
-        # 检查是否是新评论且有问题
-        if [[ "$CODEX_COMMENT_ID" != "$LAST_CODEX_COMMENT_ID" ]]; then
-            LAST_CODEX_COMMENT_ID="$CODEX_COMMENT_ID"
-
-            # 检查是否有问题（不是 "no issues" 或 "LGTM"）
-            if [[ "$CODEX_BODY" != *"Didn't find any major issues"* ]] && \
-               [[ "$CODEX_BODY" != *"no issues"* ]] && \
-               [[ "$CODEX_BODY" != *"LGTM"* ]] && \
-               [[ "$CODEX_BODY" == *"issue"* || "$CODEX_BODY" == *"problem"* || "$CODEX_BODY" == *"bug"* || "$CODEX_BODY" == *"error"* ]]; then
-                echo ""
-                echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-                echo -e "${YELLOW}  ⚠️ Codex 发现问题${NC}"
-                echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-                echo ""
-                echo "Codex 评论:"
-                echo "$CODEX_BODY" | head -30
-                echo ""
-                echo -e "${YELLOW}请根据反馈修复后重新 push${NC}"
-                exit 1
-            fi
-        fi
-    fi
-
-    # ========================================
-    # 4. 显示状态
+    # 3. 显示状态
     # ========================================
     CI_DISPLAY="${CI_CONCLUSION:-pending}"
     echo -e "${BLUE}⏳ 等待中... STATE=$STATE CI=$CI_DISPLAY (${WAITED}s)${NC}"
 
     # ========================================
-    # 5. 等待
+    # 4. 等待
     # ========================================
     sleep $INTERVAL
     WAITED=$((WAITED + INTERVAL))
