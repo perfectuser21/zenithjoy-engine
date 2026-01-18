@@ -1,33 +1,29 @@
 {
   "version": "1.0",
-  "timestamp": "2026-01-18T21:30:00Z",
-  "branch": "cp-20260118-fix-step-numbering",
+  "timestamp": "2026-01-18T23:30:00Z",
+  "branch": "cp-fix-prgate-bypass",
   "layers": {
     "L1_automated": {
       "status": "pass",
       "checks": [
-        {"name": "typecheck", "status": "pass"},
-        {"name": "test", "status": "pass"},
-        {"name": "build", "status": "pass"},
-        {"name": "shell", "status": "pass"}
+        {"name": "shellcheck", "status": "pass"},
+        {"name": "bash -n", "status": "pass"}
       ]
     },
     "L2_verification": {
       "status": "pass",
       "checks": [
-        {"name": "Script runs with --help flag", "method": "execute", "status": "pass"},
-        {"name": "Script displays 'Step 11: Cleanup' correctly", "method": "execute", "status": "pass"},
-        {"name": "All three changes verified (lines 112, 123, 222)", "method": "visual", "status": "pass"}
+        {"name": "pr-gate 检查 branch 字段", "status": "pass"},
+        {"name": "cleanup.sh 删除报告", "status": "pass"},
+        {"name": "branch-protect 清理旧报告", "status": "pass"}
       ]
     },
     "L3_acceptance": {
       "status": "pass",
       "dod_items": [
-        {"item": "check.sh 第 112 行已修正（Step 10 → Step 11）", "checked": true},
-        {"item": "check.sh 第 123 行已修正（Step 10 → Step 11）", "checked": true},
-        {"item": "check.sh 第 222 行已修正（Step 10 → Step 11）", "checked": true},
-        {"item": "所有测试通过 (84/84 passed)", "checked": true},
-        {"item": "脚本运行正常，显示 'Step 11: Cleanup'", "checked": true}
+        {"item": "旧报告不能让新分支通过", "checked": true},
+        {"item": "cleanup 后报告不存在", "checked": true},
+        {"item": "新分支首次写代码时清理旧报告", "checked": true}
       ]
     }
   },

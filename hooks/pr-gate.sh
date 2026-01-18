@@ -99,6 +99,18 @@ CHECKED=$((CHECKED + 1))
 if [[ -f "$PROJECT_ROOT/.quality-report.json" ]]; then
     echo "✅" >&2
 
+    # 检查报告的 branch 是否匹配当前分支
+    REPORT_BRANCH=$(jq -r '.branch // ""' "$PROJECT_ROOT/.quality-report.json" 2>/dev/null || echo "")
+    echo -n "  报告分支... " >&2
+    CHECKED=$((CHECKED + 1))
+    if [[ "$REPORT_BRANCH" == "$CURRENT_BRANCH" ]]; then
+        echo "✅ ($REPORT_BRANCH)" >&2
+    else
+        echo "❌ (报告: $REPORT_BRANCH, 当前: $CURRENT_BRANCH)" >&2
+        echo "    → 这是旧分支的报告，请重新运行质检" >&2
+        FAILED=1
+    fi
+
     # 检查三层结果
     L1_STATUS=$(jq -r '.layers.L1_automated.status // "missing"' "$PROJECT_ROOT/.quality-report.json" 2>/dev/null || echo "missing")
     L2_STATUS=$(jq -r '.layers.L2_verification.status // "missing"' "$PROJECT_ROOT/.quality-report.json" 2>/dev/null || echo "missing")

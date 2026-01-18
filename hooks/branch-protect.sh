@@ -100,6 +100,15 @@ fi
 if [[ "$CURRENT_BRANCH" =~ ^cp-[a-zA-Z0-9] ]]; then
     CURRENT_STEP=$(git config --get branch."$CURRENT_BRANCH".step 2>/dev/null || echo "0")
 
+    # 新分支首次写代码时，清理旧的质检报告
+    if [[ -f "$PROJECT_ROOT/.quality-report.json" ]]; then
+        REPORT_BRANCH=$(jq -r '.branch // ""' "$PROJECT_ROOT/.quality-report.json" 2>/dev/null || echo "")
+        if [[ "$REPORT_BRANCH" != "$CURRENT_BRANCH" && -n "$REPORT_BRANCH" ]]; then
+            rm -f "$PROJECT_ROOT/.quality-report.json" 2>/dev/null || true
+            echo "🧹 已清理旧分支 ($REPORT_BRANCH) 的质检报告" >&2
+        fi
+    fi
+
     # 写代码需要 step >= 4 (DoD 完成)
     if [[ "$CURRENT_STEP" -lt 4 ]]; then
         echo "" >&2

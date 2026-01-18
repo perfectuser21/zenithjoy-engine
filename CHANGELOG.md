@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.40.1] - 2026-01-18
+
+### Fixed
+- **[HIGH]** `pr-gate.sh`: 检查 `.quality-report.json` 的 `branch` 字段是否匹配当前分支，防止旧报告绕过检查
+- **[HIGH]** `cleanup.sh`: 删除 `.quality-report.json`，防止残留影响下次开发
+- **[HIGH]** `branch-protect.sh`: 新分支首次写代码时，自动清理旧分支的质检报告
+
 ## [7.40.0] - 2026-01-18
 
 ### Fixed
