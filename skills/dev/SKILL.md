@@ -108,7 +108,7 @@ Step 10: Cleanup
 - 拦截 `gh pr create`
 - 检查 .project-info.json 存在
 - 检查 step >= 6
-- 运行质检（typecheck, lint, test, build）
+- 运行质检（typecheck, lint, format, test, build, shell）
 
 **stop-gate.sh** (Stop):
 - 退出时检查任务完成度

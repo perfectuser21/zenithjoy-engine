@@ -104,8 +104,8 @@ fi
 echo ""
 echo "5️⃣  清理 git config..."
 CLEANED=false
-# 清理所有可能的配置项
-for CONFIG_KEY in "base" "base-branch" "prd-confirmed" "step"; do
+# 清理所有可能的配置项（只清理实际使用的 key）
+for CONFIG_KEY in "base-branch" "prd-confirmed" "step"; do
     if git config --get "branch.$CP_BRANCH.$CONFIG_KEY" &>/dev/null; then
         git config --unset "branch.$CP_BRANCH.$CONFIG_KEY" 2>/dev/null || true
         CLEANED=true

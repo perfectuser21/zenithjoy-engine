@@ -128,21 +128,22 @@ MISSING_COMMANDS=()
 echo ""
 echo "清理阶段 (Step 6):"
 
-# git config 已清理？（可跳过项，不计入 COMPLETED_COUNT）
+# git config 已清理？（必须清理）
 CONFIG_EXISTS=false
-for KEY in "base" "base-branch" "prd-confirmed" "step"; do
+for KEY in "base-branch" "prd-confirmed" "step"; do
   if git config "branch.$BRANCH_NAME.$KEY" &>/dev/null; then
     CONFIG_EXISTS=true
     break
   fi
 done
 if [[ "$CONFIG_EXISTS" == "false" ]]; then
-  echo "  ✅ git config 已清理（可跳过）"
+  echo "  ✅ git config 已清理"
+  ((COMPLETED_COUNT++))
 else
-  echo "  ⚠️ git config 未清理（可跳过）"
-  for KEY in "base" "base-branch" "prd-confirmed" "step"; do
+  echo "  ❌ git config 未清理"
+  for KEY in "base-branch" "prd-confirmed" "step"; do
     if git config "branch.$BRANCH_NAME.$KEY" &>/dev/null; then
-      echo "     可选修复: git config --unset branch.$BRANCH_NAME.$KEY"
+      MISSING_COMMANDS+=("git config --unset branch.$BRANCH_NAME.$KEY")
     fi
   done
 fi

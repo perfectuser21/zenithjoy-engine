@@ -2,7 +2,7 @@
 
 > 每个功能必须有对应的测试
 
-**前置条件**：step >= 3
+**前置条件**：step >= 4
 **完成后设置状态**：
 ```bash
 git config branch."$BRANCH_NAME".step 5

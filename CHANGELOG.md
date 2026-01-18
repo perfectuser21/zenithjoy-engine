@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.34.2] - 2026-01-18
+
+### Fixed
+- 修复自洽性问题（深度检查发现）：
+  - Step 5 前置条件：`>= 3` → `>= 4`（代码完成后才能写测试）
+  - cleanup.sh: 移除从未使用的 `base` 配置项，只清理 `base-branch`
+  - check.sh: git config 从"可跳过"改为必须清理
+  - SKILL.md: pr-gate 质检项 4 → 6（加上 format 和 shell）
+
+### Removed
+- 删除 `detect-test-level.sh`（功能已合并到 `project-detect.sh`）
+
 ## [7.34.1] - 2026-01-18
 
 ### Fixed
