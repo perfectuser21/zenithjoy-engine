@@ -36,3 +36,12 @@ skills/dev/VALIDATION.md
 .dev-step
 .quality-report.json
 .test-level.json
+
+# Evidence chain files (per-branch, runtime)
+.dod.md
+.layer2-evidence.md
+artifacts/screenshots/*.png
+
+# Old Subagent files (deprecated)
+.subagent-lock
+.subagent-proof.json

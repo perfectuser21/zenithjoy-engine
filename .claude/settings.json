@@ -16,7 +16,7 @@
       },
       {
         "matcher": "Bash",
-        "hooks": [{"type": "command", "command": "./hooks/pr-gate.sh"}]
+        "hooks": [{"type": "command", "command": "./hooks/pr-gate-v2.sh"}]
       }
     ],
     "PostToolUse": [
@@ -29,12 +29,6 @@
       {
         "matcher": "",
         "hooks": [{"type": "command", "command": "./hooks/stop-gate.sh"}]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "matcher": "",
-        "hooks": [{"type": "command", "command": "./hooks/subagent-quality-gate.sh"}]
       }
     ]
   }
