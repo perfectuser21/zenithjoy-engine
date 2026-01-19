@@ -419,3 +419,79 @@ generate-report.sh 在分支已删除或 PR 已合并时，所有流程步骤显
 #### 影响程度
 - Low - 测试任务，验证了机制有效性
 
+### [2026-01-19] SubagentStop Hook 压力测试与修复
+
+#### 问题背景
+SubagentStop Hook 设计用于强制 Subagent 在质检通过后才能退出。但初始测试发现 Hook 不生效。
+
+#### 发现的问题
+
+1. **Hook 不热加载**
+   - 问题：Claude Code 在会话启动时加载 settings.json，之后修改不会重新加载
+   - 影响：旧会话中新添加的 Hook 无效
+   - 解决：必须启动新会话才能使用新 Hook
+
+2. **cwd 被 reset 到 /dev**
+   - 问题：SubagentStop Hook 触发时 `pwd` 返回 `/dev`，不是项目目录
+   - 影响：`git rev-parse --show-toplevel` 失败，分支检查被跳过，直接放行
+   - 解决：通过扫描 `/home/xx/dev/*/` 目录找 `.subagent-lock` 文件定位项目
+
+3. **git config key 格式**
+   - 问题：使用 `loop_count`（下划线），但 git config 不支持下划线
+   - 解决：改为 `loop-count`（连字符）
+
+4. **SubagentStop 必须在全局配置**
+   - 问题：项目级 `.claude/settings.json` 中的 SubagentStop 不触发
+   - 解决：必须配置在 `~/.claude/settings.json` 全局配置中
+
+#### 最终方案
+
+```bash
+# ~/.claude/hooks/subagent-quality-gate.sh 关键逻辑
+
+# 1. 通过 .subagent-lock 定位项目
+for dir in /home/xx/dev/*/; do
+    if [[ -f "${dir}.subagent-lock" ]]; then
+        PROJECT_ROOT="${dir%/}"
+        break
+    fi
+done
+
+# 2. 检查质检报告
+OVERALL=$(jq -r '.overall' "$PROJECT_ROOT/.quality-report.json")
+if [[ "$OVERALL" != "pass" ]]; then
+    exit 2  # 阻止退出，Subagent 继续工作
+fi
+
+# 3. 质检通过，清理并放行
+rm -f "$PROJECT_ROOT/.subagent-lock"
+exit 0
+```
+
+#### 压力测试结果
+
+| 场景 | 结果 |
+|------|------|
+| 主 Agent 绕过 Subagent 写代码 | ✅ 被 branch-protect.sh 阻止 |
+| Subagent 质检失败后退出（新会话）| ✅ 被 SubagentStop Hook 阻止 |
+| Subagent 修复后退出 | ✅ 质检 pass 后放行 |
+| stop_hook_active 状态追踪 | ✅ Claude Code 记录阻止历史 |
+
+#### 关键证据
+
+```
+17:18:29 - stop_hook_active: false, Found project via .subagent-lock
+17:18:50 - stop_hook_active: true  ← 证明被阻止过
+```
+
+`stop_hook_active: true` 是 Claude Code 维护的状态，证明 `exit 2` 确实阻止了 Subagent 退出。
+
+#### 注意事项
+
+1. **必须新会话** - Hook 配置修改后需要重启 Claude Code
+2. **必须全局配置** - SubagentStop 不支持项目级配置
+3. **必须有 .subagent-lock** - Hook 通过此文件定位项目
+
+#### 影响程度
+- High - 核心强制机制验证成功，确保质检真正执行
+
