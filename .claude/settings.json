@@ -1,8 +1,5 @@
 {
   "skills": {
     "paths": ["./skills"]
-  },
-  "hooks": {
-    "paths": ["./hooks"]
   }
 }
