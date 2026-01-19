@@ -225,40 +225,27 @@ pr-gate.sh 只检查 `.quality-report.json` 的 `overall: "pass"` 字段，不�
 
 **Medium** - 修复多个潜在安全问题和文档不一致
 
-### [2026-01-19] n8n 自动化测试流程验证
+### [2026-01-19] n8n 自动化流程验证
 
-- **Bug**: 质检报告格式不符合 pr-gate.sh 预期
-  - 问题：初始创建的质检报告使用了错误的结构（quality_check.layer1），应该是 layers.L1_automated
-  - 解决：更新质检报告格式为正确的结构（layers.L1_automated, layers.L2_verification, layers.L3_acceptance, overall）
-  - 原因：对 pr-gate.sh 的质检报告格式要求不熟悉
-- **优化点**: n8n → Claude Code 自动化流程验证成功
-  - 完整验证了从 Notion 任务到 PR 创建的全流程
-  - 所有 11 个步骤都正常执行
-  - 自动化工作流运行正常
-- **影响程度**: Medium（质检报告格式问题会阻塞 PR 创建）
+验证 n8n → Claude Code CLI 自动化管道的完整流程。
 
-### [2026-01-19] Test V2 - Complete workflow validation
+#### 踩的坑
 
-- **Bug**: PR gate hook requires quality report with specific layer keys (`L1_automated`, `L2_verification`, `L3_acceptance`) instead of generic layer names
-- **优化点**: Quality report format should be documented in hook or step documentation for clarity
-- **影响程度**: Medium - Required manual correction during first test, but workflow validation successful
+1. **质检报告格式**
+   - 问题：使用了错误的字段名 `quality_check.layer1`
+   - 正确：`layers.L1_automated`, `layers.L2_verification`, `layers.L3_acceptance`, `overall`
+   - 影响：PR 被 pr-gate.sh 拦截
 
-### [2026-01-19] 添加 ping 工具函数
+2. **UUID 格式转换**
+   - 问题：n8n 传递无连字符的 ID，Notion API 需要带连字符
+   - 解决：execute.sh 中用 sed 转换格式
 
-#### 开发过程
-- 简单的工具函数实现，流程顺畅
-- 质检报告格式要求：L1_automated, L2_verification, L3_acceptance
-- Hook 会自动回退 step，需要正确生成质检报告后才能继续
-
-#### 发现
-- **PR Gate Hook 要求质检报告**：必须生成 `.quality-report.json` 且格式正确
-- **字段命名规范**：layers 使用 L1_automated/L2_verification/L3_acceptance，不是 layer1/layer2/layer3
-- **step 状态自动管理**：Hook 会在质检失败时自动回退 step 到 4
+3. **日志捕获**
+   - 问题：tee 无法捕获 Claude CLI 的终端控制输出
+   - 解决：使用 script 命令模拟伪终端
 
 #### 优化点
-- 质检报告生成可以自动化（Step 7 完成时自动生成）
-- 当前需要手动创建 .quality-report.json，容易出错
 
-#### 影响程度
-- Medium - 质检报告格式错误会导致 PR 被拦截，需要文档化说明
+- 质检报告格式应文档化
+- execute.sh 需要处理特殊字符转义
 

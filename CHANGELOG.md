@@ -7,21 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [7.44.0] - 2026-01-19
-
-### Added
-- Simple ping utility function in src/utils/ping.ts
-
-## [7.43.0] - 2026-01-19
-
-### Added
-- **[TEST]** Test V2: Complete workflow validation with test module and unit tests
-
-## [7.42.0] - 2026-01-19
-
-### Added
-- **[TEST]** Automated test workflow validation: Created test-automation.txt to verify n8n → Claude Code automation pipeline
-
 ## [7.41.0] - 2026-01-18
 
 ### Fixed
