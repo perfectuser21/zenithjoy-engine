@@ -14,8 +14,16 @@
 
 set -euo pipefail
 
+# ===== 调试日志 =====
+DEBUG_LOG="/tmp/subagent-stop-hook.log"
+echo "========================================" >> "$DEBUG_LOG"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] SubagentStop Hook 被触发" >> "$DEBUG_LOG"
+echo "PWD: $(pwd)" >> "$DEBUG_LOG"
+echo "========================================" >> "$DEBUG_LOG"
+
 # 读取输入
 INPUT=$(cat)
+echo "INPUT: $INPUT" >> "$DEBUG_LOG"
 
 # 获取项目根目录
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
