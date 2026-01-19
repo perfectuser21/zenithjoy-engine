@@ -943,3 +943,38 @@ sha256(branch | timestamp | quality_hash | loop_count | secret)
 #### 影响程度
 - High - 简化了强制机制，保持了多层防御
 
+### [2026-01-19] pr-gate-v2 双重 Bug 修复
+
+#### 问题描述
+
+**Bug 1: HTTP_STATUS grep 匹配过宽**
+- 问题：`grep -q "HTTP_STATUS"` 会误匹配标题文字 `### C1: 缺少 HTTP_STATUS`
+- 发现：压力测试 T5，curl 证据块没有有效 `HTTP_STATUS: 200` 但检查通过
+- 修复：改用 `grep -qE "HTTP_STATUS:\s*[0-9]+"` 精确匹配值格式
+
+**Bug 2: DoD checkbox 计数 bug**
+- 问题：`grep -c '\- \[ \]' || echo "0"` 导致输出 `0\n0`
+- 原因：`grep -c` 无匹配时输出 0 但退出码是 1，触发 `|| echo "0"` 又打印 0
+- 症状：`[[: 0\n0: syntax error in expression` 阻止 PR 创建
+- 修复：改用 `|| true` 避免重复输出
+
+#### 经验
+
+1. **grep 细节**
+   - `grep -c` 无匹配时：stdout=0, exit_code=1
+   - `grep -q` 无匹配时：stdout=空, exit_code=1
+   - 用 `|| true` 代替 `|| echo "0"` 处理无匹配情况
+
+2. **Bootstrap 注意**
+   - 修复 pr-gate-v2.sh 时，该 Hook 本身会阻止修改
+   - 需要同时满足全局 pr-gate.sh 和项目 pr-gate-v2.sh 的要求
+   - 创建完整的证据文件（.dod.md, .layer2-evidence.md, .quality-report.json, .subagent-proof.json）
+
+3. **多 Hook 并存**
+   - 全局 `~/.claude/hooks/pr-gate.sh` 和项目 `./hooks/pr-gate-v2.sh` 同时运行
+   - 需要满足所有 Hook 的要求才能创建 PR
+   - 考虑是否需要统一或明确优先级
+
+#### 影响程度
+- Medium - 修复了阻塞 PR 创建的 bug
+
