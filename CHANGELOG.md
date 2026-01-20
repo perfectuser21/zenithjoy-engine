@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [8.1.0] - 2026-01-20
+
+### Changed
+- **/dev 流程 v9**: 重构开发工作流，集成 Ralph Loop 概念
+  - 四种模式自动检测（新任务/继续开发/修复/合并）
+  - Loop 1: 本地 QA 循环（npm run qa 直到通过）
+  - Loop 2: CI 修复循环（push + 等 CI 直到通过）
+  - 20 轮告警机制（NEED_HUMAN_HELP）
+  - 有头/无头统一流程
+
+### Removed
+- **步骤状态机**: 删除 `git config branch.*.step` 追踪机制
+- **branch-protect.sh**: 删除步骤检查逻辑，只保留分支检查
+- **pr-gate-v2.sh**: 删除步骤回退逻辑
+
+### Simplified
+- **skills/dev/SKILL.md**: 重写为 v9 版本，简化流程图
+- **skills/dev/steps/*.md**: 删除所有步骤状态机相关内容
+
 ## [8.0.8] - 2026-01-20
 
 ### Fixed
