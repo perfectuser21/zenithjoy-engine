@@ -1,9 +1,10 @@
 ---
 id: features-registry
-version: 1.3.0
+version: 1.4.0
 created: 2026-01-20
 updated: 2026-01-20
 changelog:
+  - 1.4.0: 更新 Trigger 规则说明，统计改用 rc-filter.sh 脚本
   - 1.3.0: 引入 Regression Contract 体系，清理步骤状态机描述
   - 1.2.0: 删除 project-detect hook（死代码）
   - 1.1.0: 删除冗余 hooks (session-init, stop-gate)
@@ -97,26 +98,27 @@ Full Regression（全量测试）
 全量 = Regression Contract 里的所有条目
      ≠ 所有 Committed features
 
-本地命令:
-  npm run qa     # 跑 L1 自动化（PR Gate 用）
+Trigger 规则:
+  PR Gate:      跑 trigger 包含 PR 的条目
+  Release Gate: 跑 trigger 包含 Release 的条目
+  Nightly:      跑全部条目（忽略 trigger 过滤）
 
-Trigger 映射:
-  PR Gate:      跑 trigger=PR 的 RCI (15 条)
-  Release Gate: 跑 trigger=Release 的 RCI (21 条)
-  Nightly:      跑全部 (21 条)
+本地命令:
+  npm run qa              # 跑 L1 自动化
+  bash scripts/rc-filter.sh stats  # 查看 RCI 统计
 ```
 
-详见：[regression-contract.yaml](./regression-contract.yaml)
+详见：
+- [regression-contract.yaml](./regression-contract.yaml) - RCI 定义
+- [scripts/rc-filter.sh](./scripts/rc-filter.sh) - 过滤器脚本
 
 ---
 
 ## 统计
 
+> 使用 `bash scripts/rc-filter.sh stats` 获取实时统计
+
 - **Committed Features**: 8（W2 已废弃）
-- **Regression Contract Items**: 21
-- **P0 条目**: 12（核心，永远不能坏）
-- **P1 条目**: 6（重要）
-- **P2 条目**: 3（辅助）
 
 ---
 

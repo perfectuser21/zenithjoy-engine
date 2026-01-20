@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [8.0.13] - 2026-01-20
+
+### Changed
+- **regression-contract.yaml**: 升级到 v1.1.0，修正 4 个问题 + 增强 3 个字段
+  - Nightly 规则：跑全部条目，忽略 trigger 过滤
+  - 删除手写统计（改用脚本自动算）
+  - 新增 `method: auto|manual` 字段
+  - `evidence` 改为结构化格式（type/contains/equals）
+  - 新增 `scope`、`tags`、`owner` 字段
+
+### Added
+- **scripts/rc-filter.sh**: RCI 过滤器脚本
+  - `rc-filter.sh pr` - 输出 PR Gate 要跑的 RCI
+  - `rc-filter.sh release` - 输出 Release Gate 要跑的 RCI
+  - `rc-filter.sh nightly` - 输出全部 RCI
+  - `rc-filter.sh stats` - 输出统计信息
+
 ## [8.0.12] - 2026-01-20
 
 ### Added
