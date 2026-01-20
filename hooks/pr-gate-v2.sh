@@ -45,8 +45,8 @@ MODE="${PR_GATE_MODE:-}"
 
 # 2. 解析 --base 参数
 if [[ -z "$MODE" ]]; then
-    # 提取 --base 参数值
-    BASE_BRANCH=$(echo "$COMMAND" | grep -oP '(?<=--base\s)[^\s]+' || echo "")
+    # 提取 --base 参数值（兼容不支持 -P 的 grep）
+    BASE_BRANCH=$(echo "$COMMAND" | sed -n 's/.*--base[[:space:]]\+\([^[:space:]]\+\).*/\1/p' | head -1)
 
     if [[ "$BASE_BRANCH" == "main" ]]; then
         MODE="release"
@@ -224,14 +224,21 @@ if [[ "$MODE" == "pr" ]]; then
     CHECKED=$((CHECKED + 1))
     if [[ -f "$DOD_FILE" ]]; then
         # 检查 .dod.md 是否在当前分支有修改（防止复用旧的 DoD）
-        DOD_MODIFIED=$(git diff develop --name-only 2>/dev/null | grep -c "^\.dod\.md$" || echo "0")
-        DOD_NEW=$(git status --porcelain 2>/dev/null | grep -c "\.dod\.md" || echo "0")
+        DOD_MODIFIED=$(git diff develop --name-only 2>/dev/null | grep -c "^\.dod\.md$" 2>/dev/null || echo 0)
+        DOD_NEW=$(git status --porcelain 2>/dev/null | grep -c "\.dod\.md" 2>/dev/null || echo 0)
+        # 确保是纯数字
+        DOD_MODIFIED=${DOD_MODIFIED//[^0-9]/}
+        DOD_NEW=${DOD_NEW//[^0-9]/}
+        [[ -z "$DOD_MODIFIED" ]] && DOD_MODIFIED=0
+        [[ -z "$DOD_NEW" ]] && DOD_NEW=0
 
         if [[ "$DOD_MODIFIED" -gt 0 || "$DOD_NEW" -gt 0 ]]; then
             echo "✅" >&2
         else
             # 检查是否是新分支首次创建（.dod.md 已提交但未推送）
-            DOD_IN_BRANCH=$(git log develop..HEAD --name-only 2>/dev/null | grep -c "^\.dod\.md$" || echo "0")
+            DOD_IN_BRANCH=$(git log develop..HEAD --name-only 2>/dev/null | grep -c "^\.dod\.md$" 2>/dev/null || echo 0)
+            DOD_IN_BRANCH=${DOD_IN_BRANCH//[^0-9]/}
+            [[ -z "$DOD_IN_BRANCH" ]] && DOD_IN_BRANCH=0
             if [[ "$DOD_IN_BRANCH" -gt 0 ]]; then
                 echo "✅ (本分支已提交)" >&2
             else

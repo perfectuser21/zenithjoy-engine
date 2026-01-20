@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [8.0.8] - 2026-01-20
+
+### Fixed
+- **pr-gate-v2.sh**: 修复模式检测（grep -oP → sed 兼容性）
+- **pr-gate-v2.sh**: 修复 DoD 检查语法错误（grep -c 输出清理）
+
 ## [8.0.7] - 2026-01-20
 
 ### Changed
