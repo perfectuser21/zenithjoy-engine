@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [8.0.9] - 2026-01-20
+
+### Changed
+- **/dev 流程**: 集成 Ralph Loop 插件，实现自动化循环
+  - 四种模式自动检测代码（新任务/继续开发/修复/合并）
+  - Loop 1: 使用 `/ralph-loop` 本地 QA 循环
+  - Loop 2: 使用 `/ralph-loop` CI 修复循环
+  - 20 轮告警机制（NEED_HUMAN_HELP）
+
+### Simplified
+- **branch-protect.sh**: 简化为只检查分支（删除步骤状态机）
+- **pr-gate-v2.sh**: 删除步骤回退逻辑
+- **skills/dev/steps/*.md**: 删除步骤状态机相关内容
+
 ## [8.0.8] - 2026-01-20
 
 ### Fixed
