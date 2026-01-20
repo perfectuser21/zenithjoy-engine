@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [8.0.2] - 2026-01-20
+
+### Removed
+- **hooks/project-detect.sh**: 删除，检测结果（L1-L6 能力）从未被实际使用
+- **tests/hooks/project-detect.test.ts**: 删除对应测试
+
+### Changed
+- **pr-gate-v2.sh**: 移除 .project-info.json 检查（只是显示，无实际用途）
+- **settings.json**: 移除 PostToolUse 事件配置
+- **skills/dev/steps/02-detect.md**: 简化为直接读取 package.json
+
 ## [8.0.1] - 2026-01-20
 
 ### Removed

@@ -74,18 +74,6 @@ CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
 # ============================================================================
 echo "  [基础检查]" >&2
 
-# 检查 .project-info.json 是否存在
-echo -n "  项目检测... " >&2
-CHECKED=$((CHECKED + 1))
-if [[ -f "$PROJECT_ROOT/.project-info.json" ]]; then
-    LEVEL=$(jq -r '.test_levels.max_level // 0' "$PROJECT_ROOT/.project-info.json" 2>/dev/null || echo "0")
-    echo "✅ (L$LEVEL)" >&2
-else
-    echo "❌ (未检测)" >&2
-    echo "    → 执行任意 Bash 命令触发自动检测" >&2
-    FAILED=1
-fi
-
 # 检查分支（必须是 cp-* 或 feature/*）
 echo -n "  分支... " >&2
 CHECKED=$((CHECKED + 1))
