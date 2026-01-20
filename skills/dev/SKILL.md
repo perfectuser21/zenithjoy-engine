@@ -117,12 +117,12 @@ Step 11: Cleanup
 | step | 状态 | 说明 |
 |------|------|------|
 | 1 | PRD 确定 | 需求明确 |
-| 2 | 项目环境检测完成 | .project-info.json 生成 |
+| 2 | 项目环境确认 | 确认项目类型 |
 | 3 | 分支已创建 | cp-* 或 feature/* 分支 |
 | 4 | DoD 完成 | DoD 推演完成，**可以写代码** |
 | 5 | 代码完成 | 功能代码写完 |
 | 6 | 测试完成 | 测试代码写完 |
-| 7 | 质检通过 | 三层质检通过，**可以提交** |
+| 7 | 质检通过 | L1 质检通过，**可以提交** |
 | 8 | PR 已创建 | 等待 CI |
 | 9 | CI 通过 | CI 检查完成 |
 | 10 | Learning 完成 | 经验已记录 |
@@ -140,18 +140,6 @@ Step 11: Cleanup
   - `PR_GATE_MODE=pr`（默认）：只检查 L1，.dod.md 存在即可
   - `PR_GATE_MODE=release`：完整检查 L1+L2+L3，要求证据链
 - 失败时回退到 step 4，引导修复后重试
-
-**stop-gate.sh** (Stop):
-- 退出时检查任务完成度
-- 显示进度建议
-
-**project-detect.sh** (PostToolUse - Bash):
-- 检测项目初始化状态
-- 生成 .project-info.json
-
-**session-init.sh** (SessionStart):
-- 会话初始化，恢复上下文
-- 读取已保存的步骤状态
 
 **注意**：所有 Hook 都是引导性的，CI 是唯一强制检查。
 
