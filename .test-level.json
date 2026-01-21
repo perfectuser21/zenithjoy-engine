@@ -3,18 +3,10 @@
   "max_level": 2,
   "levels": {
     "L1": true,
-    "L2": true,
-    "L3": false,
-    "L4": false,
-    "L5": false,
-    "L6": false
+    "L2": true
   },
   "details": {
-    "L1": ["typecheck","shellcheck"],
-    "L2": ["vitest"],
-    "L3": [],
-    "L4": [],
-    "L5": [],
-    "L6": []
+    "L1": ["typecheck", "shellcheck"],
+    "L2": ["vitest"]
   }
 }
