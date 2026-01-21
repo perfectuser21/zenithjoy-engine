@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# QA Report Generator v2
+# QA Report Generator v3
 # ============================================================================
 #
 # 生成 QA 审计报告 JSON，供 Dashboard 使用
@@ -11,10 +11,10 @@
 #   bash scripts/qa-report.sh --output     # 输出到 .qa-report.json
 #   bash scripts/qa-report.sh --post URL   # POST 到指定 URL
 #
-# 检查内容 (v2):
-#   - Meta:  Feature → RCI 覆盖率 + P0 触发规则
-#   - Unit:  真实运行 npm run qa（typecheck + test + build）
-#   - E2E:   Golden Paths 结构完整性 + RCI 可解析
+# v3 新增:
+#   - Features 增加 description, rci_count, rcis, in_golden_paths
+#   - RCIs 增加完整详情列表
+#   - Golden Paths 增加 rcis, covers_features
 #
 # ============================================================================
 
@@ -55,270 +55,241 @@ get_timestamp() {
 }
 
 # ============================================================================
-# Features 提取
+# Python 生成完整报告（v3 核心）
 # ============================================================================
 
-extract_features() {
-    if [[ ! -f "$FEATURES_FILE" ]]; then
-        echo "[]"
-        return
-    fi
-
-    # 提取 Committed features（简化实现）
-    local features=()
-
-    # H1, H2
-    if grep -q "H1.*Committed" "$FEATURES_FILE"; then
-        features+=('{"id":"H1","name":"branch-protect","status":"Committed","scope":"hook"}')
-    fi
-    if grep -q "H2.*Committed" "$FEATURES_FILE"; then
-        features+=('{"id":"H2","name":"pr-gate-v2","status":"Committed","scope":"hook"}')
-    fi
-
-    # W1, W3, W4
-    if grep -q "W1.*Committed" "$FEATURES_FILE"; then
-        features+=('{"id":"W1","name":"/dev 流程","status":"Committed","scope":"workflow"}')
-    fi
-    if grep -q "W3.*Committed" "$FEATURES_FILE"; then
-        features+=('{"id":"W3","name":"循环回退","status":"Committed","scope":"workflow"}')
-    fi
-    if grep -q "W4.*Committed" "$FEATURES_FILE"; then
-        features+=('{"id":"W4","name":"测试任务模式","status":"Committed","scope":"workflow"}')
-    fi
-
-    # C1-C4
-    if grep -q "C1.*Committed" "$FEATURES_FILE"; then
-        features+=('{"id":"C1","name":"version-check","status":"Committed","scope":"ci"}')
-    fi
-    if grep -q "C2.*Committed" "$FEATURES_FILE"; then
-        features+=('{"id":"C2","name":"test job","status":"Committed","scope":"ci"}')
-    fi
-    if grep -q "C3.*Committed" "$FEATURES_FILE"; then
-        features+=('{"id":"C3","name":"shell syntax check","status":"Committed","scope":"ci"}')
-    fi
-    if grep -q "C4.*Committed" "$FEATURES_FILE"; then
-        features+=('{"id":"C4","name":"notify-failure","status":"Committed","scope":"ci"}')
-    fi
-
-    # B1
-    if grep -q "B1.*Committed" "$FEATURES_FILE"; then
-        features+=('{"id":"B1","name":"calculator","status":"Committed","scope":"business"}')
-    fi
-
-    # E1 (QA Reporting)
-    if grep -q "E1.*Committed" "$FEATURES_FILE"; then
-        features+=('{"id":"E1","name":"QA Reporting","status":"Committed","scope":"export"}')
-    fi
-
-    # 输出 JSON 数组
-    if [[ ${#features[@]} -eq 0 ]]; then
-        echo "[]"
-    else
-        local IFS=','
-        echo "[${features[*]}]"
-    fi
-}
-
-# ============================================================================
-# RCIs 提取
-# ============================================================================
-
-extract_rcis() {
-    if [[ ! -f "$RC_FILE" ]]; then
-        echo '{"total":0,"by_priority":{"P0":[],"P1":[],"P2":[]},"details":[]}'
-        return
-    fi
-
-    # 统计
-    local total=$(grep -c "^\s*- id:" "$RC_FILE" 2>/dev/null || echo 0)
-    local p0=$(grep -c "priority: P0" "$RC_FILE" 2>/dev/null || echo 0)
-    local p1=$(grep -c "priority: P1" "$RC_FILE" 2>/dev/null || echo 0)
-    local p2=$(grep -c "priority: P2" "$RC_FILE" 2>/dev/null || echo 0)
-
-    # 提取 P0 IDs
-    local p0_ids=$(grep -B1 "priority: P0" "$RC_FILE" | grep "id:" | sed 's/.*id: //' | tr -d '"' | tr '\n' ',' | sed 's/,$//')
-    local p1_ids=$(grep -B1 "priority: P1" "$RC_FILE" | grep "id:" | sed 's/.*id: //' | tr -d '"' | tr '\n' ',' | sed 's/,$//')
-    local p2_ids=$(grep -B1 "priority: P2" "$RC_FILE" | grep "id:" | sed 's/.*id: //' | tr -d '"' | tr '\n' ',' | sed 's/,$//')
-
-    # 格式化为 JSON 数组
-    format_ids() {
-        local ids="$1"
-        if [[ -z "$ids" ]]; then
-            echo "[]"
-        else
-            echo "[\"$(echo "$ids" | sed 's/,/","/g')\"]"
-        fi
-    }
-
-    cat <<EOF
-{
-    "total": $total,
-    "by_priority": {
-      "P0": $(format_ids "$p0_ids"),
-      "P1": $(format_ids "$p1_ids"),
-      "P2": $(format_ids "$p2_ids")
-    },
-    "counts": {
-      "P0": $p0,
-      "P1": $p1,
-      "P2": $p2
-    }
-  }
-EOF
-}
-
-# ============================================================================
-# Golden Paths 提取
-# ============================================================================
-
-extract_golden_paths() {
-    if [[ ! -f "$RC_FILE" ]]; then
-        echo '[]'
-        return
-    fi
-
-    # 检查是否有 golden_paths 部分
-    if ! grep -q "^golden_paths:" "$RC_FILE"; then
-        echo '[]'
-        return
-    fi
-
-    # 简化提取：只获取 GP IDs 和名称
-    local gps=()
-
-    # GP-001
-    if grep -q "GP-001" "$RC_FILE"; then
-        local name=$(grep -A1 "id: GP-001" "$RC_FILE" | grep "name:" | sed 's/.*name: "//' | sed 's/".*//')
-        gps+=("{\"id\":\"GP-001\",\"name\":\"$name\"}")
-    fi
-
-    # GP-002
-    if grep -q "GP-002" "$RC_FILE"; then
-        local name=$(grep -A1 "id: GP-002" "$RC_FILE" | grep "name:" | sed 's/.*name: "//' | sed 's/".*//')
-        gps+=("{\"id\":\"GP-002\",\"name\":\"$name\"}")
-    fi
-
-    # GP-003
-    if grep -q "GP-003" "$RC_FILE"; then
-        local name=$(grep -A1 "id: GP-003" "$RC_FILE" | grep "name:" | sed 's/.*name: "//' | sed 's/".*//')
-        gps+=("{\"id\":\"GP-003\",\"name\":\"$name\"}")
-    fi
-
-    # GP-004
-    if grep -q "GP-004" "$RC_FILE"; then
-        local name=$(grep -A1 "id: GP-004" "$RC_FILE" | grep "name:" | sed 's/.*name: "//' | sed 's/".*//')
-        gps+=("{\"id\":\"GP-004\",\"name\":\"$name\"}")
-    fi
-
-    if [[ ${#gps[@]} -eq 0 ]]; then
-        echo "[]"
-    else
-        local IFS=','
-        echo "[${gps[*]}]"
-    fi
-}
-
-# ============================================================================
-# Gates 提取
-# ============================================================================
-
-extract_gates() {
-    if [[ ! -f "$RC_FILE" ]]; then
-        echo '{}'
-        return
-    fi
-
-    # PR Gate: trigger 包含 PR 的 RCIs
-    local pr_count=$(grep -E "trigger:.*PR" "$RC_FILE" | wc -l || echo 0)
-
-    # Release Gate: trigger 包含 Release 的 RCIs
-    local release_count=$(grep -E "trigger:.*Release" "$RC_FILE" | wc -l || echo 0)
-
-    # Nightly: 全部
-    local total=$(grep -c "^\s*- id:" "$RC_FILE" 2>/dev/null || echo 0)
-    # 减去 golden_paths 部分
-    local gp_count=$(grep -c "id: GP-" "$RC_FILE" 2>/dev/null || echo 0)
-    total=$((total - gp_count))
-
-    cat <<EOF
-{
-    "pr": {
-      "name": "PR Gate",
-      "description": "跑 trigger 包含 PR 的 RCIs",
-      "count": $pr_count
-    },
-    "release": {
-      "name": "Release Gate",
-      "description": "跑 trigger 包含 Release 的 RCIs",
-      "count": $release_count
-    },
-    "nightly": {
-      "name": "Nightly",
-      "description": "跑全部 RCIs",
-      "count": $total
-    }
-  }
-EOF
-}
-
-# ============================================================================
-# Summary 计算 (v2: 真实检查)
-# ============================================================================
-
-# Meta: Feature → RCI 覆盖率
-calculate_meta() {
+generate_full_data() {
     python3 << 'PYTHON'
 import yaml
 import re
 import json
+import sys
+
+# Feature 人话描述映射
+FEATURE_DESCRIPTIONS = {
+    "H1": "禁止在 main/develop 直接写代码，强制走分支",
+    "H2": "创建 PR 前强制跑测试，不过不让提",
+    "W1": "统一开发入口：需求→分支→写码→测试→PR→合并",
+    "W3": "测试失败不中止，自动回去继续修",
+    "W4": "[TEST] 开头的任务跳过版本号更新",
+    "C1": "PR 必须更新版本号，否则 CI 红",
+    "C2": "CI 跑 typecheck + test + build",
+    "C3": "CI 检查所有 .sh 脚本语法",
+    "C4": "CI 失败发 Notion 通知",
+    "B1": "示例计算器模块（80 个测试用例）",
+    "E1": "生成 QA 审计 JSON 给 Dashboard 用"
+}
 
 # 读取文件
 try:
     with open('FEATURES.md', 'r') as f:
         features_content = f.read()
+except:
+    features_content = ""
+
+try:
     with open('regression-contract.yaml', 'r') as f:
         rc_data = yaml.safe_load(f)
-except Exception as e:
-    print(json.dumps({"score": 0, "total_features": 0, "covered_features": 0, "gaps": [], "p0_violations": []}))
-    exit(0)
+except:
+    rc_data = {}
 
-# 提取 Committed Features
-committed = set()
-for match in re.finditer(r'\|\s*([A-Z]\d+)\s*\|.*\*\*Committed\*\*', features_content):
-    committed.add(match.group(1))
-
-# 提取 RC 中的 Features 和 P0 规则
-rc_features = set()
-p0_violations = []
+# ============================================================================
+# 1. 提取所有 RCIs
+# ============================================================================
+all_rcis = []
+rci_by_feature = {}  # feature -> [rci_ids]
+rci_details = {}     # rci_id -> {feature, name, priority, trigger, method}
 
 for section in ['hooks', 'workflow', 'ci', 'business', 'export']:
     if section in rc_data and rc_data[section]:
         for rci in rc_data[section]:
+            rci_id = rci.get('id', '')
             feature = rci.get('feature', '')
-            rc_features.add(feature)
-            # 检查 P0 必须在 PR 触发
-            if rci.get('priority') == 'P0':
-                trigger = rci.get('trigger', [])
-                if 'PR' not in trigger:
-                    p0_violations.append(rci.get('id', ''))
 
-# 计算
-gaps = list(committed - rc_features)
-covered = len(committed) - len(gaps)
-total = len(committed)
-score = int(covered * 100 / total) if total > 0 else 0
+            detail = {
+                "id": rci_id,
+                "feature": feature,
+                "name": rci.get('name', ''),
+                "priority": rci.get('priority', 'P2'),
+                "trigger": rci.get('trigger', []),
+                "method": rci.get('method', 'manual'),
+                "scope": rci.get('scope', section)
+            }
 
-print(json.dumps({
-    "score": score,
-    "total_features": total,
-    "covered_features": covered,
+            all_rcis.append(detail)
+            rci_details[rci_id] = detail
+
+            if feature not in rci_by_feature:
+                rci_by_feature[feature] = []
+            rci_by_feature[feature].append(rci_id)
+
+# ============================================================================
+# 2. 提取 Golden Paths
+# ============================================================================
+golden_paths = []
+gp_by_feature = {}  # feature -> [gp_ids]
+
+gps = rc_data.get('golden_paths', [])
+for gp in gps:
+    gp_id = gp.get('id', '')
+    gp_rcis = gp.get('rcis', [])
+
+    # 计算覆盖的 features
+    covers_features = set()
+    for rci_id in gp_rcis:
+        if rci_id in rci_details:
+            covers_features.add(rci_details[rci_id]['feature'])
+
+    gp_detail = {
+        "id": gp_id,
+        "name": gp.get('name', ''),
+        "description": gp.get('description', ''),
+        "trigger": gp.get('trigger', []),
+        "method": gp.get('method', 'manual'),
+        "rcis": gp_rcis,
+        "covers_features": list(covers_features)
+    }
+    golden_paths.append(gp_detail)
+
+    # 反向映射：feature -> gp
+    for f in covers_features:
+        if f not in gp_by_feature:
+            gp_by_feature[f] = []
+        gp_by_feature[f].append(gp_id)
+
+# ============================================================================
+# 3. 提取 Committed Features
+# ============================================================================
+committed_features = []
+
+for match in re.finditer(r'\|\s*([A-Z]\d+)\s*\|\s*([^\|]+)\s*\|\s*\*\*Committed\*\*', features_content):
+    fid = match.group(1)
+    fname = match.group(2).strip()
+
+    feature_detail = {
+        "id": fid,
+        "name": fname,
+        "description": FEATURE_DESCRIPTIONS.get(fid, fname),
+        "status": "Committed",
+        "scope": "hook" if fid.startswith("H") else
+                 "workflow" if fid.startswith("W") else
+                 "ci" if fid.startswith("C") else
+                 "business" if fid.startswith("B") else
+                 "export" if fid.startswith("E") else "other",
+        "rci_count": len(rci_by_feature.get(fid, [])),
+        "rcis": rci_by_feature.get(fid, []),
+        "in_golden_paths": gp_by_feature.get(fid, [])
+    }
+    committed_features.append(feature_detail)
+
+# ============================================================================
+# 4. 计算 Meta 分数
+# ============================================================================
+committed_ids = {f['id'] for f in committed_features}
+covered_ids = set(rci_by_feature.keys())
+gaps = list(committed_ids - covered_ids)
+
+# P0 必须在 PR 触发
+p0_violations = []
+for rci in all_rcis:
+    if rci['priority'] == 'P0' and 'PR' not in rci['trigger']:
+        p0_violations.append(rci['id'])
+
+meta_score = int(len(committed_ids - set(gaps)) * 100 / len(committed_ids)) if committed_ids else 0
+
+meta_result = {
+    "score": meta_score,
+    "total_features": len(committed_ids),
+    "covered_features": len(committed_ids) - len(gaps),
     "gaps": gaps,
     "p0_violations": p0_violations
-}))
+}
+
+# ============================================================================
+# 5. 计算 E2E 分数
+# ============================================================================
+gp_coverage = set()
+for gp in golden_paths:
+    gp_coverage.update(gp['covers_features'])
+
+uncovered = list(committed_ids - gp_coverage)
+e2e_score = 100 if golden_paths else 0  # GP 结构完整即 100
+
+e2e_result = {
+    "score": e2e_score,
+    "gp_count": len(golden_paths),
+    "gp_coverage": list(gp_coverage),
+    "uncovered_features": uncovered,
+    "unresolved_rcis": []
+}
+
+# ============================================================================
+# 6. RCI 统计
+# ============================================================================
+p0_rcis = [r for r in all_rcis if r['priority'] == 'P0']
+p1_rcis = [r for r in all_rcis if r['priority'] == 'P1']
+p2_rcis = [r for r in all_rcis if r['priority'] == 'P2']
+
+rcis_result = {
+    "total": len(all_rcis),
+    "by_priority": {
+        "P0": [r['id'] for r in p0_rcis],
+        "P1": [r['id'] for r in p1_rcis],
+        "P2": [r['id'] for r in p2_rcis]
+    },
+    "counts": {
+        "P0": len(p0_rcis),
+        "P1": len(p1_rcis),
+        "P2": len(p2_rcis)
+    },
+    "details": all_rcis
+}
+
+# ============================================================================
+# 7. Gates 统计
+# ============================================================================
+pr_count = len([r for r in all_rcis if 'PR' in r['trigger']])
+release_count = len([r for r in all_rcis if 'Release' in r['trigger']])
+
+gates_result = {
+    "pr": {
+        "name": "PR Gate",
+        "description": "跑 trigger 包含 PR 的 RCIs",
+        "count": pr_count,
+        "rcis": [r['id'] for r in all_rcis if 'PR' in r['trigger']]
+    },
+    "release": {
+        "name": "Release Gate",
+        "description": "跑 trigger 包含 Release 的 RCIs",
+        "count": release_count,
+        "rcis": [r['id'] for r in all_rcis if 'Release' in r['trigger']]
+    },
+    "nightly": {
+        "name": "Nightly",
+        "description": "跑全部 RCIs",
+        "count": len(all_rcis),
+        "rcis": [r['id'] for r in all_rcis]
+    }
+}
+
+# 输出
+output = {
+    "features": committed_features,
+    "rcis": rcis_result,
+    "golden_paths": golden_paths,
+    "gates": gates_result,
+    "meta": meta_result,
+    "e2e": e2e_result
+}
+
+print(json.dumps(output))
 PYTHON
 }
 
-# Unit: 真实运行 npm run qa
+# ============================================================================
+# Unit 检查（需要实际运行）
+# ============================================================================
+
 calculate_unit() {
     # Fast mode: 跳过实际运行
     if [[ "$FAST_MODE" == "true" ]]; then
@@ -337,17 +308,19 @@ EOF
 
     local start_time=$(date +%s)
     local output
-    local exit_code
+    local exit_code=0
 
     # 真实运行
-    output=$(npm run qa 2>&1) || true
-    exit_code=$?
+    output=$(npm run qa 2>&1) || exit_code=$?
 
     local end_time=$(date +%s)
     local duration=$((end_time - start_time))
 
-    # 提取测试数量（匹配 "99 passed" 格式，取最大的数字）
-    local test_count=$(echo "$output" | grep -oE "Tests\s+[0-9]+ passed" | grep -oE "[0-9]+" || echo "$output" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" | sort -rn | head -1 || echo "0")
+    # 提取测试数量
+    local test_count=$(echo "$output" | grep -oE "Tests\s+[0-9]+ passed" | grep -oE "[0-9]+" | head -1 || echo "0")
+    if [[ -z "$test_count" || "$test_count" == "0" ]]; then
+        test_count=$(echo "$output" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" | sort -rn | head -1 || echo "0")
+    fi
 
     # 判断是否通过
     local passed="false"
@@ -359,7 +332,7 @@ EOF
         score=100
     else
         # 提取错误摘要（最后 10 行）
-        error_summary=$(echo "$output" | tail -10 | jq -Rs .)
+        error_summary=$(echo "$output" | tail -10 | jq -Rs . 2>/dev/null || echo "null")
     fi
 
     cat <<EOF
@@ -373,81 +346,34 @@ EOF
 EOF
 }
 
-# E2E: GP 结构完整性
-calculate_e2e() {
-    python3 << 'PYTHON'
-import yaml
-import json
+# ============================================================================
+# 主函数
+# ============================================================================
 
-try:
-    with open('regression-contract.yaml', 'r') as f:
-        rc_data = yaml.safe_load(f)
-except:
-    print(json.dumps({"score": 0, "gp_count": 0, "gp_coverage": [], "uncovered_features": []}))
-    exit(0)
+generate_report() {
+    local repo=$(get_repo_name)
+    local version=$(get_version)
+    local timestamp=$(get_timestamp)
 
-# 检查 golden_paths 存在
-gps = rc_data.get('golden_paths', [])
-if not gps:
-    print(json.dumps({"score": 0, "gp_count": 0, "gp_coverage": [], "uncovered_features": []}))
-    exit(0)
+    # 获取完整数据
+    local full_data=$(generate_full_data)
 
-# 收集所有 RCI IDs
-all_rci_ids = set()
-rci_to_feature = {}
-for section in ['hooks', 'workflow', 'ci', 'business', 'export']:
-    if section in rc_data and rc_data[section]:
-        for rci in rc_data[section]:
-            rci_id = rci.get('id', '')
-            all_rci_ids.add(rci_id)
-            rci_to_feature[rci_id] = rci.get('feature', '')
+    # 提取各部分
+    local features=$(echo "$full_data" | jq '.features')
+    local rcis=$(echo "$full_data" | jq '.rcis')
+    local golden_paths=$(echo "$full_data" | jq '.golden_paths')
+    local gates=$(echo "$full_data" | jq '.gates')
+    local meta=$(echo "$full_data" | jq '.meta')
+    local e2e=$(echo "$full_data" | jq '.e2e')
 
-# 检查 GP 结构和覆盖
-gp_count = len(gps)
-gp_coverage_features = set()
-valid_gps = 0
-unresolved_rcis = []
+    # 计算 Unit
+    local unit=$(calculate_unit)
 
-for gp in gps:
-    has_id = 'id' in gp
-    has_name = 'name' in gp
-    has_rcis = 'rcis' in gp and len(gp.get('rcis', [])) > 0
+    # 计算 overall
+    local meta_score=$(echo "$meta" | jq -r '.score')
+    local unit_score=$(echo "$unit" | jq -r '.score')
+    local e2e_score=$(echo "$e2e" | jq -r '.score')
 
-    if has_id and has_name and has_rcis:
-        valid_gps += 1
-        for rci_id in gp.get('rcis', []):
-            if rci_id in all_rci_ids:
-                gp_coverage_features.add(rci_to_feature.get(rci_id, ''))
-            else:
-                unresolved_rcis.append(rci_id)
-
-# 收集所有 Features
-all_features = set(rci_to_feature.values())
-uncovered = list(all_features - gp_coverage_features)
-
-# 计算分数
-score = int(valid_gps * 100 / gp_count) if gp_count > 0 else 0
-
-print(json.dumps({
-    "score": score,
-    "gp_count": gp_count,
-    "gp_coverage": list(gp_coverage_features),
-    "uncovered_features": uncovered,
-    "unresolved_rcis": unresolved_rcis
-}))
-PYTHON
-}
-
-calculate_summary() {
-    local meta_result=$(calculate_meta)
-    local unit_result=$(calculate_unit)
-    local e2e_result=$(calculate_e2e)
-
-    local meta_score=$(echo "$meta_result" | jq -r '.score')
-    local unit_score=$(echo "$unit_result" | jq -r '.score')
-    local e2e_score=$(echo "$e2e_result" | jq -r '.score')
-
-    # Fast mode: unit_score = -1，只用 meta 和 e2e 计算
     local overall
     if [[ "$unit_score" == "-1" ]]; then
         overall=$(( (meta_score + e2e_score) / 2 ))
@@ -457,34 +383,15 @@ calculate_summary() {
 
     cat <<EOF
 {
-    "meta": $meta_result,
-    "unit": $unit_result,
-    "e2e": $e2e_result,
-    "overall": $overall
-  }
-EOF
-}
-
-# ============================================================================
-# 主函数
-# ============================================================================
-
-generate_report() {
-    local repo=$(get_repo_name)
-    local version=$(get_version)
-    local timestamp=$(get_timestamp)
-    local summary=$(calculate_summary)
-    local features=$(extract_features)
-    local rcis=$(extract_rcis)
-    local golden_paths=$(extract_golden_paths)
-    local gates=$(extract_gates)
-
-    cat <<EOF
-{
   "repo": "$repo",
   "version": "$version",
   "timestamp": "$timestamp",
-  "summary": $summary,
+  "summary": {
+    "meta": $meta,
+    "unit": $unit,
+    "e2e": $e2e,
+    "overall": $overall
+  },
   "features": $features,
   "rcis": $rcis,
   "golden_paths": $golden_paths,

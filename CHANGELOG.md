@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [8.0.18] - 2026-01-21
+
+### Changed
+- **scripts/qa-report.sh**: 升级到 v3，增强 Dashboard 数据输出
+  - Features: 新增 description（人话描述）、rci_count、rcis 列表、in_golden_paths
+  - RCIs: 新增 details 完整列表（id, feature, name, priority, trigger, method, scope）
+  - Golden Paths: 新增 rcis 列表、covers_features
+  - Gates: 新增每个 gate 的 rcis 列表
+
 ## [8.0.17] - 2026-01-21
 
 ### Changed
