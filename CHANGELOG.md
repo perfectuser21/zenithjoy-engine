@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [8.0.26] - 2026-01-21
+
+### Fixed
+- **pr-gate-v2.sh**: 修复带引号的 `--base 'main'` 参数解析
+- **release-check.sh**: 添加路径遍历防护（安全修复）
+- **RCI Evidence**: 为 E1-003, E2-002, E2-003 添加 `contains` 字段
+- **GP-005**: 补充缺失的 E2-003 RCI 引用
+
+### Changed
+- **QA Skill**: 添加缺失的 frontmatter 元数据
+- **criteria.md**: 更新示例，移除已废弃的 B1, C4, W4 引用
+- **regression-contract.yaml**: 升级到 v1.10.0
+- **FEATURES.md**: 同步版本到 v1.10.0
+- **docs/**: 为 4 个文档添加 frontmatter（ARCHITECTURE, LEARNINGS, QUALITY-STRATEGY, INTERFACE-SPEC）
+- **CLAUDE.md**: 目录结构新增 qa/ skill 记录
+
+### Removed
+- **dist/**: 清理 8 个孤立构建文件（t5-test, t8-test, test-v2, utils/）
+
+## [8.0.25] - 2026-01-21
+
+### Fixed
+- **pr-gate-v2.sh**: 修复 `--base=value` 格式解析 bug（之前只支持 `--base value`）
+- **rc-filter.sh**: 修复 stats 计算时错误包含 Golden Paths 的问题
+
+### Removed
+- **W4 [TEST] 模式残留**: 从 skills/dev/steps/01-prd.md 移除已废弃的测试任务检测代码
+- **孤儿测试文件**: 删除 test-automation.txt 和 test-automation.test.ts
+
+### Changed
+- **FEATURES.md**: 升级到 v1.9.0
+
 ## [8.0.24] - 2026-01-21
 
 ### Added

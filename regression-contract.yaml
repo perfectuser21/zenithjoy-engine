@@ -15,7 +15,7 @@
 #
 # ============================================================================
 
-version: "1.9.0"
+version: "1.10.0"
 updated: "2026-01-21"
 
 # ============================================================================
@@ -544,7 +544,8 @@ export:
       then: "meta, unit, e2e 百分比在 0-100 范围内"
     evidence:
       type: command
-      run: "bash scripts/qa-report.sh | jq '.summary.overall'"
+      run: "bash scripts/qa-report.sh --fast | jq '.summary.overall'"
+      contains: "[0-9]+"
       description: "返回 0-100 的数字"
     test: "scripts/qa-report.sh"
 
@@ -586,6 +587,7 @@ export:
     evidence:
       type: command
       run: "jq '.mode' .dev-runs/*-report.json"
+      contains: "interactive|headless"
       description: "返回 interactive 或 headless"
     test: "skills/dev/scripts/generate-report.sh"
 
@@ -605,6 +607,7 @@ export:
     evidence:
       type: command
       run: "jq '.quality_report' .dev-runs/*-report.json"
+      contains: "L1_automated|L2_verification|L3_acceptance"
       description: "返回 L1/L2/L3 状态对象"
     test: "skills/dev/scripts/generate-report.sh"
 
@@ -725,6 +728,7 @@ golden_paths:
       - E1-002  # QA JSON 包含完整结构
       - E2-001  # 开发任务报告生成 JSON
       - E2-002  # 报告包含 mode 字段
+      - E2-003  # 报告包含质检结果
     verification:
       type: end-to-end
       steps:

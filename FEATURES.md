@@ -1,9 +1,11 @@
 ---
 id: features-registry
-version: 1.8.0
+version: 1.10.0
 created: 2026-01-20
 updated: 2026-01-21
 changelog:
+  - 1.10.0: 同步 regression-contract.yaml 版本，GP-005 补 E2-003
+  - 1.9.0: QA 清理 - 修复 bugs、移除 W4 残留、更新文档
   - 1.8.0: 新增 C5 release-check，GP-005 Export 链路
   - 1.7.0: 新增 E2 Dev Session Reporting
   - 1.6.0: 新增 W5 模式自动检测
