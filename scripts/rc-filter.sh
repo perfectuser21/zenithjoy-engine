@@ -48,7 +48,9 @@ show_stats() {
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 
-    TOTAL=$(grep -c "^\s*- id:" "$RC_FILE" || echo 0)
+    # 排除 GP-* 条目（Golden Paths 不是 RCI）
+    TOTAL=$(grep "^\s*- id:" "$RC_FILE" | grep -cv "GP-" || echo 0)
+    GP_COUNT=$(grep -c "id: GP-" "$RC_FILE" || echo 0)
     P0=$(grep -c "priority: P0" "$RC_FILE" || echo 0)
     P1=$(grep -c "priority: P1" "$RC_FILE" || echo 0)
     P2=$(grep -c "priority: P2" "$RC_FILE" || echo 0)
@@ -56,10 +58,15 @@ show_stats() {
     MANUAL=$(grep -c "method: manual" "$RC_FILE" || echo 0)
 
     # 统计 trigger（简化版）
+    # Golden Paths 也有 trigger，需要排除
     PR_COUNT=$(grep -E "trigger:.*PR" "$RC_FILE" | wc -l || echo 0)
     RELEASE_COUNT=$(grep -E "trigger:.*Release" "$RC_FILE" | wc -l || echo 0)
+    # 减去 GP 的 trigger（GP 都是 Release 触发）
+    PR_COUNT=$((PR_COUNT > GP_COUNT ? PR_COUNT - 0 : PR_COUNT))
+    RELEASE_COUNT=$((RELEASE_COUNT - GP_COUNT))
 
     echo "  总 RCI 数量:    $TOTAL"
+    echo "  Golden Paths:   $GP_COUNT"
     echo ""
     echo "  Priority 分布:"
     echo "    P0 (核心):    $P0"
@@ -73,7 +80,7 @@ show_stats() {
     echo "  Trigger 覆盖:"
     echo "    PR Gate:      $PR_COUNT 条"
     echo "    Release Gate: $RELEASE_COUNT 条"
-    echo "    Nightly:      $TOTAL 条 (全部)"
+    echo "    Nightly:      $TOTAL 条 (全部 RCI)"
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }

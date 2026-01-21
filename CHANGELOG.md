@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [8.0.19] - 2026-01-21
+
+### Fixed
+- **scripts/rc-filter.sh**: 修复统计 bug，排除 GP-* 条目（显示 26 RCI + 4 GP）
+- **FEATURES.md**: 更新统计为 11 个 Committed Features
+- **testing-matrix.md**: 移除不存在的 ecc-test.sh 引用，改为业务 repo 自行实现
+
+### Changed
+- **regression-contract.yaml**: 升级到 v1.5.0
+  - GP-001 合并 W3 (循环回退) 的 RCIs
+  - GP-001 覆盖 Feature 从 4 个增加到 5 个
+
 ## [8.0.18] - 2026-01-21
 
 ### Changed

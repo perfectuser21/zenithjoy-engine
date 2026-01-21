@@ -127,7 +127,7 @@ Trigger 规则:
 
 > 使用 `bash scripts/rc-filter.sh stats` 获取实时统计
 
-- **Committed Features**: 9（新增 E1，W2 已废弃）
+- **Committed Features**: 11（H1-H2, W1/W3/W4, C1-C4, B1, E1）
 
 ---
 
