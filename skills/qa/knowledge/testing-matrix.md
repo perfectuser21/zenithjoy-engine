@@ -71,7 +71,8 @@ npm run qa
 # + E2E 用户链路测试
 
 # EngineUpgrade (额外)
-bash scripts/ecc-test.sh
+# 业务 repo 自行实现 ECC 检查脚本
+npm run ecc  # 或业务 repo 自定义命令
 ```
 
 ---
@@ -89,12 +90,12 @@ bash scripts/ecc-test.sh
 2. **轻量 E2E**：核心流程可跑通
 
 ```bash
-# ECC 检查
-bash scripts/ecc-test.sh
+# ECC 检查（业务 repo 自行实现）
+npm run ecc  # 或业务 repo 自定义命令
 
 # 或在 CI 中
 if: files_changed('.engine-version')
-run: bash scripts/ecc-test.sh
+run: npm run ecc
 ```
 
 ---
