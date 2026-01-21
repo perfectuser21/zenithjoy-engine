@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [8.0.28] - 2026-01-21
+
+### Security
+- **n8n/prd-executor.json**: 删除存在命令注入漏洞的工作流文件
+  - 漏洞: prd_path/work_dir 用户输入直接拼接到 SSH 命令
+  - 保留安全的 prd-executor-simple.json (HTTP 调用，无 shell 拼接)
+
+### Changed
+- **n8n/README.md**: 更新文档，只保留 simple 版本说明
+
 ## [8.0.27] - 2026-01-21
 
 ### Added

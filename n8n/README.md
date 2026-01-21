@@ -6,7 +6,7 @@
 
 | 文件 | 说明 |
 |------|------|
-| `workflows/prd-executor.json` | PRD 执行工作流 - 调度 Cecilia 执行 checkpoints |
+| `workflows/prd-executor-simple.json` | PRD 执行工作流 (HTTP) - 通过本地 HTTP 调用 Cecilia |
 
 ## 使用方法
 
@@ -14,40 +14,31 @@
 
 ```bash
 # 方法 1: N8N CLI
-n8n import:workflow --input=workflows/prd-executor.json
+n8n import:workflow --input=workflows/prd-executor-simple.json
 
 # 方法 2: N8N Web UI
-# Settings → Import → 选择 prd-executor.json
+# Settings → Import → 选择 prd-executor-simple.json
 ```
 
-### 2. 配置环境变量
+### 2. 启动 Cecilia HTTP 服务
 
-在 N8N 设置中添加：
+```bash
+# 在 VPS 上启动 Cecilia HTTP 服务（监听 8899 端口）
+cecilia --serve --port 8899
+```
 
-| 变量 | 说明 | 示例 |
-|------|------|------|
-| `DASHBOARD_URL` | Dashboard API 地址 | `http://localhost:3000/api/cecilia` |
-| `NOTIFICATION_WEBHOOK` | 通知 Webhook（可选）| Slack/Feishu webhook URL |
-
-### 3. 配置 SSH 凭证
-
-创建 SSH 凭证 "VPS SSH"：
-- Host: VPS IP
-- Username: xx
-- Authentication: Private Key / Password
-
-### 4. 触发工作流
+### 3. 触发工作流
 
 **Webhook 触发**：
 
 ```bash
-curl -X POST http://n8n:5678/webhook/prd-executor \
+curl -X POST http://n8n:5678/webhook/cecilia-exec \
   -H "Content-Type: application/json" \
   -d '{
     "prd_path": "/path/to/prd.json",
     "work_dir": "/path/to/project",
-    "repo": "zenithjoy-core",
-    "feature_branch": "feature/xxx"
+    "checkpoint_id": "CP-001",
+    "run_all": false
   }'
 ```
 
@@ -58,50 +49,47 @@ curl -X POST http://n8n:5678/webhook/prd-executor \
 
 ## 工作流说明
 
-### prd-executor.json
+### prd-executor-simple.json
 
 ```
-Webhook Trigger
+Webhook Trigger (POST /cecilia-exec)
       │
       ▼
-Load PRD → Create Dashboard Run → Read PRD File
+Set Parameters (prd_path, work_dir, checkpoint_id, run_all)
       │
       ▼
-Parse Checkpoints (filter pending)
+HTTP POST → localhost:8899 (Cecilia HTTP 服务)
       │
       ▼
-┌─────────────────────────────┐
-│  For each checkpoint:       │
-│  ┌───────────────────────┐  │
-│  │ Check Dependency      │  │
-│  │ (skip if not ready)   │  │
-│  └───────────┬───────────┘  │
-│              │              │
-│  ┌───────────▼───────────┐  │
-│  │ SSH: cecilia -c CP-X  │  │
-│  └───────────┬───────────┘  │
-│              │              │
-│  ┌───────────▼───────────┐  │
-│  │ Parse Result          │  │
-│  └───────────┬───────────┘  │
-│              │              │
-│        ┌─────┴─────┐        │
-│        ▼           ▼        │
-│    Success      Failed      │
-│        │           │        │
-│   Update DB   Notify Error  │
-└─────────────────────────────┘
+Check Success
       │
-      ▼
-Notify Complete
+  ┌───┴───┐
+  ▼       ▼
+Success  Failed
+  │       │
+  ▼       ▼
+Output   Output
 ```
+
+**特点**：
+- 简单可靠，无 SSH 命令拼接
+- 通过 HTTP 调用本地 Cecilia 服务
+- 支持单个 checkpoint 或全部执行
 
 ## 前置依赖
 
 - **N8N**: 已部署并运行
-- **Cecilia**: 在 VPS 上安装（来自 zenithjoy-core）
-- **Dashboard**: API 服务运行中（来自 zenithjoy-core）
-- **SSH 访问**: N8N 能 SSH 到运行 Cecilia 的机器
+- **Cecilia**: HTTP 服务模式运行（`cecilia --serve`）
+
+## 测试
+
+```bash
+# 健康检查
+cecilia --health
+
+# 执行测试 PRD
+cecilia -p n8n/test-prd.json -c CP-001
+```
 
 ## 相关文档
 
