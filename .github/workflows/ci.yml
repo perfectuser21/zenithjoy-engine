@@ -176,35 +176,52 @@ jobs:
     if: github.event_name == 'pull_request' && github.base_ref == 'main'
     needs: [test]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
 
-      - name: L2B + L3 Evidence Check
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: L3 Regression Tests
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "  Release Check: L2B + L3 校验"
+          echo "  Release Check: L3 回归测试"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          bash scripts/run-regression.sh release
+
+      - name: L4 Evidence Check
+        run: |
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  L4: 文档 & 验收检查"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo ""
 
           FAILED=0
 
-          # L2B: 检查 .layer2-evidence.md
-          echo "  [L2B: Evidence 校验]"
+          # L4a: 检查 .layer2-evidence.md
+          echo "  [Evidence 文件]"
           if [ -f ".layer2-evidence.md" ]; then
-            echo "  证据文件... ✅"
+            echo "  .layer2-evidence.md... ✅"
           else
-            echo "  证据文件... ❌ (.layer2-evidence.md 不存在)"
+            echo "  .layer2-evidence.md... ❌ (不存在)"
             FAILED=1
           fi
 
-          # L3: 检查 .dod.md
+          # L4b: 检查 .dod.md
           echo ""
-          echo "  [L3: Acceptance 校验]"
+          echo "  [DoD 验收]"
           if [ -f ".dod.md" ]; then
-            echo "  DoD 文件... ✅"
+            echo "  .dod.md... ✅"
 
             # 检查是否全勾
             UNCHECKED=$(grep -c '\- \[ \]' .dod.md 2>/dev/null || echo "0")
@@ -217,7 +234,7 @@ jobs:
               FAILED=1
             fi
           else
-            echo "  DoD 文件... ❌ (.dod.md 不存在)"
+            echo "  .dod.md... ❌ (不存在)"
             FAILED=1
           fi
 

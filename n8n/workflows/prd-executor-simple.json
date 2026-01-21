@@ -1,6 +1,6 @@
 {
   "name": "PRD Executor - Simple (HTTP)",
-  "active": false,
+  "active": true,
   "nodes": [
     {
       "id": "trigger",

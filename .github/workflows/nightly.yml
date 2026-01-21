@@ -1,0 +1,89 @@
+name: Nightly Regression
+
+on:
+  schedule:
+    # 每天 UTC 18:00 (北京时间 02:00)
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: '测试模式'
+        required: false
+        default: 'nightly'
+        type: choice
+        options:
+          - nightly
+          - release
+          - pr
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Regression Tests
+        run: |
+          MODE="${{ github.event.inputs.mode || 'nightly' }}"
+          bash scripts/run-regression.sh "$MODE"
+
+  notify:
+    needs: [regression]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Notify Result
+        env:
+          REGRESSION_RESULT: ${{ needs.regression.result }}
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+        run: |
+          if [ -z "$FEISHU_WEBHOOK" ]; then
+            echo "⚠️ FEISHU_WEBHOOK not configured, skipping notification"
+            exit 0
+          fi
+
+          if [ "$REGRESSION_RESULT" = "success" ]; then
+            TITLE="✅ Nightly Regression 通过"
+            COLOR="green"
+          else
+            TITLE="❌ Nightly Regression 失败"
+            COLOR="red"
+          fi
+
+          curl -s -X POST "$FEISHU_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "msg_type": "interactive",
+              "card": {
+                "header": {
+                  "title": {"tag": "plain_text", "content": "'"$TITLE"'"},
+                  "template": "'"$COLOR"'"
+                },
+                "elements": [
+                  {
+                    "tag": "div",
+                    "text": {
+                      "tag": "lark_md",
+                      "content": "**Repo**: ${{ github.repository }}\n**Branch**: ${{ github.ref_name }}\n**Run**: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+                    }
+                  }
+                ]
+              }
+            }'
+
+          echo "📨 Notification sent to Feishu"

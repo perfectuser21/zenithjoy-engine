@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [8.0.30] - 2026-01-22
+
+### Added
+- **scripts/run-regression.sh**: 回归测试运行器，支持 pr/release/nightly 三种模式
+- **.github/workflows/nightly.yml**: Nightly 全量回归工作流（每天 02:00 自动运行）
+
+### Fixed
+- **ci.yml release-check**: 真正运行 L3 回归测试，而不只是检查文件存在
+
+### Changed
+- L3 测试现在会真正执行 RCI 中定义的自动化测试
+
 ## [8.0.29] - 2026-01-22
 
 ### Changed
