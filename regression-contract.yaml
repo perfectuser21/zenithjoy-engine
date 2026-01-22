@@ -15,7 +15,7 @@
 #
 # ============================================================================
 
-version: "1.15.0"
+version: "1.16.0"
 updated: "2026-01-22"
 
 # ============================================================================
@@ -607,6 +607,28 @@ ci:
       name: "DevGate checks"
       status: success
     test: ".github/workflows/ci.yml"
+
+  # --------------------------------------------------------------------------
+  # C7: Nightly DevGate Metrics
+  # --------------------------------------------------------------------------
+  - id: C7-001
+    feature: C7
+    name: "Nightly DevGate Metrics 收集"
+    scope: ci
+    priority: P2
+    trigger: [Release]
+    method: auto
+    tags: [ci, nightly, metrics, phase4]
+    owner: infra
+    steps:
+      given: "Nightly workflow 运行"
+      when: "执行 DevGate Metrics step"
+      then: "生成 JSON 报告并上传为 artifact"
+    evidence:
+      type: ci_job
+      name: "DevGate Metrics"
+      status: success
+    test: ".github/workflows/nightly.yml"
 
   # --------------------------------------------------------------------------
   # C5: release-check
