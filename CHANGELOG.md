@@ -7,6 +7,84 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [8.4.0] - 2026-01-22
+
+### Security
+- **scripts/run-regression.sh**: 添加命令白名单防止 eval 注入
+- **scripts/run-regression.sh**: 修复 yq 查询变量注入风险
+- **scripts/run-regression.sh**: 修复 trap 变量引用
+- **skills/dev/scripts/cleanup.sh v1.3**: 使用 mktemp 替代硬编码 /tmp
+
+### Fixed
+- **hooks/pr-gate-v2.sh v2.5**: 修复最后一处硬编码 develop (line 290)
+- **hooks/branch-protect.sh v14**: 验证 BASE_BRANCH 存在性
+- **scripts/run-regression.sh**: 修复 ls 通配符 word splitting
+- **skills/dev/scripts/generate-report.sh**: JSON 文件名特殊字符转义
+- **skills/dev/scripts/multi-feature.sh**: 变量初始化防止空值
+- **skills/dev/scripts/cleanup.sh v1.3**: 修复 MERGE_HEAD 路径
+
+### Changed
+- **README.md**: 添加 yq 依赖说明
+- **package.json**: 添加 engines 字段 (node >= 18)
+- **.gitignore**: 精确化 .env 规则（允许 .env.example）
+
+### Removed
+- **templates/dod.md**: 删除重复模板（保留 DOD-TEMPLATE.md）
+- **.dev-runs/**: 清理历史开发报告
+
+## [8.3.0] - 2026-01-22
+
+### Fixed
+- **skills/dev/scripts/check.sh**: 移除无用的 SKILL.md 路径检查，更新过时注释
+- **skills/dev/scripts/cleanup.sh v1.2**: 报告生成错误记录到日志而非吞掉
+- **hooks/pr-gate-v2.sh**: 增强 `--repo` 参数解析
+  - 支持 `-R` 短格式
+  - 支持 URL 格式（`https://github.com/owner/repo`）
+  - 支持 SSH 格式（`git@github.com:owner/repo`）
+- **skills/dev/scripts/generate-report.sh**: 修复空文件列表时的 JSON 生成
+
+## [8.2.0] - 2026-01-22
+
+### Fixed
+- **hooks/branch-protect.sh v13**: 修复硬编码 develop 分支问题
+  - 使用 `git config branch.$BRANCH.base-branch` 读取实际 base 分支
+  - 支持 `feature/*` 分支作为 base 分支
+- **hooks/pr-gate-v2.sh v2.4**: 修复硬编码 develop 分支问题
+  - PRD/DoD 更新检查使用配置的 base 分支
+  - checkbox 匹配支持大小写 `[x]` 和 `[X]`
+- **skills/dev/scripts/cleanup.sh v1.1**: 自动检测 base 分支
+  - 优先使用参数，其次从 git config 读取
+
+## [8.1.1] - 2026-01-22
+
+### Fixed
+- **hooks/pr-gate-v2.sh v2.3**: 修复目标仓库检测
+  - 解析 `--repo owner/repo` 参数
+  - 在 `~/dev/` 等常见位置搜索本地仓库
+  - 在正确的仓库目录执行 PR Gate 检查
+  - 解决在其他项目目录运行 `gh pr create --repo X` 时检查错误仓库的问题
+
+## [8.1.0] - 2026-01-22
+
+### Added
+- **hooks/branch-protect.sh v12**: 增加全局配置目录保护
+  - 阻止直接修改 `~/.claude/hooks/` 和 `~/.claude/skills/`
+  - 强制走 zenithjoy-engine 工作流修改后再部署
+  - 防止跳过版本控制直接修改全局配置
+
+### Changed
+- **hooks/branch-protect.sh v11**: PRD/DoD 内容有效性检查
+  - PRD 需要至少 3 行且包含关键字段
+  - DoD 需要至少 3 行且包含 checkbox 格式
+- **hooks/pr-gate-v2.sh v2.2**: 增加 PRD 检查和内容有效性检查
+- **skills/dev/scripts/scan-change-level.sh**: L1-L6 重命名为 T1-T6，避免与质检层级命名冲突
+- **skills/dev/scripts/multi-feature.sh**: 同步到 `origin/develop` 而非 `origin/main`
+- **skills/dev/scripts/check.sh**: 修复 SKILL_FILE 路径
+
+### Fixed
+- 质检层级命名一致性：L1/L2/L3 = 自动化测试/效果验证/需求验收
+- 分支策略一致性：develop 是主开发线，不是 main
+
 ## [8.0.32] - 2026-01-22
 
 ### Added

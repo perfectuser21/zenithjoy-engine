@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # ZenithJoy Engine - Cleanup 脚本
+# v1.3: 使用 mktemp 替代硬编码 /tmp，修复 MERGE_HEAD 路径
+# v1.2: 报告生成错误记录到日志而非吞掉
+# v1.1: 自动检测 base 分支（从 git config 读取）
 # PR 合并后执行完整清理，确保不留垃圾
 #
-# 用法: bash skills/dev/scripts/cleanup.sh <cp-分支名> <base-分支名>
+# 用法: bash skills/dev/scripts/cleanup.sh <cp-分支名> [base-分支名]
 # 例如: bash skills/dev/scripts/cleanup.sh cp-20260117-fix-bug develop
 
 set -euo pipefail
@@ -15,7 +18,8 @@ NC='\033[0m' # No Color
 
 # 参数
 CP_BRANCH="${1:-}"
-BASE_BRANCH="${2:-develop}"
+# v1.1: 优先使用参数，其次从 git config 读取，最后 fallback 到 develop
+BASE_BRANCH="${2:-$(git config "branch.$CP_BRANCH.base-branch" 2>/dev/null || echo "develop")}"
 
 if [[ -z "$CP_BRANCH" ]]; then
     echo -e "${RED}错误: 请提供 cp-* 分支名${NC}"
@@ -37,11 +41,17 @@ echo ""
 # ========================================
 echo "0. 生成任务报告..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPORT_ERROR_LOG=$(mktemp)
 if [[ -f "$SCRIPT_DIR/generate-report.sh" ]]; then
-    if bash "$SCRIPT_DIR/generate-report.sh" "$CP_BRANCH" "$BASE_BRANCH" "$(pwd)" 2>/dev/null; then
+    # v1.2: 记录错误到日志而非吞掉
+    if bash "$SCRIPT_DIR/generate-report.sh" "$CP_BRANCH" "$BASE_BRANCH" "$(pwd)" 2>"$REPORT_ERROR_LOG"; then
         echo -e "   ${GREEN}[OK] 报告已保存到 .dev-runs/${NC}"
+        rm -f "$REPORT_ERROR_LOG"
     else
         echo -e "   ${YELLOW}[WARN] 报告生成失败，继续 cleanup${NC}"
+        if [[ -s "$REPORT_ERROR_LOG" ]]; then
+            echo -e "   ${YELLOW}错误日志: $REPORT_ERROR_LOG${NC}"
+        fi
     fi
 else
     echo -e "   ${YELLOW}[WARN] generate-report.sh 不存在，跳过${NC}"
@@ -85,7 +95,7 @@ else
     echo -e "   ${YELLOW}⚠️  拉取失败，可能有冲突${NC}"
     WARNINGS=$((WARNINGS + 1))
     # 检查是否处于 MERGING 状态
-    if [[ -f "$(git rev-parse --git-dir)/MERGE_HEAD" ]]; then
+    if [[ -f "$(git rev-parse --git-path MERGE_HEAD 2>/dev/null)" ]]; then
         echo -e "   ${RED}❌ 检测到未完成的合并，需要手动解决${NC}"
         echo -e "   → 运行 'git merge --abort' 取消合并，或手动解决冲突"
         FAILED=1

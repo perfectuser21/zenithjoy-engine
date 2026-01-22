@@ -12,6 +12,7 @@ AI 开发工作流核心组件。提供 Hooks、Skills 和 CI 模板，实现引
 
 - **gh CLI**: GitHub CLI (`gh auth login` 已完成)
 - **jq**: JSON 处理工具 (`apt install jq`)
+- **yq**: YAML 处理工具 (`apt install yq` 或 `brew install yq`)
 - **Node.js**: 18+ (CI 使用 20)
 
 ## Environment Variables

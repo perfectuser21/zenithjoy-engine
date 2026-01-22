@@ -88,20 +88,9 @@ if [[ -z "$LOCAL_BRANCH" && -z "$REMOTE_BRANCH" ]]; then
   echo "   这可能是因为分支已被清理，或者名称拼写错误"
 fi
 
-# 自动检测项目根目录（优先使用环境变量，其次使用 git）
-if [[ -n "${ZENITHJOY_ENGINE:-}" ]]; then
-  PROJECT_ROOT="$ZENITHJOY_ENGINE"
-else
-  PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
-fi
-SKILL_FILE="$PROJECT_ROOT/skills/dev/SKILL.md"
-
-# SKILL.md 存在性检查
-if [[ ! -f "$SKILL_FILE" ]]; then
-  echo "❌ SKILL.md 不存在: $SKILL_FILE"
-  echo "   请检查 ZENITHJOY_ENGINE 环境变量"
-  exit 1
-fi
+# 自动检测项目根目录
+PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+# 注：SKILL.md 检查已移除（不影响 cleanup 检查，且路径可能因部署方式不同）
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -210,7 +199,7 @@ else
   echo "  ✅ 无未提交文件"
 fi
 
-# 其他阶段已通过流程验证（step 状态机保证）
+# 其他阶段已通过流程验证（PRD/DoD Hook + PR Gate 保证）
 # check.sh 只验证 Step 11 Cleanup 的检查项
 
 echo ""

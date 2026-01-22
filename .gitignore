@@ -18,8 +18,10 @@ Thumbs.db
 *.swp
 *.swo
 
-# Environment
-.env*
+# Environment (allow .env.example)
+.env
+.env.local
+.env.*.local
 
 # TypeScript
 *.tsbuildinfo
