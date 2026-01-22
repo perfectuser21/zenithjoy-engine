@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # ZenithJoy Engine - Cleanup 脚本
+# v1.3: 使用 mktemp 替代硬编码 /tmp，修复 MERGE_HEAD 路径
 # v1.2: 报告生成错误记录到日志而非吞掉
 # v1.1: 自动检测 base 分支（从 git config 读取）
 # PR 合并后执行完整清理，确保不留垃圾
@@ -40,7 +41,7 @@ echo ""
 # ========================================
 echo "0. 生成任务报告..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPORT_ERROR_LOG="/tmp/cleanup-report-error-$$.log"
+REPORT_ERROR_LOG=$(mktemp)
 if [[ -f "$SCRIPT_DIR/generate-report.sh" ]]; then
     # v1.2: 记录错误到日志而非吞掉
     if bash "$SCRIPT_DIR/generate-report.sh" "$CP_BRANCH" "$BASE_BRANCH" "$(pwd)" 2>"$REPORT_ERROR_LOG"; then
@@ -94,7 +95,7 @@ else
     echo -e "   ${YELLOW}⚠️  拉取失败，可能有冲突${NC}"
     WARNINGS=$((WARNINGS + 1))
     # 检查是否处于 MERGING 状态
-    if [[ -f "$(git rev-parse --git-dir)/MERGE_HEAD" ]]; then
+    if [[ -f "$(git rev-parse --git-path MERGE_HEAD 2>/dev/null)" ]]; then
         echo -e "   ${RED}❌ 检测到未完成的合并，需要手动解决${NC}"
         echo -e "   → 运行 'git merge --abort' 取消合并，或手动解决冲突"
         FAILED=1

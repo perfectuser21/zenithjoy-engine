@@ -149,7 +149,7 @@ cat > "$JSON_REPORT" << EOF
   },
   "version": "$CURRENT_VERSION",
   "files_changed": [
-$(if [[ -n "$FILES_CHANGED" ]]; then echo "$FILES_CHANGED" | sed 's/^/    "/; s/$/",/' | sed '$ s/,$//'; fi)
+$(if [[ -n "$FILES_CHANGED" ]]; then echo "$FILES_CHANGED" | while IFS= read -r f; do printf '    %s,\n' "$(echo "$f" | jq -R .)"; done | sed '$ s/,$//'; fi)
   ]
 }
 EOF

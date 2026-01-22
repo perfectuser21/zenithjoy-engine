@@ -181,6 +181,20 @@ run_evidence() {
             fi
 
             # 执行命令
+            # 安全注意：evidence_run 来自 regression-contract.yaml（受版本控制）
+            # 只允许执行白名单中的命令前缀
+            local first_cmd
+            first_cmd=$(echo "$evidence_run" | awk '{print $1}')
+            case "$first_cmd" in
+                npm|node|bash|sh|cat|grep|ls|curl|gh|git|jq|yq)
+                    # 允许的命令
+                    ;;
+                *)
+                    echo -e "${YELLOW}⏭️ (disallowed command: $first_cmd)${NC}"
+                    L3_SKIPPED=$((L3_SKIPPED + 1))
+                    return
+                    ;;
+            esac
             local output
             set +e
             output=$(cd "$PROJECT_ROOT" && eval "$evidence_run" 2>&1)
@@ -215,7 +229,10 @@ run_evidence() {
         file)
             # 检查文件是否存在
             local file_path
-            file_path=$(yq eval ".. | select(has(\"evidence\")) | select(.id == \"$id\") | .evidence.path" "$RC_FILE" 2>/dev/null | head -1)
+            # 安全：转义 id 中的特殊字符防止 yq 注入
+            local safe_id
+            safe_id=$(printf '%s' "$id" | sed 's/["\\]/\\&/g')
+            file_path=$(yq eval ".. | select(has(\"evidence\")) | select(.id == \"$safe_id\") | .evidence.path" "$RC_FILE" 2>/dev/null | head -1)
 
             if [[ "$file_path" == "null" ]] || [[ -z "$file_path" ]]; then
                 echo -e "${YELLOW}⏭️ (no file path defined)${NC}"
@@ -223,8 +240,8 @@ run_evidence() {
                 return
             fi
 
-            # 支持通配符
-            if ls $PROJECT_ROOT/$file_path 1>/dev/null 2>&1; then
+            # 支持通配符（引号内使用 eval 展开）
+            if eval "ls \"$PROJECT_ROOT\"/$file_path" 1>/dev/null 2>&1; then
                 echo -e "${GREEN}✅${NC}"
                 L3_PASSED=$((L3_PASSED + 1))
             else
@@ -333,7 +350,7 @@ else
     # 使用临时文件存储 RCI 列表（避免子 shell 问题）
     RCI_RAW_FILE=$(mktemp)
     RCI_LIST_FILE=$(mktemp)
-    trap "rm -f $RCI_RAW_FILE $RCI_LIST_FILE" EXIT
+    trap "rm -f \"$RCI_RAW_FILE\" \"$RCI_LIST_FILE\"" EXIT
 
     # 分两步写入：先解析，再过滤
     parse_rcis > "$RCI_RAW_FILE"
