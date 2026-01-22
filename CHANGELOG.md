@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [8.10.0] - 2026-01-22
+
+### Added (Phase 4.1: DevGate L2 阈值检查)
+- **nightly.yml**: L2 Strict Gate 阈值检查步骤
+  - P0/P1 RCI 覆盖率 < 100% → nightly fail
+  - P0 manual tests > 0 → nightly fail
+  - RCI 增长 < 2 → 软警告（不 fail）
+- **metrics.cjs**: 输出增强
+  - `rci_coverage.offenders`: 未更新 RCI 的 PR 列表
+  - `dod.p0_manual_tests`: P0 手动测试单独计数
+  - human 输出显示 "Top Offenders" 列表
+
+### Changed
+- **regression-contract.yaml v1.17.0**: 新增 C7-002 (L2 阈值检查)
+
+### Documentation
+- 锁定 Metrics 口径定义：
+  - 窗口归属：按 `created` 时间戳
+  - PR 优先级：按 meta 的 `priority` 字段
+  - RCI 更新判定：merged commit 包含 regression-contract.yaml
+
 ## [8.9.0] - 2026-01-22
 
 ### Added (Phase 4: DevGate Metrics 指标面板)

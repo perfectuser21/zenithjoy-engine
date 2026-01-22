@@ -306,6 +306,19 @@ function main() {
   const totalDodItems = snapshots.reduce((sum, s) => sum + s.dodItems, 0);
   const totalManualTests = snapshots.reduce((sum, s) => sum + s.manualTests, 0);
 
+  // P0 manual tests 单独统计（L2 阈值检查需要）
+  const p0Snapshots = snapshots.filter(s => s.meta.priority === 'P0');
+  const p0ManualTests = p0Snapshots.reduce((sum, s) => sum + s.manualTests, 0);
+
+  // Top offenders: P0/P1 PRs without RCI update
+  const offenders = rciCoverage.details
+    .filter(d => !d.rciUpdated)
+    .map(d => ({
+      pr: d.pr,
+      priority: d.priority,
+      sha: d.sha || 'N/A',
+    }));
+
   // 构建结果
   const result = {
     window: {
@@ -322,6 +335,7 @@ function main() {
       updated: rciCoverage.updated,
       total: rciCoverage.total,
       pct: rciCoverage.pct,
+      offenders,
     },
     rci_growth: {
       new_ids_count: rciGrowth.count,
@@ -330,6 +344,7 @@ function main() {
     dod: {
       items: totalDodItems,
       manual_tests: totalManualTests,
+      p0_manual_tests: p0ManualTests,
     },
   };
 
@@ -365,7 +380,17 @@ RCI Growth
 DoD & Manual
   DoD items archived: ${result.dod.items}
   Manual tests declared: ${result.dod.manual_tests}
+  P0 manual tests: ${result.dod.p0_manual_tests}${result.dod.p0_manual_tests > 0 ? '  ⚠️  WARNING: P0 should avoid manual tests!' : ''}
 `);
+
+  // Top offenders (always show when coverage < 100%)
+  if (result.rci_coverage.offenders && result.rci_coverage.offenders.length > 0) {
+    console.log('Top Offenders (Missing RCI Update):');
+    for (const o of result.rci_coverage.offenders) {
+      console.log(`  ❌ PR #${o.pr} (${o.priority}) sha:${o.sha}`);
+    }
+    console.log('');
+  }
 
   if (verbose && rciCoverage.details.length > 0) {
     console.log('Detailed P0/P1 Coverage:');

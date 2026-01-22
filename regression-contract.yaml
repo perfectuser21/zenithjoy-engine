@@ -15,7 +15,7 @@
 #
 # ============================================================================
 
-version: "1.16.0"
+version: "1.17.0"
 updated: "2026-01-22"
 
 # ============================================================================
@@ -627,6 +627,25 @@ ci:
     evidence:
       type: ci_job
       name: "DevGate Metrics"
+      status: success
+    test: ".github/workflows/nightly.yml"
+
+  - id: C7-002
+    feature: C7
+    name: "Nightly L2 阈值检查"
+    scope: ci
+    priority: P1
+    trigger: [Release]
+    method: auto
+    tags: [ci, nightly, threshold, phase41]
+    owner: infra
+    steps:
+      given: "devgate-metrics.json 已生成"
+      when: "执行 DevGate Threshold Check (L2) step"
+      then: "P0/P1 RCI 覆盖率 100% 且 P0 manual tests = 0"
+    evidence:
+      type: ci_job
+      name: "DevGate Threshold Check (L2)"
       status: success
     test: ".github/workflows/nightly.yml"
 

@@ -244,6 +244,16 @@ describe('metrics.sh 基础功能', () => {
     const json = JSON.parse(output)
     expect(typeof json.dod.items).toBe('number')
     expect(typeof json.dod.manual_tests).toBe('number')
+    expect(typeof json.dod.p0_manual_tests).toBe('number')
+  })
+
+  it('JSON 包含 rci_coverage.offenders 数组', () => {
+    const output = execSync(`bash ${METRICS_SCRIPT} --format json`, {
+      encoding: 'utf-8',
+      cwd: ROOT,
+    })
+    const json = JSON.parse(output)
+    expect(Array.isArray(json.rci_coverage.offenders)).toBe(true)
   })
 })
 
@@ -344,6 +354,30 @@ describe('metrics.sh 指标计算', () => {
     const json = JSON.parse(output)
     // PR-100: 1 manual, PR-101: 1 manual = 2 total
     expect(json.dod.manual_tests).toBe(2)
+  })
+
+  it('正确统计 P0 manual test 数', () => {
+    const output = runMetrics('--format json', testDir)
+    const json = JSON.parse(output)
+    // PR-100 (P0): 1 manual test
+    expect(json.dod.p0_manual_tests).toBe(1)
+  })
+
+  it('JSON 包含 offenders 数组', () => {
+    const output = runMetrics('--format json', testDir)
+    const json = JSON.parse(output)
+    expect(Array.isArray(json.rci_coverage.offenders)).toBe(true)
+  })
+
+  it('offenders 包含未更新 RCI 的 PR', () => {
+    const output = runMetrics('--format json', testDir)
+    const json = JSON.parse(output)
+    // 测试目录中的 PR 没有真实的 git commit，所以都会被标记为未更新 RCI
+    // offenders 应该包含 P0/P1 的 PR (100, 101)，不包含 NONE (102)
+    const offenderPrs = json.rci_coverage.offenders.map((o: { pr: string }) => o.pr)
+    expect(offenderPrs).toContain('100')
+    expect(offenderPrs).toContain('101')
+    expect(offenderPrs).not.toContain('102')
   })
 })
 

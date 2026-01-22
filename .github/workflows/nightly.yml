@@ -56,6 +56,73 @@ jobs:
           # 上传为 artifact
           echo "metrics_month=$MONTH" >> "$GITHUB_OUTPUT"
 
+      - name: DevGate Threshold Check (L2)
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  DevGate Threshold Check (L2 Strict Gate)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+
+          # 读取 JSON 报告
+          if [ ! -f devgate-metrics.json ]; then
+            echo "⚠️ No metrics file found, skipping threshold check"
+            exit 0
+          fi
+
+          json=$(cat devgate-metrics.json)
+
+          # 提取指标
+          pct=$(echo "$json" | jq '.rci_coverage.pct')
+          p0p1=$(echo "$json" | jq '.prs.total_p0p1')
+          p0_manual=$(echo "$json" | jq '.dod.p0_manual_tests')
+          offenders=$(echo "$json" | jq -r '.rci_coverage.offenders[]? | "  - PR #\(.pr) (\(.priority)) sha:\(.sha)"')
+          rci_growth=$(echo "$json" | jq '.rci_growth.new_ids_count')
+
+          fail=0
+
+          # 检查 1: P0/P1 RCI 覆盖率 = 100%
+          echo "[Check 1] P0/P1 RCI Coverage"
+          if [ "$p0p1" -gt 0 ] && [ "$pct" -lt 100 ]; then
+            echo "❌ RCI Coverage < 100% ($pct%)"
+            if [ -n "$offenders" ]; then
+              echo "Missing RCI updates:"
+              echo "$offenders"
+            fi
+            fail=1
+          else
+            echo "✅ RCI Coverage: $pct% (P0/P1: $p0p1)"
+          fi
+          echo ""
+
+          # 检查 2: P0 不允许 manual tests
+          echo "[Check 2] P0 Manual Tests"
+          if [ "$p0_manual" -gt 0 ]; then
+            echo "❌ P0 manual tests detected ($p0_manual)"
+            echo "P0 PRs should have automated tests, not manual evidence."
+            fail=1
+          else
+            echo "✅ P0 manual tests: 0"
+          fi
+          echo ""
+
+          # 软警告: RCI 增长 < 2
+          echo "[Info] RCI Growth"
+          if [ "$rci_growth" -lt 2 ]; then
+            echo "⚠️ Low RCI Growth ($rci_growth). Consider reviewing regression gaps."
+          else
+            echo "✅ New RCI IDs: $rci_growth"
+          fi
+          echo ""
+
+          # 最终结果
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          if [ "$fail" -eq 1 ]; then
+            echo "❌ DevGate Threshold Check FAILED (L2 Mode)"
+            exit 1
+          fi
+          echo "✅ DevGate Threshold Check PASSED (L2 Mode)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
       - name: Upload Metrics
         uses: actions/upload-artifact@v4
         with:
