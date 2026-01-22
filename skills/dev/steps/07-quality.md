@@ -28,7 +28,8 @@ npm run qa  # = typecheck + test + build
 - [ ] `npm run typecheck` 通过
 - [ ] `npm run test` 通过
 - [ ] `npm run build` 通过
-- [ ] `.dod.md` 存在（不要求全勾）
+- [ ] `.prd.md` 存在且内容有效
+- [ ] `.dod.md` 存在且有验收清单
 
 **结果判定**：
 - ✅ L1 全绿 → 继续 Step 8 (PR)
@@ -90,4 +91,4 @@ find . -name "*.sh" -exec bash -n {} \;
 1. **分层检查** - PR 只 L1，Release 才 L2+L3
 2. **快速反馈** - 本地 `npm run qa` 与 CI 结论一致
 3. **证据驱动** - Release 时用截图/curl 证明效果
-4. **CI 兜底** - 最终 CI 是唯一强制检查
+4. **PRD/DoD + CI 强制检查** - Hook 强制 PRD/DoD，CI 强制自动化测试

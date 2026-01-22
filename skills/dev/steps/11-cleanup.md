@@ -11,7 +11,7 @@
 ```
 .dev-runs/
 ├── <task-id>-report.txt   # 给用户看的纯文本报告
-└── <task-id>-report.json  # 给 Cecilia 读取的 JSON 报告
+└── <task-id>-report.json  # 给 Cecelia 读取的 JSON 报告
 ```
 
 ### TXT 报告内容（重点：三层质检）
@@ -39,7 +39,7 @@ PR 状态:    已合并
 ================================================================================
 ```
 
-### JSON 报告（供 Cecilia 链式任务）
+### JSON 报告（供 Cecelia 链式任务）
 
 ```json
 {

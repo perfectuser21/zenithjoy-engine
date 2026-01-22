@@ -184,7 +184,7 @@ PR #$PR_NUMBER 的 CI 失败，需要修复。
 
 ## 有头 vs 无头
 
-| | 有头 | 无头 (Cecilia) |
+| | 有头 | 无头 (Cecelia) |
 |---|---|---|
 | PRD 来源 | 用户说 | prompt 传入 |
 | 告警处理 | Claude 问用户 | 输出 NEED_HUMAN_HELP，N8N 发通知 |
@@ -195,10 +195,10 @@ PR #$PR_NUMBER 的 CI 失败，需要修复。
 
 ## 核心规则
 
-1. **只在 cp-* 或 feature/* 分支写代码** - Hook 引导
+1. **只在 cp-* 或 feature/* 分支写代码** - Hook 强制
 2. **develop 是主开发线** - PR 合并回 develop
 3. **main 始终稳定** - 只在里程碑时从 develop 合并
-4. **CI 是唯一强制检查** - 其他都是引导
+4. **PRD + DoD + CI 是强制检查** - Hook 在写代码前检查 PRD/DoD，PR Gate 检查 CI
 5. **Loop 自动处理失败** - Ralph Loop 自动重试
 
 ---
@@ -241,12 +241,16 @@ skills/dev/
 
 ## 快速修复模式
 
-**适用条件**（全部满足）：
-- `fix:` 类型修复
-- 单文件或少量改动
-- 需求明确
+**注意**：快速修复模式只适用于 **PR 创建后 CI 失败** 的情况。
 
-**简化流程**：PRD 快速确认 → Loop 1 → PR → Loop 2 → Merge
+**适用条件**：
+- 已有 PR
+- CI 红了
+- 需要修复代码让 CI 通过
+
+**流程**：修复代码 → push → 等 CI → CI 绿 → 合并
+
+**不适用**：新任务不能用快速修复模式跳过 PRD/DoD。Hook 会强制要求 PRD/DoD。
 
 ---
 

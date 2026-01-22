@@ -3,7 +3,7 @@
 #
 # 用法:
 #   multi-feature.sh detect   # 检测所有 feature 分支状态
-#   multi-feature.sh sync     # 同步其他 feature 分支到 main
+#   multi-feature.sh sync     # 同步其他 feature 分支到 develop
 #   multi-feature.sh list     # 简单列出 feature 分支
 
 set -euo pipefail  # -e: 命令失败时退出; -u: 未定义变量报错; -o pipefail: 管道失败传播
@@ -23,16 +23,16 @@ get_feature_branches() {
   git branch | grep -F 'feature/' | sed 's/^[* ]*//' || true
 }
 
-# 获取分支落后 main 的 commit 数
+# 获取分支落后 develop 的 commit 数
 get_behind_count() {
   local branch=$1
-  git rev-list --count "$branch"..origin/main 2>/dev/null || echo "?"
+  git rev-list --count "$branch"..origin/develop 2>/dev/null || echo "?"
 }
 
 # 获取领先的 commits 列表（过滤 auto-backup）
 get_ahead_commits() {
   local branch=$1
-  git log origin/main.."$branch" --oneline 2>/dev/null | grep -v "^[a-f0-9]* auto-backup:" || true
+  git log origin/develop.."$branch" --oneline 2>/dev/null | grep -v "^[a-f0-9]* auto-backup:" || true
 }
 
 # 获取领先的 commits 数量（过滤 auto-backup）
@@ -41,7 +41,7 @@ get_ahead_count_filtered() {
   local count
   # 使用 grep -c 直接计数，避免管道中的空格问题
   # || echo 0 处理 grep 无匹配时返回 1 的情况
-  count=$(git log origin/main.."$branch" --oneline 2>/dev/null | grep -cv "^[a-f0-9]* auto-backup:" || echo 0)
+  count=$(git log origin/develop.."$branch" --oneline 2>/dev/null | grep -cv "^[a-f0-9]* auto-backup:" || echo 0)
   echo "${count:-0}"
 }
 
@@ -60,7 +60,7 @@ case $ACTION in
     echo ""
 
     # 先 fetch 最新
-    git fetch origin main --quiet 2>/dev/null || true
+    git fetch origin develop --quiet 2>/dev/null || true
 
     BRANCHES=$(get_feature_branches)
 
@@ -92,30 +92,30 @@ case $ACTION in
       LAST_UPDATE=$(get_last_update "$branch")
 
       if [ "$BEHIND" = "0" ] || [ "$BEHIND" = "?" ]; then
-        # 已同步 main
+        # 已同步 develop
         echo -e "  ${GREEN}✅${NC} $branch${MARKER}"
         echo "     最后更新: $LAST_UPDATE"
         if [ "$AHEAD_FILTERED" = "0" ]; then
-          echo "     与 main 完全一致（或仅有 auto-backup）"
+          echo "     与 develop 完全一致（或仅有 auto-backup）"
         else
-          echo "     已同步 main，领先 $AHEAD_FILTERED commits:"
+          echo "     已同步 develop，领先 $AHEAD_FILTERED commits:"
           get_ahead_commits "$branch" | head -5 | sed 's/^/       /'
           if [[ "$AHEAD_FILTERED" =~ ^[0-9]+$ ]] && [ "$AHEAD_FILTERED" -gt 5 ]; then
             echo "       ... 还有 $((AHEAD_FILTERED - 5)) 个"
           fi
         fi
       elif [ "$AHEAD_FILTERED" = "0" ]; then
-        # 落后 main 但没有自己的改动（或仅有 auto-backup），建议删除
+        # 落后 develop 但没有自己的改动（或仅有 auto-backup），建议删除
         echo -e "  ${RED}🗑️${NC}  $branch${MARKER}"
         echo "     最后更新: $LAST_UPDATE"
-        echo "     落后 main $BEHIND commits，无实际改动"
+        echo "     落后 develop $BEHIND commits，无实际改动"
         echo "     建议删除: git branch -D $branch"
         NEED_SYNC=$((NEED_SYNC + 1))
       else
-        # 落后 main 且有自己的改动，需要同步
+        # 落后 develop 且有自己的改动，需要同步
         echo -e "  ${YELLOW}⚠️${NC}  $branch${MARKER}"
         echo "     最后更新: $LAST_UPDATE"
-        echo "     落后 main $BEHIND commits，领先 $AHEAD_FILTERED commits:"
+        echo "     落后 develop $BEHIND commits，领先 $AHEAD_FILTERED commits:"
         get_ahead_commits "$branch" | head -5 | sed 's/^/       /'
         if [[ "$AHEAD_FILTERED" =~ ^[0-9]+$ ]] && [ "$AHEAD_FILTERED" -gt 5 ]; then
           echo "       ... 还有 $((AHEAD_FILTERED - 5)) 个"
@@ -127,7 +127,7 @@ case $ACTION in
 
     if [ $NEED_SYNC -gt 0 ]; then
       echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      echo -e "  ${YELLOW}建议${NC}: 有 $NEED_SYNC 个分支需要同步 main"
+      echo -e "  ${YELLOW}建议${NC}: 有 $NEED_SYNC 个分支需要同步 develop"
       echo "  运行: bash $0 sync"
       echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     else
@@ -145,7 +145,7 @@ case $ACTION in
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 
-    git fetch origin main --quiet 2>/dev/null || true
+    git fetch origin develop --quiet 2>/dev/null || true
 
     BRANCHES=$(get_feature_branches)
 
@@ -176,7 +176,7 @@ case $ACTION in
         continue
       fi
 
-      if git merge origin/main --no-edit --quiet 2>/dev/null; then
+      if git merge origin/develop --no-edit --quiet 2>/dev/null; then
         echo -e "    ${GREEN}✓${NC} 同步成功"
         SYNCED=$((SYNCED + 1))
       else
@@ -189,7 +189,7 @@ case $ACTION in
         echo ""
         echo "      手动同步步骤:"
         echo "        1. git checkout $branch"
-        echo "        2. git merge origin/main"
+        echo "        2. git merge origin/develop"
         echo "        3. 解决冲突后: git add . && git commit"
         FAILED=$((FAILED + 1))
       fi
@@ -216,7 +216,7 @@ case $ACTION in
     echo "用法: $0 {detect|sync|list}"
     echo ""
     echo "  detect  检测所有 feature 分支状态"
-    echo "  sync    同步其他 feature 分支到 main"
+    echo "  sync    同步其他 feature 分支到 develop"
     echo "  list    简单列出 feature 分支"
     exit 1
     ;;

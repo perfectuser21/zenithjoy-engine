@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # ============================================================================
-# PreToolUse Hook: PR Gate v2 (硬门禁版)
+# PreToolUse Hook: PR Gate v2.2 (硬门禁版)
 # ============================================================================
 #
+# v2.2: 增加 PRD/DoD 内容有效性检查（不能是空文件）
+# v2.1: 增加 PRD 检查（与 DoD 检查并列）
 # v8+ 硬门禁规则：
 #   PR → develop：必须 L1 全自动绿
 #   develop → main：必须 L1 绿 + L2B/L3 证据链齐全
@@ -213,38 +215,101 @@ if [[ $SHELL_COUNT -gt 0 ]]; then
 fi
 
 # ============================================================================
-# Part 2: PR 模式 - 简化检查
+# Part 2: PR 模式 - PRD + DoD 检查
 # ============================================================================
 if [[ "$MODE" == "pr" ]]; then
+    # ===== PRD 检查 =====
     echo "" >&2
-    echo "  [DoD 检查] (简化)" >&2
+    echo "  [PRD 检查]" >&2
+
+    PRD_FILE="$PROJECT_ROOT/.prd.md"
+    echo -n "  PRD 文件... " >&2
+    CHECKED=$((CHECKED + 1))
+    if [[ -f "$PRD_FILE" ]]; then
+        # 检查 PRD 内容有效性
+        PRD_LINES=$(wc -l < "$PRD_FILE" 2>/dev/null || echo 0)
+        PRD_LINES=${PRD_LINES//[^0-9]/}; [[ -z "$PRD_LINES" ]] && PRD_LINES=0
+        PRD_HAS_CONTENT=$(grep -cE "(功能描述|成功标准|需求来源|描述|标准)" "$PRD_FILE" 2>/dev/null || echo 0)
+        PRD_HAS_CONTENT=${PRD_HAS_CONTENT//[^0-9]/}; [[ -z "$PRD_HAS_CONTENT" ]] && PRD_HAS_CONTENT=0
+
+        if [[ "$PRD_LINES" -lt 3 || "$PRD_HAS_CONTENT" -eq 0 ]]; then
+            echo "❌ (内容无效)" >&2
+            echo "    → PRD 需要至少 3 行，且包含关键字段（功能描述/成功标准）" >&2
+            FAILED=1
+        else
+            # 检查 .prd.md 是否在当前分支有修改（防止复用旧的 PRD）
+            PRD_MODIFIED=$(git diff develop --name-only 2>/dev/null | grep -c "^\.prd\.md$" 2>/dev/null || echo 0)
+            PRD_NEW=$(git status --porcelain 2>/dev/null | grep -c "\.prd\.md" 2>/dev/null || echo 0)
+            # 确保是纯数字
+            PRD_MODIFIED=${PRD_MODIFIED//[^0-9]/}
+            PRD_NEW=${PRD_NEW//[^0-9]/}
+            [[ -z "$PRD_MODIFIED" ]] && PRD_MODIFIED=0
+            [[ -z "$PRD_NEW" ]] && PRD_NEW=0
+
+            if [[ "$PRD_MODIFIED" -gt 0 || "$PRD_NEW" -gt 0 ]]; then
+                echo "✅" >&2
+            else
+                # 检查是否是新分支首次创建（.prd.md 已提交但未推送）
+                PRD_IN_BRANCH=$(git log develop..HEAD --name-only 2>/dev/null | grep -c "^\.prd\.md$" 2>/dev/null || echo 0)
+                PRD_IN_BRANCH=${PRD_IN_BRANCH//[^0-9]/}
+                [[ -z "$PRD_IN_BRANCH" ]] && PRD_IN_BRANCH=0
+                if [[ "$PRD_IN_BRANCH" -gt 0 ]]; then
+                    echo "✅ (本分支已提交)" >&2
+                else
+                    echo "❌ (.prd.md 未更新)" >&2
+                    echo "    → 当前 .prd.md 是旧任务的，请为本次任务更新 PRD" >&2
+                    FAILED=1
+                fi
+            fi
+        fi
+    else
+        echo "❌ (.prd.md 不存在)" >&2
+        echo "    → 请创建 .prd.md 记录需求" >&2
+        FAILED=1
+    fi
+
+    # ===== DoD 检查 =====
+    echo "" >&2
+    echo "  [DoD 检查]" >&2
 
     DOD_FILE="$PROJECT_ROOT/.dod.md"
     echo -n "  DoD 文件... " >&2
     CHECKED=$((CHECKED + 1))
     if [[ -f "$DOD_FILE" ]]; then
-        # 检查 .dod.md 是否在当前分支有修改（防止复用旧的 DoD）
-        DOD_MODIFIED=$(git diff develop --name-only 2>/dev/null | grep -c "^\.dod\.md$" 2>/dev/null || echo 0)
-        DOD_NEW=$(git status --porcelain 2>/dev/null | grep -c "\.dod\.md" 2>/dev/null || echo 0)
-        # 确保是纯数字
-        DOD_MODIFIED=${DOD_MODIFIED//[^0-9]/}
-        DOD_NEW=${DOD_NEW//[^0-9]/}
-        [[ -z "$DOD_MODIFIED" ]] && DOD_MODIFIED=0
-        [[ -z "$DOD_NEW" ]] && DOD_NEW=0
+        # 检查 DoD 内容有效性
+        DOD_LINES=$(wc -l < "$DOD_FILE" 2>/dev/null || echo 0)
+        DOD_LINES=${DOD_LINES//[^0-9]/}; [[ -z "$DOD_LINES" ]] && DOD_LINES=0
+        DOD_HAS_CHECKBOX=$(grep -cE "^\s*-\s*\[[ x]\]" "$DOD_FILE" 2>/dev/null || echo 0)
+        DOD_HAS_CHECKBOX=${DOD_HAS_CHECKBOX//[^0-9]/}; [[ -z "$DOD_HAS_CHECKBOX" ]] && DOD_HAS_CHECKBOX=0
 
-        if [[ "$DOD_MODIFIED" -gt 0 || "$DOD_NEW" -gt 0 ]]; then
-            echo "✅" >&2
+        if [[ "$DOD_LINES" -lt 3 || "$DOD_HAS_CHECKBOX" -eq 0 ]]; then
+            echo "❌ (内容无效)" >&2
+            echo "    → DoD 需要至少 3 行，且包含验收清单 (- [ ] 格式)" >&2
+            FAILED=1
         else
-            # 检查是否是新分支首次创建（.dod.md 已提交但未推送）
-            DOD_IN_BRANCH=$(git log develop..HEAD --name-only 2>/dev/null | grep -c "^\.dod\.md$" 2>/dev/null || echo 0)
-            DOD_IN_BRANCH=${DOD_IN_BRANCH//[^0-9]/}
-            [[ -z "$DOD_IN_BRANCH" ]] && DOD_IN_BRANCH=0
-            if [[ "$DOD_IN_BRANCH" -gt 0 ]]; then
-                echo "✅ (本分支已提交)" >&2
+            # 检查 .dod.md 是否在当前分支有修改（防止复用旧的 DoD）
+            DOD_MODIFIED=$(git diff develop --name-only 2>/dev/null | grep -c "^\.dod\.md$" 2>/dev/null || echo 0)
+            DOD_NEW=$(git status --porcelain 2>/dev/null | grep -c "\.dod\.md" 2>/dev/null || echo 0)
+            # 确保是纯数字
+            DOD_MODIFIED=${DOD_MODIFIED//[^0-9]/}
+            DOD_NEW=${DOD_NEW//[^0-9]/}
+            [[ -z "$DOD_MODIFIED" ]] && DOD_MODIFIED=0
+            [[ -z "$DOD_NEW" ]] && DOD_NEW=0
+
+            if [[ "$DOD_MODIFIED" -gt 0 || "$DOD_NEW" -gt 0 ]]; then
+                echo "✅" >&2
             else
-                echo "❌ (.dod.md 未更新)" >&2
-                echo "    → 当前 .dod.md 是旧任务的，请为本次任务更新 DoD" >&2
-                FAILED=1
+                # 检查是否是新分支首次创建（.dod.md 已提交但未推送）
+                DOD_IN_BRANCH=$(git log develop..HEAD --name-only 2>/dev/null | grep -c "^\.dod\.md$" 2>/dev/null || echo 0)
+                DOD_IN_BRANCH=${DOD_IN_BRANCH//[^0-9]/}
+                [[ -z "$DOD_IN_BRANCH" ]] && DOD_IN_BRANCH=0
+                if [[ "$DOD_IN_BRANCH" -gt 0 ]]; then
+                    echo "✅ (本分支已提交)" >&2
+                else
+                    echo "❌ (.dod.md 未更新)" >&2
+                    echo "    → 当前 .dod.md 是旧任务的，请为本次任务更新 DoD" >&2
+                    FAILED=1
+                fi
             fi
         fi
     else

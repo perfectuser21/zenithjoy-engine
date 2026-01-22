@@ -88,19 +88,15 @@ if [[ -z "$LOCAL_BRANCH" && -z "$REMOTE_BRANCH" ]]; then
   echo "   这可能是因为分支已被清理，或者名称拼写错误"
 fi
 
-# 自动检测项目根目录（优先使用环境变量，其次使用 git）
-if [[ -n "${ZENITHJOY_ENGINE:-}" ]]; then
-  PROJECT_ROOT="$ZENITHJOY_ENGINE"
-else
-  PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
-fi
-SKILL_FILE="$PROJECT_ROOT/skills/dev/SKILL.md"
+# 自动检测项目根目录
+PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+# Skills 在 ~/.claude/skills/dev/ 目录下
+SKILL_FILE="$HOME/.claude/skills/dev/SKILL.md"
 
 # SKILL.md 存在性检查
 if [[ ! -f "$SKILL_FILE" ]]; then
-  echo "❌ SKILL.md 不存在: $SKILL_FILE"
-  echo "   请检查 ZENITHJOY_ENGINE 环境变量"
-  exit 1
+  echo "⚠️ SKILL.md 不存在: $SKILL_FILE"
+  echo "   这不影响 cleanup 检查，继续执行..."
 fi
 
 echo ""
