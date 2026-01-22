@@ -38,6 +38,8 @@ describe('snapshot-prd-dod.sh meta 增强', () => {
   beforeAll(() => {
     execSync(`rm -rf ${testDir} && mkdir -p ${testDir}`)
     execSync(`cd ${testDir} && git init --quiet`)
+    // 配置 git user（CI 环境需要）
+    execSync(`cd ${testDir} && git config user.email "test@example.com" && git config user.name "Test"`)
     // 创建测试 PRD 和 DoD
     fs.writeFileSync(
       path.join(testDir, '.prd.md'),
@@ -252,6 +254,8 @@ describe('metrics.sh 指标计算', () => {
     // 创建测试目录和 git repo
     execSync(`rm -rf ${testDir} && mkdir -p ${testDir}/.history`)
     execSync(`cd ${testDir} && git init --quiet`)
+    // 配置 git user（CI 环境需要）
+    execSync(`cd ${testDir} && git config user.email "test@example.com" && git config user.name "Test"`)
 
     // 创建模拟的快照文件（带 meta）
     const now = new Date()
@@ -349,6 +353,8 @@ describe('metrics.sh 时间窗口', () => {
   beforeAll(() => {
     execSync(`rm -rf ${testDir} && mkdir -p ${testDir}/.history`)
     execSync(`cd ${testDir} && git init --quiet`)
+    // 配置 git user（CI 环境需要）
+    execSync(`cd ${testDir} && git config user.email "test@example.com" && git config user.name "Test"`)
 
     // 本月的 PR
     const thisMonth = new Date()
