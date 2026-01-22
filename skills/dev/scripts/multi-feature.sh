@@ -89,6 +89,7 @@ case $ACTION in
 
       # 获取过滤后的提交数和最后更新时间
       AHEAD_FILTERED=$(get_ahead_count_filtered "$branch")
+      AHEAD_FILTERED="${AHEAD_FILTERED:-0}"  # 确保非空
       LAST_UPDATE=$(get_last_update "$branch")
 
       if [ "$BEHIND" = "0" ] || [ "$BEHIND" = "?" ]; then

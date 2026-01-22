@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [8.4.0] - 2026-01-22
+
+### Security
+- **scripts/run-regression.sh**: 添加命令白名单防止 eval 注入
+- **scripts/run-regression.sh**: 修复 yq 查询变量注入风险
+- **scripts/run-regression.sh**: 修复 trap 变量引用
+- **skills/dev/scripts/cleanup.sh v1.3**: 使用 mktemp 替代硬编码 /tmp
+
+### Fixed
+- **hooks/pr-gate-v2.sh v2.5**: 修复最后一处硬编码 develop (line 290)
+- **hooks/branch-protect.sh v14**: 验证 BASE_BRANCH 存在性
+- **scripts/run-regression.sh**: 修复 ls 通配符 word splitting
+- **skills/dev/scripts/generate-report.sh**: JSON 文件名特殊字符转义
+- **skills/dev/scripts/multi-feature.sh**: 变量初始化防止空值
+- **skills/dev/scripts/cleanup.sh v1.3**: 修复 MERGE_HEAD 路径
+
+### Changed
+- **README.md**: 添加 yq 依赖说明
+- **package.json**: 添加 engines 字段 (node >= 18)
+- **.gitignore**: 精确化 .env 规则（允许 .env.example）
+
+### Removed
+- **templates/dod.md**: 删除重复模板（保留 DOD-TEMPLATE.md）
+- **.dev-runs/**: 清理历史开发报告
+
 ## [8.3.0] - 2026-01-22
 
 ### Fixed

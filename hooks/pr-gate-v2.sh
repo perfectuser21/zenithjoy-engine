@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# PreToolUse Hook: PR Gate v2.4 (硬门禁版)
+# PreToolUse Hook: PR Gate v2.5 (硬门禁版)
 # ============================================================================
 #
 # v2.4: 修复硬编码 develop 分支，改用 git config 读取 base 分支
@@ -287,7 +287,8 @@ if [[ "$MODE" == "pr" ]]; then
             FAILED=1
         else
             # 检查 .prd.md 是否在当前分支有修改（防止复用旧的 PRD）
-            PRD_MODIFIED=$(git diff develop --name-only 2>/dev/null | grep -c "^\.prd\.md$" 2>/dev/null || echo 0)
+            # v2.5: 使用配置的 base 分支
+            PRD_MODIFIED=$(git diff "$BASE_BRANCH" --name-only 2>/dev/null | grep -c "^\.prd\.md$" 2>/dev/null || echo 0)
             PRD_NEW=$(git status --porcelain 2>/dev/null | grep -c "\.prd\.md" 2>/dev/null || echo 0)
             # 确保是纯数字
             PRD_MODIFIED=${PRD_MODIFIED//[^0-9]/}

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # ZenithJoy Engine - 分支保护 Hook
+# v14: 验证 BASE_BRANCH 存在性，不存在则回退 develop
 # v13: 修复硬编码 develop 分支，改用 git config 读取 base 分支
 # v12: 增加全局配置目录保护（~/.claude/hooks/, ~/.claude/skills/）
 # v11: 增加 PRD/DoD 内容有效性检查（不能是空文件）
@@ -176,6 +177,10 @@ if [[ "$CURRENT_BRANCH" =~ ^feature/ ]] || [[ "$CURRENT_BRANCH" =~ ^cp-[a-zA-Z0-
     # 方法：检查 .prd.md 是否在当前分支的提交历史中，或者在暂存区/工作区有修改，或者是新文件
     # v13: 使用配置的 base 分支而非硬编码 develop
     BASE_BRANCH=$(git config "branch.$CURRENT_BRANCH.base-branch" 2>/dev/null || echo "develop")
+    # v14: 验证 BASE_BRANCH 存在，否则回退到 develop
+    if ! git rev-parse "$BASE_BRANCH" >/dev/null 2>&1; then
+        BASE_BRANCH="develop"
+    fi
     PRD_IN_BRANCH=$(git log "$BASE_BRANCH"..HEAD --name-only 2>/dev/null | grep -c "^\.prd\.md$" || echo 0)
     PRD_STAGED=$(git diff --cached --name-only 2>/dev/null | grep -c "^\.prd\.md$" || echo 0)
     PRD_MODIFIED=$(git diff --name-only 2>/dev/null | grep -c "^\.prd\.md$" || echo 0)
