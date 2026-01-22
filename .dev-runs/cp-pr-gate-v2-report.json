@@ -3,9 +3,9 @@
   "project": "zenithjoy-engine",
   "branch": "cp-pr-gate-v2",
   "base_branch": "develop",
+  "mode": "interactive",
   "timestamp": "2026-01-19 22:35",
   "date": "2026-01-19",
-  "step": "11",
   "quality_report": {
     "L1_automated": "pass",
     "L2_verification": "pass",

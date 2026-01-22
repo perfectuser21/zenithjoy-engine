@@ -195,7 +195,7 @@ echo ""
 
 if [[ $FAILED -eq 1 ]]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  ❌ Release Check 失败"
+    echo "  ❌ Release 检查失败"
     echo ""
     echo "  请补充证据："
     echo "    1. 创建/更新 .layer2-evidence.md（截图/curl 证据）"
@@ -206,7 +206,7 @@ if [[ $FAILED -eq 1 ]]; then
 fi
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  ✅ Release Check 通过 ($CHECKED 项)"
+echo "  ✅ Release 检查通过 ($CHECKED 项)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 exit 0
