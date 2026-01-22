@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # ZenithJoy Engine - Cleanup 脚本
+# v1.1: 自动检测 base 分支（从 git config 读取）
 # PR 合并后执行完整清理，确保不留垃圾
 #
-# 用法: bash skills/dev/scripts/cleanup.sh <cp-分支名> <base-分支名>
+# 用法: bash skills/dev/scripts/cleanup.sh <cp-分支名> [base-分支名]
 # 例如: bash skills/dev/scripts/cleanup.sh cp-20260117-fix-bug develop
 
 set -euo pipefail
@@ -15,7 +16,8 @@ NC='\033[0m' # No Color
 
 # 参数
 CP_BRANCH="${1:-}"
-BASE_BRANCH="${2:-develop}"
+# v1.1: 优先使用参数，其次从 git config 读取，最后 fallback 到 develop
+BASE_BRANCH="${2:-$(git config "branch.$CP_BRANCH.base-branch" 2>/dev/null || echo "develop")}"
 
 if [[ -z "$CP_BRANCH" ]]; then
     echo -e "${RED}错误: 请提供 cp-* 分支名${NC}"

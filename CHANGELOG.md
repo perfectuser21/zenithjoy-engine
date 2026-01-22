@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [8.2.0] - 2026-01-22
+
+### Fixed
+- **hooks/branch-protect.sh v13**: 修复硬编码 develop 分支问题
+  - 使用 `git config branch.$BRANCH.base-branch` 读取实际 base 分支
+  - 支持 `feature/*` 分支作为 base 分支
+- **hooks/pr-gate-v2.sh v2.4**: 修复硬编码 develop 分支问题
+  - PRD/DoD 更新检查使用配置的 base 分支
+  - checkbox 匹配支持大小写 `[x]` 和 `[X]`
+- **skills/dev/scripts/cleanup.sh v1.1**: 自动检测 base 分支
+  - 优先使用参数，其次从 git config 读取
+
 ## [8.1.1] - 2026-01-22
 
 ### Fixed

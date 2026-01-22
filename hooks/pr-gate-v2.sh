@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # ============================================================================
-# PreToolUse Hook: PR Gate v2.3 (硬门禁版)
+# PreToolUse Hook: PR Gate v2.4 (硬门禁版)
 # ============================================================================
 #
+# v2.4: 修复硬编码 develop 分支，改用 git config 读取 base 分支
 # v2.3: 修复目标仓库检测 - 解析 --repo 参数，检查正确的仓库
 # v2.2: 增加 PRD/DoD 内容有效性检查（不能是空文件）
 # v2.1: 增加 PRD 检查（与 DoD 检查并列）
@@ -91,6 +92,8 @@ if [[ "$MODE" != "pr" && "$MODE" != "release" ]]; then
 fi
 
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+# v2.4: 读取配置的 base 分支，而非硬编码 develop
+BASE_BRANCH=$(git config "branch.$CURRENT_BRANCH.base-branch" 2>/dev/null || echo "develop")
 
 echo "" >&2
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
@@ -278,7 +281,8 @@ if [[ "$MODE" == "pr" ]]; then
                 echo "✅" >&2
             else
                 # 检查是否是新分支首次创建（.prd.md 已提交但未推送）
-                PRD_IN_BRANCH=$(git log develop..HEAD --name-only 2>/dev/null | grep -c "^\.prd\.md$" 2>/dev/null || echo 0)
+                # v2.4: 使用配置的 base 分支
+                PRD_IN_BRANCH=$(git log "$BASE_BRANCH"..HEAD --name-only 2>/dev/null | grep -c "^\.prd\.md$" 2>/dev/null || echo 0)
                 PRD_IN_BRANCH=${PRD_IN_BRANCH//[^0-9]/}
                 [[ -z "$PRD_IN_BRANCH" ]] && PRD_IN_BRANCH=0
                 if [[ "$PRD_IN_BRANCH" -gt 0 ]]; then
@@ -316,7 +320,8 @@ if [[ "$MODE" == "pr" ]]; then
             FAILED=1
         else
             # 检查 .dod.md 是否在当前分支有修改（防止复用旧的 DoD）
-            DOD_MODIFIED=$(git diff develop --name-only 2>/dev/null | grep -c "^\.dod\.md$" 2>/dev/null || echo 0)
+            # v2.4: 使用配置的 base 分支
+            DOD_MODIFIED=$(git diff "$BASE_BRANCH" --name-only 2>/dev/null | grep -c "^\.dod\.md$" 2>/dev/null || echo 0)
             DOD_NEW=$(git status --porcelain 2>/dev/null | grep -c "\.dod\.md" 2>/dev/null || echo 0)
             # 确保是纯数字
             DOD_MODIFIED=${DOD_MODIFIED//[^0-9]/}
@@ -328,7 +333,8 @@ if [[ "$MODE" == "pr" ]]; then
                 echo "✅" >&2
             else
                 # 检查是否是新分支首次创建（.dod.md 已提交但未推送）
-                DOD_IN_BRANCH=$(git log develop..HEAD --name-only 2>/dev/null | grep -c "^\.dod\.md$" 2>/dev/null || echo 0)
+                # v2.4: 使用配置的 base 分支
+                DOD_IN_BRANCH=$(git log "$BASE_BRANCH"..HEAD --name-only 2>/dev/null | grep -c "^\.dod\.md$" 2>/dev/null || echo 0)
                 DOD_IN_BRANCH=${DOD_IN_BRANCH//[^0-9]/}
                 [[ -z "$DOD_IN_BRANCH" ]] && DOD_IN_BRANCH=0
                 if [[ "$DOD_IN_BRANCH" -gt 0 ]]; then
@@ -390,7 +396,8 @@ if [[ "$MODE" == "release" ]]; then
 
         if [[ -f "$DOD_FILE" ]]; then
             UNCHECKED=$(grep -c '\- \[ \]' "$DOD_FILE" 2>/dev/null) || true
-            CHECKED_BOXES=$(grep -c '\- \[x\]' "$DOD_FILE" 2>/dev/null) || true
+            # v2.4: 支持大小写 [x] 和 [X]
+            CHECKED_BOXES=$(grep -cE '\- \[[xX]\]' "$DOD_FILE" 2>/dev/null) || true
 
             echo -n "  验收项... " >&2
             CHECKED=$((CHECKED + 1))
