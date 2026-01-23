@@ -172,8 +172,12 @@ if [[ -d "$SKILLS_SRC_DIR" ]]; then
                 echo -e "  [DRY-RUN] Would copy: $skill_name/"
             else
                 mkdir -p "$target_skill"
-                cp -r "$skill_dir"* "$target_skill/" 2>/dev/null || true
-                echo -e "  ${GREEN}[OK]${NC} $skill_name/"
+                # L2 fix: 检查 cp 结果，失败时显示警告而非 OK
+                if cp -r "$skill_dir"* "$target_skill/" 2>/dev/null; then
+                    echo -e "  ${GREEN}[OK]${NC} $skill_name/"
+                else
+                    echo -e "  ${YELLOW}[WARN]${NC} $skill_name/ (部分文件可能未复制)"
+                fi
             fi
         fi
     done

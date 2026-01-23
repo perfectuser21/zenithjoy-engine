@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [9.0.1] - 2026-01-23
+
+### Fixed (深度扫描遗漏修复)
+
+- **install-hooks.sh**: cp 失败时显示警告而非 OK (L2)
+  - 深度扫描 `|| true` 和 `2>/dev/null` 模式发现
+  - 31 个 `|| true` 中仅此 1 个为真正问题
+
 ## [9.0.0] - 2026-01-23
 
 ### Changed (Clear Version - 全量代码审计)
