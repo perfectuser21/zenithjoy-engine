@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [9.3.0] - 2026-01-23
+
+### Added
+
+- **Worktree 并行开发检测**: 在 /dev 流程中自动检测活跃分支
+  - 新增 `skills/dev/steps/02.5-parallel-detect.md`: 并行开发检测步骤
+  - 新增 `skills/dev/scripts/worktree-manage.sh`: Worktree 管理脚本
+    - `create <task-name>`: 创建新 worktree
+    - `list`: 列出所有 worktree
+    - `remove <branch>`: 移除指定 worktree
+    - `cleanup`: 清理已合并的 worktree
+
+- **Cleanup worktree 清理**: cleanup.sh 新增 Step 4.5
+  - 自动检测并移除关联的 worktree
+  - 安全处理未提交改动的情况
+
+### Changed
+
+- **SKILL.md**: 流程图更新，添加并行检测步骤
+- **03-branch.md**: 添加 worktree 环境感知
+
+---
+
 ## [9.2.0] - 2026-01-23
 
 ### 🎉 里程碑版本：完整质量保证体系

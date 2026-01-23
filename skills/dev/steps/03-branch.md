@@ -4,15 +4,27 @@
 
 ---
 
-## 分支检查
+## 环境检查
 
 ```bash
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 REPO=$(basename "$(git rev-parse --show-toplevel)")
 
+# 检测是否在 worktree 中
+IS_WORKTREE=false
+GIT_DIR=$(git rev-parse --git-dir 2>/dev/null)
+if [[ "$GIT_DIR" == *"worktrees"* ]]; then
+    IS_WORKTREE=true
+    MAIN_WORKTREE=$(git worktree list 2>/dev/null | head -1 | awk '{print $1}')
+fi
+
 echo "📍 当前位置："
 echo "   Repo: $REPO"
 echo "   分支: $CURRENT_BRANCH"
+if [[ "$IS_WORKTREE" == "true" ]]; then
+    echo "   环境: Worktree"
+    echo "   主工作区: $MAIN_WORKTREE"
+fi
 ```
 
 **分支处理逻辑**：
@@ -23,6 +35,8 @@ echo "   分支: $CURRENT_BRANCH"
 | develop | → 创建 cp-* 分支 |
 | feature/* | → 创建 cp-* 分支 |
 | cp-* | ✅ 继续当前任务，跳到 Step 4 |
+
+**Worktree 注意**：如果在 worktree 中，分支已由 worktree-manage.sh 创建。
 
 ---
 
