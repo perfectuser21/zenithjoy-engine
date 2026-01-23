@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [8.15.0] - 2026-01-23
+
+### Fixed (Skills 矛盾信息修复)
+- **skills/dev/SKILL.md**: 简化流程图，与步骤文件对应
+  - 移除具体 Step 编号，避免与 01-11 步骤文件混淆
+  - 统一术语为 "QA Decision Node"（之前有 "QA Node" 混用）
+- **skills/dev/steps/07-quality.md**: 明确 L1/L2A/L2B/L3/L4 分层定义
+  - L1: 自动化测试 (npm run qa)
+  - L2A: 代码审计 (Audit Node)
+  - L2B: Evidence 证据 (.layer2-evidence.md)
+  - L3: Acceptance 验收 (DoD 全勾)
+  - L4: 过度优化 (不修)
+  - PR 模式: L1 + L2A
+  - Release 模式: L1 + L2A + L2B + L3
+- **hooks/pr-gate-v2.sh**: 更新模式提示文案
+  - PR 模式: "L1 + L2A" (之前写 "L1 only")
+  - Release 模式: "L1 + L2A + L2B + L3"
+- **skills/qa/knowledge/criteria.md**: 添加 E scope 定义
+  - E = Export (QA报告/会话摘要)
+
 ## [8.14.0] - 2026-01-22
 
 ### Changed (Skills 架构重构)

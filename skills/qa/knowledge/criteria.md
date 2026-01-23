@@ -125,6 +125,7 @@ Scope:
   W = Workflow
   C = CI/Release
   B = Business
+  E = Export (QA报告/会话摘要)
 
 例：H1-001, H2-003, W1-002, C1-001, E1-001
 ```

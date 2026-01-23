@@ -1,8 +1,8 @@
 # Audit Report
 
-Branch: cp-skill-refactor
-Date: 2026-01-22
-Scope: skills/dev/SKILL.md, skills/dev/steps/04-dod.md, skills/dev/steps/07-quality.md, skills/qa/SKILL.md, skills/audit/SKILL.md
+Branch: cp-fix-skill-contradictions
+Date: 2026-01-23
+Scope: skills/dev/SKILL.md, skills/dev/steps/07-quality.md, hooks/pr-gate-v2.sh, skills/qa/knowledge/criteria.md
 Target Level: L2
 
 Summary:
@@ -21,13 +21,15 @@ Blockers: []
 
 ## 审计说明
 
-本次改动为文档/措辞重构：
-1. 将"调用 /qa /audit"改为"QA Decision Node / Audit Node（参考规范）"
-2. 添加 QA-DECISION.md 和 AUDIT-REPORT.md 的固定输出 schema
-3. 将 /audit 从"可选调用"改为"必须"
+本次改动修复文档矛盾信息：
+1. 统一术语 "QA Decision Node"（移除 "QA Node" 混用）
+2. 简化流程图，与步骤文件对应
+3. 明确 L1/L2A/L2B/L3/L4 分层定义
+4. 添加 E scope 定义到 criteria.md
+5. 更新 pr-gate 模式提示文案
 
-改动范围仅限于 Skill 文档的措辞和结构，不涉及任何代码逻辑：
-- 无语法错误风险（纯 Markdown）
+改动范围仅限于文档和提示信息：
+- 无语法错误风险（Markdown + Shell echo）
 - 无功能影响（文档性质）
 - 无边界条件问题
 
@@ -37,4 +39,4 @@ Blockers: []
 
 ---
 
-**审计完成时间**: 2026-01-22 23:40
+**审计完成时间**: 2026-01-23 08:48

@@ -5,22 +5,16 @@ Priority: P2
 RepoType: Engine
 
 Tests:
-  - dod_item: "SKILL.md 不含'调用 /qa'或'调用 /audit'"
+  - dod_item: "统一术语 QA Decision Node"
     method: manual
     location: manual:grep-verify
-  - dod_item: "steps/04-dod.md 改为 QA Decision Node"
+  - dod_item: "简化流程图"
     method: manual
     location: manual:file-check
-  - dod_item: "steps/07-quality.md 改为 Audit Node"
+  - dod_item: "L1/L2A/L2B/L3 分层定义"
     method: manual
     location: manual:file-check
-  - dod_item: "/qa SKILL.md 包含固定输出 schema"
-    method: manual
-    location: manual:file-check
-  - dod_item: "/audit SKILL.md 包含固定输出 schema"
-    method: manual
-    location: manual:file-check
-  - dod_item: "/audit 删除'可选调用'，改为'必须'"
+  - dod_item: "E scope 添加"
     method: manual
     location: manual:file-check
   - dod_item: "npm run qa 通过"
@@ -31,4 +25,4 @@ RCI:
   new: []
   update: []
 
-Reason: 文档/措辞重构，不涉及核心逻辑改动，无需纳入回归契约
+Reason: 文档矛盾修复，不涉及核心逻辑改动，无需纳入回归契约
