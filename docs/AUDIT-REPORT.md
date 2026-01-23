@@ -1,12 +1,12 @@
 # Audit Report
 
-> MEDIUM P3 级代码质量修复
+> LOW 级代码风格修复
 
 ## 基本信息
 
 | 字段 | 值 |
 |------|-----|
-| Branch | `cp-fix-medium-p3-issues` |
+| Branch | `cp-fix-low-issues` |
 | Date | 2026-01-23 |
 | Scope | Scripts |
 | Target Level | L2 |
@@ -19,34 +19,36 @@
 |------|------|------|
 | L1 (阻塞性) | 0 | - |
 | L2 (功能性) | 0 | - |
-| L3 (最佳实践) | 3 | 全部 FIXED |
-| L4 (过度优化) | 0 | - |
+| L3 (最佳实践) | 2 | 全部 FIXED |
+| L4 (过度优化) | 6 | WONT_FIX |
 
 ### Blockers (L1 + L2)
 
 无
 
-### L3 修复 (代码质量)
+### L3 修复 (代码风格)
 
 | ID | 文件 | 问题 | 状态 |
 |----|------|------|------|
-| Q1 | scripts/run-regression.sh:186 | 重复定义 first_cmd 变量 | FIXED |
-| Q2 | scripts/devgate/snapshot-prd-dod.sh:63 | 错误消息格式不统一 | FIXED |
-| Q3 | scripts/devgate/view-snapshot.sh:64 | 调用外部脚本前未检查存在性 | FIXED |
+| S1 | scripts/run-regression.sh:1 | Shebang 不可移植 | FIXED |
+| S2 | scripts/install-hooks.sh:1 | Shebang 不可移植 | FIXED |
+
+### L4 不修复 (过度优化)
+
+| ID | 文件 | 问题 | 原因 |
+|----|------|------|------|
+| O1 | tests/hooks/metrics.test.ts | 文件过长 (473行) | 重构成本高，当前结构可接受 |
+| O2 | tests/hooks/pr-gate-phase1.test.ts | 文件过长 (304行) | 同上 |
+| O3 | tests/hooks/append-learnings.test.ts | 文件过长 (288行) | 同上 |
+| O4 | tests/hooks/install-hooks.test.ts | 文件过长 (274行) | 同上 |
+| O5 | scripts/install-hooks.sh | 注释密度低 | 代码足够清晰 |
+| O6 | scripts/setup-branch-protection.sh | 注释密度低 | 代码足够清晰 |
 
 ### 修复详情
 
-#### Q1: run-regression.sh 重复变量定义
-- **问题**: `first_cmd` 变量在 173 行和 186 行重复定义
-- **修复**: 删除 186 行的重复定义，添加注释说明
-
-#### Q2: snapshot-prd-dod.sh 错误消息格式
-- **问题**: 未知选项的错误消息格式与其他脚本不一致
-- **修复**: 统一为 `echo "错误: 未知选项 $1" >&2`
-
-#### Q3: view-snapshot.sh 外部脚本检查
-- **问题**: 调用 `list-snapshots.sh` 前未检查脚本是否存在
-- **修复**: 添加 `-f` 存在性检查，不存在时输出提示
+#### S1 & S2: Shebang 可移植性
+- **问题**: 使用 `#!/bin/bash` 硬编码路径，在某些系统上 bash 可能不在 /bin
+- **修复**: 改为 `#!/usr/bin/env bash`，使用 env 查找 bash 位置
 
 ## 结论
 
@@ -58,4 +60,4 @@ Decision: **PASS**
 
 ---
 
-**审计完成时间**: 2026-01-23 11:15
+**审计完成时间**: 2026-01-23 11:45

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [8.23.0] - 2026-01-23
+
+### Fixed (LOW 级代码风格修复)
+- **scripts/run-regression.sh**: Shebang 改为 `#!/usr/bin/env bash` 提高可移植性
+- **scripts/install-hooks.sh**: Shebang 改为 `#!/usr/bin/env bash` 提高可移植性
+
 ## [8.22.0] - 2026-01-23
 
 ### Fixed (MEDIUM P3 级代码质量修复)

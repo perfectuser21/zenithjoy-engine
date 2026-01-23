@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # install-hooks.sh - Install hook-core to target project
 # Version: 1.0.0
 
