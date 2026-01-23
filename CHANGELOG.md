@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [9.3.7] - 2026-01-23
+
+### Fixed
+
+- **PR Gate 证据采集**: 修复门禁失败证据不可信问题
+  - 日志保存到 `artifacts/pr-gate/gate-{timestamp}.log`（不再用 mktemp 临时文件）
+  - 失败时输出完整失败清单（不只是 tail -10）
+  - 统一 Hook 和 CI 环境（CI=true, TZ=UTC, NODE_ENV=test）
+  - 7 天自动清理旧日志
+
 ## [9.3.6] - 2026-01-23
 
 ### Fixed

@@ -194,15 +194,29 @@ fi
 echo "" >&2
 echo "  [L1: 自动化测试]" >&2
 
+# 环境统一化：让 Hook 和 CI 保持一致
+export CI=true
+export TZ=UTC
+export NODE_ENV=test
+
 # L3 修复: 改用位标志检测项目类型
 PROJECT_TYPE=0  # 位标志: 1=node, 2=python, 4=go
 [[ -f "$PROJECT_ROOT/package.json" ]] && PROJECT_TYPE=$((PROJECT_TYPE | 1))
 [[ -f "$PROJECT_ROOT/requirements.txt" || -f "$PROJECT_ROOT/pyproject.toml" ]] && PROJECT_TYPE=$((PROJECT_TYPE | 2))
 [[ -f "$PROJECT_ROOT/go.mod" ]] && PROJECT_TYPE=$((PROJECT_TYPE | 4))
 
-# 临时文件用于保存测试输出
-TEST_OUTPUT_FILE=$(mktemp)
-trap 'rm -f "$TEST_OUTPUT_FILE"' EXIT
+# 证据目录：保存门禁日志
+ARTIFACTS_DIR="$PROJECT_ROOT/artifacts/pr-gate"
+mkdir -p "$ARTIFACTS_DIR"
+
+# 日志文件：不要用临时文件，要可审计
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+GATE_LOG="$ARTIFACTS_DIR/gate-${TIMESTAMP}.log"
+
+# 清理 7 天前的旧日志
+find "$ARTIFACTS_DIR" -name "gate-*.log" -mtime +7 -delete 2>/dev/null || true
+
+echo "  日志保存到: $GATE_LOG" >&2
 
 # Node.js 项目 (PROJECT_TYPE & 1)
 if (( PROJECT_TYPE & 1 )); then
@@ -210,13 +224,13 @@ if (( PROJECT_TYPE & 1 )); then
     if grep -q '"typecheck"' package.json 2>/dev/null; then
         echo -n "  typecheck... " >&2
         CHECK_COUNT=$((CHECK_COUNT + 1))
-        # L2 修复: 保存测试输出到文件
-        if npm run typecheck >"$TEST_OUTPUT_FILE" 2>&1; then
+        echo "━━━ [typecheck] $(date) ━━━" >> "$GATE_LOG"
+        if npm run typecheck >> "$GATE_LOG" 2>&1; then
             echo "[OK]" >&2
         else
             echo "[FAIL]" >&2
-            # 显示最后几行错误
-            tail -10 "$TEST_OUTPUT_FILE" >&2 || true
+            echo "  完整日志: $GATE_LOG" >&2
+            grep -E "(error|fail|Error|FAIL)" "$GATE_LOG" | tail -20 >&2 || tail -20 "$GATE_LOG" >&2
             FAILED=1
         fi
     fi
@@ -225,11 +239,13 @@ if (( PROJECT_TYPE & 1 )); then
     if grep -q '"lint"' package.json 2>/dev/null; then
         echo -n "  lint... " >&2
         CHECK_COUNT=$((CHECK_COUNT + 1))
-        if npm run lint >"$TEST_OUTPUT_FILE" 2>&1; then
+        echo "━━━ [lint] $(date) ━━━" >> "$GATE_LOG"
+        if npm run lint >> "$GATE_LOG" 2>&1; then
             echo "[OK]" >&2
         else
             echo "[FAIL]" >&2
-            tail -10 "$TEST_OUTPUT_FILE" >&2 || true
+            echo "  完整日志: $GATE_LOG" >&2
+            grep -E "(error|Error)" "$GATE_LOG" | tail -20 >&2 || tail -20 "$GATE_LOG" >&2
             FAILED=1
         fi
     fi
@@ -238,11 +254,15 @@ if (( PROJECT_TYPE & 1 )); then
     if grep -q '"test"' package.json 2>/dev/null; then
         echo -n "  test... " >&2
         CHECK_COUNT=$((CHECK_COUNT + 1))
-        if npm test >"$TEST_OUTPUT_FILE" 2>&1; then
+        echo "━━━ [test] $(date) ━━━" >> "$GATE_LOG"
+        if npm test >> "$GATE_LOG" 2>&1; then
             echo "[OK]" >&2
         else
             echo "[FAIL]" >&2
-            tail -10 "$TEST_OUTPUT_FILE" >&2 || true
+            echo "  完整日志: $GATE_LOG" >&2
+            echo "  失败的测试:" >&2
+            # 提取失败测试清单（Jest 格式）
+            grep -E "FAIL|✕|⎯⎯⎯" "$GATE_LOG" | tail -30 >&2 || tail -30 "$GATE_LOG" >&2
             FAILED=1
         fi
     fi
@@ -251,11 +271,13 @@ if (( PROJECT_TYPE & 1 )); then
     if grep -q '"build"' package.json 2>/dev/null; then
         echo -n "  build... " >&2
         CHECK_COUNT=$((CHECK_COUNT + 1))
-        if npm run build >"$TEST_OUTPUT_FILE" 2>&1; then
+        echo "━━━ [build] $(date) ━━━" >> "$GATE_LOG"
+        if npm run build >> "$GATE_LOG" 2>&1; then
             echo "[OK]" >&2
         else
             echo "[FAIL]" >&2
-            tail -10 "$TEST_OUTPUT_FILE" >&2 || true
+            echo "  完整日志: $GATE_LOG" >&2
+            grep -E "(error|Error)" "$GATE_LOG" | tail -20 >&2 || tail -20 "$GATE_LOG" >&2
             FAILED=1
         fi
     fi
@@ -266,12 +288,13 @@ if (( PROJECT_TYPE & 2 )); then
     if [[ -d "$PROJECT_ROOT/tests" || -d "$PROJECT_ROOT/test" || -f "$PROJECT_ROOT/pytest.ini" ]]; then
         echo -n "  pytest... " >&2
         CHECK_COUNT=$((CHECK_COUNT + 1))
-        # L2 修复: 保存 pytest 输出
-        if pytest -q >"$TEST_OUTPUT_FILE" 2>&1; then
+        echo "━━━ [pytest] $(date) ━━━" >> "$GATE_LOG"
+        if pytest -q >> "$GATE_LOG" 2>&1; then
             echo "[OK]" >&2
         else
             echo "[FAIL]" >&2
-            tail -10 "$TEST_OUTPUT_FILE" >&2 || true
+            echo "  完整日志: $GATE_LOG" >&2
+            grep -E "(FAILED|ERROR)" "$GATE_LOG" | tail -20 >&2 || tail -20 "$GATE_LOG" >&2
             FAILED=1
         fi
     fi
@@ -281,12 +304,13 @@ fi
 if (( PROJECT_TYPE & 4 )); then
     echo -n "  go test... " >&2
     CHECK_COUNT=$((CHECK_COUNT + 1))
-    # L2 修复: 保存 go test 输出
-    if go test ./... >"$TEST_OUTPUT_FILE" 2>&1; then
+    echo "━━━ [go test] $(date) ━━━" >> "$GATE_LOG"
+    if go test ./... >> "$GATE_LOG" 2>&1; then
         echo "[OK]" >&2
     else
         echo "[FAIL]" >&2
-        tail -10 "$TEST_OUTPUT_FILE" >&2 || true
+        echo "  完整日志: $GATE_LOG" >&2
+        grep -E "(FAIL|--- FAIL)" "$GATE_LOG" | tail -20 >&2 || tail -20 "$GATE_LOG" >&2
         FAILED=1
     fi
 fi
