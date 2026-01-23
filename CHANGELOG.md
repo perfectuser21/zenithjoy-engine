@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [9.1.4] - 2026-01-23
+
+### Added
+
+- **scan-rci-coverage.cjs `--stats` 模式**: 独立分母核对
+  - 用 find/ls 独立计数，与扫描器对比
+  - 验证扫描器没有漏算
+
+- **scripts/devgate/assert-ci-guards.sh**: 防篡改哨兵
+  - 验证 CI 守门没有被移除
+  - 检查 coverage:rci、version-check、DevGate、release-check
+
+### Milestone
+
+**独立交叉验证**: 从"自证"变成"可信"
+
+四项验证全部完成：
+1. ✅ 可证伪（反证能 fail）
+2. ✅ 可审计（--explain 有分母来源 + 匹配原因）
+3. ✅ 强制执行（CI 守门）
+4. ✅ 独立交叉验证（--stats 分母核对 + 防篡改哨兵）
+
+---
+
 ## [9.1.3] - 2026-01-23
 
 ### Added

@@ -12,6 +12,7 @@
  *   --snapshot       同时生成 BASELINE-SNAPSHOT.md
  *   --json           输出 JSON 格式
  *   --explain        输出详细审计证据（每个入口的来源和匹配依据）
+ *   --stats          独立分母核对（用 find/ls 交叉验证）
  *
  * 业务入口：
  *   - skills/{name}/SKILL.md
@@ -383,6 +384,7 @@ function main() {
   let generateSnapshotFile = false;
   let jsonOutput = false;
   let explainMode = false;
+  let statsMode = false;
 
   // 解析参数
   for (let i = 0; i < args.length; i++) {
@@ -395,6 +397,8 @@ function main() {
       jsonOutput = true;
     } else if (args[i] === "--explain") {
       explainMode = true;
+    } else if (args[i] === "--stats") {
+      statsMode = true;
     }
   }
 
@@ -427,7 +431,97 @@ function main() {
     console.log(`Snapshot written to ${snapshotPath}`);
   }
 
-  if (explainMode) {
+  if (statsMode) {
+    // 独立分母核对模式：用不同算法交叉验证
+    console.log("");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("  RCI Coverage Independent Verification (--stats)");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("");
+    console.log("  ▸ 独立分母核对（用 find/ls 独立计数，与扫描器对比）");
+    console.log("  ───────────────────────────────────────────────────────────────────────────");
+    console.log("");
+
+    // 独立统计：用 find/ls 命令直接计数
+    const independentCounts = {};
+    let independentTotal = 0;
+
+    // Skills
+    try {
+      const skillsRaw = execSync(`find ${PROJECT_ROOT}/skills -name 'SKILL.md' 2>/dev/null | wc -l`, { encoding: "utf-8" }).trim();
+      independentCounts.skills_raw = parseInt(skillsRaw, 10) || 0;
+    } catch { independentCounts.skills_raw = 0; }
+
+    // Hooks (排除 Gate hooks)
+    try {
+      const hooksAll = execSync(`ls ${PROJECT_ROOT}/hooks/*.sh 2>/dev/null | wc -l`, { encoding: "utf-8" }).trim();
+      const hooksGate = execSync(`ls ${PROJECT_ROOT}/hooks/*.sh 2>/dev/null | grep -E '(pr-gate|branch-protect|session-start)' | wc -l`, { encoding: "utf-8" }).trim();
+      independentCounts.hooks_raw = parseInt(hooksAll, 10) || 0;
+      independentCounts.hooks_gate = parseInt(hooksGate, 10) || 0;
+      independentCounts.hooks_business = independentCounts.hooks_raw - independentCounts.hooks_gate;
+    } catch { independentCounts.hooks_raw = 0; independentCounts.hooks_gate = 0; independentCounts.hooks_business = 0; }
+
+    // Scripts (排除 devgate、deploy、setup 等)
+    try {
+      const scriptsAll = execSync(`ls ${PROJECT_ROOT}/scripts/*.sh 2>/dev/null | wc -l`, { encoding: "utf-8" }).trim();
+      const scriptsExcluded = execSync(`ls ${PROJECT_ROOT}/scripts/*.sh 2>/dev/null | grep -E '(deploy|setup-|run-gate|rc-filter)' | wc -l`, { encoding: "utf-8" }).trim();
+      independentCounts.scripts_raw = parseInt(scriptsAll, 10) || 0;
+      independentCounts.scripts_excluded = parseInt(scriptsExcluded, 10) || 0;
+      independentCounts.scripts_business = independentCounts.scripts_raw - independentCounts.scripts_excluded;
+    } catch { independentCounts.scripts_raw = 0; independentCounts.scripts_excluded = 0; independentCounts.scripts_business = 0; }
+
+    // DevGate tools (全部排除，因为是 Gate 范畴)
+    try {
+      const devgateAll = execSync(`ls ${PROJECT_ROOT}/scripts/devgate/*.cjs 2>/dev/null | wc -l`, { encoding: "utf-8" }).trim();
+      independentCounts.devgate_raw = parseInt(devgateAll, 10) || 0;
+      independentCounts.devgate_business = 0; // 全部是 Gate 范畴
+    } catch { independentCounts.devgate_raw = 0; independentCounts.devgate_business = 0; }
+
+    independentTotal = independentCounts.skills_raw + independentCounts.hooks_business + independentCounts.scripts_business + independentCounts.devgate_business;
+
+    // 扫描器计数（按类型）
+    const scannerCounts = {};
+    for (const entry of entries) {
+      scannerCounts[entry.type] = (scannerCounts[entry.type] || 0) + 1;
+    }
+
+    console.log("  方法 A: 独立计数 (find/ls)");
+    console.log("  ────────────────────────────────────────");
+    console.log(`    Skills (SKILL.md):        ${independentCounts.skills_raw}`);
+    console.log(`    Hooks (*.sh):             ${independentCounts.hooks_raw} raw - ${independentCounts.hooks_gate} gate = ${independentCounts.hooks_business} business`);
+    console.log(`    Scripts (*.sh):           ${independentCounts.scripts_raw} raw - ${independentCounts.scripts_excluded} excluded = ${independentCounts.scripts_business} business`);
+    console.log(`    DevGate (*.cjs):          ${independentCounts.devgate_raw} raw → 0 business (Gate 范畴)`);
+    console.log(`    ────────────────────────────────────────`);
+    console.log(`    独立总计:                 ${independentTotal}`);
+    console.log("");
+
+    console.log("  方法 B: 扫描器计数 (enumerateEntries)");
+    console.log("  ────────────────────────────────────────");
+    console.log(`    skill:                    ${scannerCounts.skill || 0}`);
+    console.log(`    hook:                     ${scannerCounts.hook || 0}`);
+    console.log(`    script:                   ${scannerCounts.script || 0}`);
+    console.log(`    devgate:                  ${scannerCounts.devgate || 0}`);
+    console.log(`    ────────────────────────────────────────`);
+    console.log(`    扫描器总计:               ${entries.length}`);
+    console.log("");
+
+    // 对比
+    console.log("  ▸ 交叉验证结果");
+    console.log("  ───────────────────────────────────────────────────────────────────────────");
+    console.log("");
+
+    const match = independentTotal === entries.length;
+    if (match) {
+      console.log(`    ✅ 分母一致: 独立计数 ${independentTotal} = 扫描器 ${entries.length}`);
+      console.log("    结论: 扫描器没有漏算，分母可信");
+    } else {
+      console.log(`    ⚠️  分母不一致: 独立计数 ${independentTotal} ≠ 扫描器 ${entries.length}`);
+      console.log("    需要检查扫描规则或排除模式是否正确");
+    }
+
+    console.log("");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  } else if (explainMode) {
     // 审计证据模式：输出详细的入口来源和匹配依据
     console.log("");
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
