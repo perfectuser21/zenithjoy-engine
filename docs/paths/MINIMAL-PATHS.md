@@ -53,7 +53,7 @@ changelog:
 2. ✅ **p1: CI fail → 修复 → push → 退出（不等 CI）**
 3. ✅ **p2: CI pass → 自动 merge → Learning → Cleanup**
 
-**RCI 覆盖**: W1-001,W1-002,W1-003,W1-004,W1-005
+**RCI 覆盖**: W1-001,W1-002,W1-003,W1-004,W1-005,W1-006
 
 ---
 
@@ -62,7 +62,7 @@ changelog:
 1. ✅ **Notion 任务 → n8n 轮询 (5分钟) → cecelia-run → 执行 → 更新状态**
 2. ✅ **CI fail → PHASE_OVERRIDE=p1 → cecelia-run → 修复 → push → 退出**
 
-**RCI 覆盖**: N1-001,N1-002
+**RCI 覆盖**: N1-001,N1-002,N1-003,N1-004
 
 ---
 

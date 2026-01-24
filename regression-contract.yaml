@@ -585,37 +585,54 @@ workflow:
 
   - id: W1-004
     feature: W1
-    name: "Loop 1 循环（5→6→7）"
+    name: "p0 阶段完整流程"
     scope: workflow
-    priority: P1
-    trigger: [Release]
+    priority: P0
+    trigger: [PR, Release]
     method: manual
-    tags: [dev, loop]
+    tags: [dev, p0, v2.0.0, two-phase]
     owner: workflow
     steps:
-      given: "Step 7 质检失败"
-      when: "发现问题"
-      then: "返回 Step 5 继续修复，而非结束"
+      given: "进入 p0 阶段（本地开发）"
+      when: "执行 PRD → DoD → Code → Audit (PASS) → Test (L1) → PR"
+      then: "创建 PR 后结束，不等待 CI（Stop Hook 检查 phase=p0，直接 exit 0）"
     evidence:
       type: log
-      description: "对话记录显示循环"
+      description: "PR 创建后 Stop Hook 输出 'p0 阶段: PR 已创建 → exit 0'"
 
   - id: W1-005
     feature: W1
-    name: "CI 失败后循环"
+    name: "p1 阶段事件驱动修复"
     scope: workflow
-    priority: P1
-    trigger: [Release]
+    priority: P0
+    trigger: [PR, Release]
     method: manual
-    tags: [dev, loop, ci]
+    tags: [dev, p1, v2.0.0, two-phase, event-driven]
     owner: workflow
     steps:
-      given: "Step 9 CI 红"
-      when: "wait-for-merge.sh 检测到失败"
-      then: "返回 Step 5 重新循环"
+      given: "PR 已创建，CI 检测到失败（phase=p1）"
+      when: "CI fail 事件触发（n8n 轮询 Notion / GitHub webhook / cron）"
+      then: "PHASE_OVERRIDE=p1 启动 → 诊断 → 修复 → push → 退出（不等待 CI，等下次唤醒）"
     evidence:
       type: log
-      contains: "CI 失败"
+      contains: "p1 阶段.*CI.*fail.*修复.*push.*exit 0"
+
+  - id: W1-006
+    feature: W1
+    name: "p2 阶段自动 merge"
+    scope: workflow
+    priority: P0
+    trigger: [PR, Release]
+    method: manual
+    tags: [dev, p2, v2.0.0, two-phase, auto-merge]
+    owner: workflow
+    steps:
+      given: "PR CI 全部通过（phase=p2）"
+      when: "CI pass 事件触发（GitHub Actions auto-merge job）"
+      then: "自动合并 PR → Learning（总结经验）→ Cleanup（清理分支）→ 完成"
+    evidence:
+      type: log
+      contains: "p2 阶段.*CI pass.*merge.*learning.*cleanup"
 
   # --------------------------------------------------------------------------
   # W3: 循环回退
@@ -1189,6 +1206,24 @@ n8n:
       type: file
       path: "n8n/workflows/prd-executor-simple.json"
       exists: true
+
+  - id: N1-004
+    feature: N1
+    name: "p1 阶段无头修复语义"
+    scope: n8n
+    priority: P0
+    trigger: [PR, Release]
+    method: manual
+    tags: [n8n, cecelia, p1, v2.0.0, headless]
+    owner: infra
+    steps:
+      given: "CI fail 触发无头修复（PHASE_OVERRIDE=p1）"
+      when: "运行 cecelia-run 执行修复流程"
+      then: "修复 → push → 检测 CI pending → exit 0（不挂着等）"
+    evidence:
+      type: log
+      contains: "p1.*CI pending.*exit 0"
+    test: "手动模拟 p1 场景"
 
 # ============================================================================
 # Golden Paths (E2E 关键链路)

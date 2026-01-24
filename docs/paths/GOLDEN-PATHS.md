@@ -74,7 +74,7 @@ StopHook 触发 → 阶段检测 (detect-phase.sh) → p0: 检查质检+PR | p1:
 PR (p0 结束) → CI fail (p1 唤醒) → Fix → Push → CI pass (p2 自动 merge)
 ```
 
-**RCI 覆盖**: W1-001,W1-002,W1-003,W1-004,W1-005
+**RCI 覆盖**: W1-001,W1-002,W1-003,W1-004,W1-005,W1-006
 
 ---
 
@@ -90,7 +90,7 @@ n8n 触发 → cecelia-run → PHASE_OVERRIDE (可选) → claude -p "/dev ..." 
 执行流程 → 输出 JSON → cecelia-api 更新 Core + 同步 Notion
 ```
 
-**RCI 覆盖**: N1-001,N1-002
+**RCI 覆盖**: N1-001,N1-002,N1-003,N1-004
 
 ---
 
