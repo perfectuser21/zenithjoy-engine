@@ -549,8 +549,8 @@ if [[ "$MODE" == "pr" ]]; then
     echo -n "  QA 决策文件... " >&2
     CHECK_COUNT=$((CHECK_COUNT + 1))
     if [[ -f "$QA_DECISION_FILE" ]]; then
-        # 允许：前导空格、Decision 大小写、冒号后空格
-        QA_HAS_DECISION=$(clean_number "$(grep -cEi '^[[:space:]]*Decision[[:space:]]*:' "$QA_DECISION_FILE" 2>/dev/null || echo 0)")
+        # 允许：前导空格、Markdown #、Decision 大小写、冒号后空格
+        QA_HAS_DECISION=$(clean_number "$(grep -cEi '^[#[:space:]]*Decision[[:space:]]*:' "$QA_DECISION_FILE" 2>/dev/null || echo 0)")
         QA_FILE_SIZE=$(wc -c < "$QA_DECISION_FILE" 2>/dev/null || echo 0)
 
         if [[ "$QA_FILE_SIZE" -lt 10 ]]; then
@@ -574,10 +574,10 @@ if [[ "$MODE" == "pr" ]]; then
     echo -n "  审计报告文件... " >&2
     CHECK_COUNT=$((CHECK_COUNT + 1))
     if [[ -f "$AUDIT_REPORT_FILE" ]]; then
-        # 允许：前导空格、Decision 大小写、PASS/FAIL 大小写、冒号后空格
-        AUDIT_PASS=$(clean_number "$(grep -cEi '^[[:space:]]*Decision[[:space:]]*:[[:space:]]*PASS([[:space:]]|$)' "$AUDIT_REPORT_FILE" 2>/dev/null || echo 0)")
-        AUDIT_FAIL=$(clean_number "$(grep -cEi '^[[:space:]]*Decision[[:space:]]*:[[:space:]]*FAIL([[:space:]]|$)' "$AUDIT_REPORT_FILE" 2>/dev/null || echo 0)")
-        AUDIT_HAS_DECISION=$(clean_number "$(grep -cEi '^[[:space:]]*Decision[[:space:]]*:' "$AUDIT_REPORT_FILE" 2>/dev/null || echo 0)")
+        # 允许：前导空格、Markdown #、Decision 大小写、PASS/FAIL 大小写、冒号后空格
+        AUDIT_PASS=$(clean_number "$(grep -cEi '^[#[:space:]]*Decision[[:space:]]*:[[:space:]]*PASS([[:space:]]|$)' "$AUDIT_REPORT_FILE" 2>/dev/null || echo 0)")
+        AUDIT_FAIL=$(clean_number "$(grep -cEi '^[#[:space:]]*Decision[[:space:]]*:[[:space:]]*FAIL([[:space:]]|$)' "$AUDIT_REPORT_FILE" 2>/dev/null || echo 0)")
+        AUDIT_HAS_DECISION=$(clean_number "$(grep -cEi '^[#[:space:]]*Decision[[:space:]]*:' "$AUDIT_REPORT_FILE" 2>/dev/null || echo 0)")
 
         if [[ "$AUDIT_PASS" -gt 0 ]]; then
             echo "[OK] (PASS)" >&2
