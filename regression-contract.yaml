@@ -18,8 +18,8 @@
 
 # NOTE: version 需要与 package.json 保持同步
 # 更新 package.json 时同步更新此处
-version: "9.3.0"
-updated: "2026-01-23"
+version: "10.0.0"
+updated: "2026-01-24"
 
 # ============================================================================
 # Hooks 回归契约
@@ -435,6 +435,43 @@ hooks:
       run: "bash scripts/detect-phase.sh"
       contains: "PHASE:"
     test: "tests/hooks/stop-hook.test.ts"
+
+  - id: H7-004
+    feature: H7
+    name: "v10.0.0 两阶段语义对齐"
+    scope: hook
+    priority: P1
+    trigger: [PR, Release]
+    method: manual
+    tags: [stop-hook, v10.0.0, contract-rebase]
+    owner: infra
+    steps:
+      given: "v10.0.0 Contract Rebase"
+      when: "hooks/stop.sh 执行"
+      then: "使用 v2.0.0 两阶段语义（p0/p1/p2），不再使用旧的 Loop/Ralph 术语"
+    evidence:
+      type: manual
+      desc: "代码审查确认无旧术语残留"
+
+  # --------------------------------------------------------------------------
+  # H8: Session End Hook
+  # --------------------------------------------------------------------------
+  - id: H8-001
+    feature: H8
+    name: "会话结束状态追踪"
+    scope: hook
+    priority: P2
+    trigger: [Release]
+    method: manual
+    tags: [session, tracking, v10.0.0]
+    owner: infra
+    steps:
+      given: "Claude Code 会话结束时"
+      when: "hooks/session-end.sh 触发"
+      then: "记录会话结束状态，清理临时文件"
+    evidence:
+      type: manual
+      desc: "检查会话结束后的清理效果"
 
   # --------------------------------------------------------------------------
   # H3: Phase 3 - Hook Core 多仓库治理
@@ -1284,6 +1321,66 @@ n8n:
       run: "yq '.rci_definitions | length' regression-contract.yaml"
       contains: "[0-9]+"
     test: "yq '.rci_definitions[] | select(.id == \"H1-001\")' regression-contract.yaml"
+
+  # --------------------------------------------------------------------------
+  # P2: DevGate Quality Checks
+  # --------------------------------------------------------------------------
+  - id: P2-001
+    feature: P2
+    name: "qa-with-gate.sh 执行"
+    scope: devgate
+    priority: P2
+    trigger: [Release]
+    method: manual
+    tags: [devgate, qa, v10.0.0]
+    owner: qa
+    steps:
+      given: "执行 QA 检查"
+      when: "运行 scripts/qa-with-gate.sh"
+      then: "执行完整的 QA 检查流程，输出结果"
+    evidence:
+      type: manual
+      desc: "验证 QA 检查流程完整性"
+
+  # --------------------------------------------------------------------------
+  # N1: Infrastructure Scripts
+  # --------------------------------------------------------------------------
+  - id: N1-001
+    feature: N1
+    name: "generate-path-views.sh 视图生成"
+    scope: infrastructure
+    priority: P1
+    trigger: [PR, Release]
+    method: manual
+    tags: [contract, views, v10.0.0, contract-rebase]
+    owner: infra
+    steps:
+      given: "feature-registry.yml 已更新"
+      when: "运行 scripts/generate-path-views.sh"
+      then: "生成 MINIMAL/GOLDEN/OPTIMAL-PATHS.md 派生视图"
+    evidence:
+      type: manual
+      desc: "验证视图生成无 git diff"
+
+  # --------------------------------------------------------------------------
+  # W1-007: Phase Detection
+  # --------------------------------------------------------------------------
+  - id: W1-007
+    feature: W1
+    name: "detect-phase.sh 阶段检测"
+    scope: workflow
+    priority: P2
+    trigger: [Release]
+    method: manual
+    tags: [workflow, phase-detection, v10.0.0]
+    owner: infra
+    steps:
+      given: "在任意工作阶段"
+      when: "运行 scripts/detect-phase.sh"
+      then: "正确识别当前阶段（p0/p1/p2/pending/unknown）"
+    evidence:
+      type: manual
+      desc: "验证阶段检测逻辑"
 
 # ============================================================================
 # Golden Paths (E2E 关键链路)
