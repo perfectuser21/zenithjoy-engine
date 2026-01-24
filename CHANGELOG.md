@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.0.1] - 2026-01-24
+
+### Fixed
+
+- **pr-gate-v2.sh**: 验证逻辑宽松匹配，避免误判
+  - QA-DECISION.md Decision 字段支持 Markdown 标题和空格变化
+  - AUDIT-REPORT.md Decision: PASS 大小写不敏感，增加 TBD 拦截
+  - DoD 检查改为"全勾完成"而非"本次修改"，对齐两阶段工作流
+
 ## [10.0.0] - 2026-01-24
 
 ### BREAKING CHANGES
