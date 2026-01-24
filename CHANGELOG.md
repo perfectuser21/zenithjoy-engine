@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.0.0] - 2026-01-24
+
+### BREAKING CHANGES
+
+- **Contract Rebase**: 文档架构重构，建立单一事实源体系
+  - `features/feature-registry.yml` 成为唯一的 Feature 定义位置
+  - 所有其他文档（FEATURES.md, Minimal/Golden/Optimal Paths）变为派生视图
+  - 旧的手动维护模式废弃，全部改为自动生成
+  - 修改 feature 定义必须先更新 registry，再运行生成脚本
+
+### Added
+
+- **单一事实源**: `features/feature-registry.yml`
+  - Platform Core 5: H1 (Branch Protection), H7 (Stop Hook), H2 (PR Gate), W1 (Two-Phase), N1 (Cecelia)
+  - Product Core 5: P1 (Regression), P2 (DevGate), P3 (QA Reporting), P4 (CI Gates), P5 (Worktree)
+  - 机器可读的 YAML 结构化定义，包含 entrypoints/golden_path/minimal_paths/tests/rcis
+
+- **Contract 文档**:
+  - `docs/contracts/WORKFLOW-CONTRACT.md` - 两阶段工作流契约（p0/p1/p2 状态机）
+  - `docs/contracts/QUALITY-CONTRACT.md` - 三套质量分层体系（质检流程/问题严重性/测试覆盖度）
+
+- **派生视图（自动生成，不可手动编辑）**:
+  - `docs/paths/MINIMAL-PATHS.md` - 最小验收路径（每个 feature 1-3 条）
+  - `docs/paths/GOLDEN-PATHS.md` - 端到端成功路径（GP-001 ~ GP-007）
+  - `docs/paths/OPTIMAL-PATHS.md` - 推荐体验路径
+  - `scripts/generate-path-views.sh` - 从 registry 生成视图的脚本
+
+- **自动化防漂移机制**:
+  - CI `contract-drift-check` job - 检测视图与 registry 不同步，失败时提供修复步骤
+  - 强制开发者更新 registry 后运行生成脚本，确保一致性
+  - 系统特性：可持续自动维护，防止"2 周后又漂移"
+
+- **DRCA v2.0 事件驱动诊断闭环**:
+  - `docs/runbooks/DRCA-v2.md` - 事件驱动诊断闭环
+  - 核心变化：从"连续等待诊断"升级到"事件驱动诊断"
+  - CI fail → 诊断 → 修复 → push → 退出 → 等待下次事件唤醒（不挂着）
+
+- **RCI v2.0.0 语义对齐**:
+  - **W1-004**: "Loop 1 循环" → "p0 阶段完整流程"（P0）
+  - **W1-005**: "CI 失败后循环" → "p1 阶段事件驱动修复"（P0）
+  - **W1-006**: 新增 "p2 阶段自动 merge"（P0）
+  - **N1-004**: 新增 "p1 阶段无头修复语义"（P0）
+  - **H7-001/002/003**: Stop Hook 质量门禁 RCI（P0）
+
+- **验收清单**: `docs/CONTRACT-REBASE-ACCEPTANCE.md` - 94% 完成度追踪
+
+### Changed
+
+- **FEATURES.md**: 从独立文档变为派生视图，指向 registry 为真源
+  - 添加 H7: Stop Hook Quality Gate（v2.0.0 核心）
+  - 更新 W1: "11 步流程" → "Two-Phase Dev Workflow"
+  - 更新 W5: "四模式" → "Phase Detection (p0/p1/p2/pending/unknown)"
+  - 废弃 W3: "循环回退" → 被 p1 事件驱动循环替代
+  - 添加 v2.0.0 重要变更说明，指向单一事实源
+
+- **regression-contract.yaml**: 添加 H7/W1/N1 的 v2.0.0 RCI
+  - H7: 3 条 RCI（p0 质检门禁 / p1 CI 状态 / 阶段检测集成）
+  - W1: 更新 W1-004/005 语义，新增 W1-006（p0/p1/p2 完整覆盖）
+  - N1: 新增 N1-004（p1 无头修复语义）
+
+- **skills/dev/SKILL.md**: 更新流程图，对齐 v2.0.0 两阶段工作流
+
+### Documentation
+
+- `docs/ENFORCEMENT-REALITY.md` - Stop Hook 强制能力的现实
+- 所有 Contract 和 Path 文档包含明确的来源说明和更新规则
+
 ## [9.5.0] - 2026-01-24
 
 ### Added
