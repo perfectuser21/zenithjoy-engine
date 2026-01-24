@@ -11,7 +11,7 @@ changelog:
 
 **目标**: 把旧的 DRCA / Minimal Path / Optimal Path / Golden Paths / RCI 全部更新到 v2.0.0 两阶段工作流
 
-**状态**: 🟡 进行中
+**状态**: ✅ 已完成（90% + 自动化防漂移）
 
 ---
 
@@ -49,14 +49,14 @@ changelog:
 | 每个 feature 必含字段 | id/name/priority/entrypoints/golden_path/minimal_paths/tests/rcis | features/feature-registry.yml | ✅ |
 | 分组清晰 | platform_features vs product_features | features/feature-registry.yml | ✅ |
 
-### A4. Regression Contract 🟡
+### A4. Regression Contract ✅
 
 | 检查项 | 要求 | 文件 | 状态 |
 |--------|------|------|------|
-| 引用 registry | feature id 对应 | regression-contract.yaml | 🟡 已有，需验证对齐 |
-| H7 RCI | Stop Hook 相关契约 | regression-contract.yaml | 🔴 待添加 |
-| v2.0.0 RCI | 两阶段相关契约 | regression-contract.yaml | 🟡 W1-00X 需更新 |
-| Golden Paths | 引用 registry 的 golden_path | regression-contract.yaml | 🟡 待验证 |
+| 引用 registry | feature id 对应 | regression-contract.yaml | ✅ 已对齐 |
+| H7 RCI | Stop Hook 相关契约 | regression-contract.yaml | ✅ H7-001/002/003 已添加 |
+| v2.0.0 RCI | 两阶段相关契约 | regression-contract.yaml | ✅ 已更新 |
+| Golden Paths | 引用 registry 的 golden_path | regression-contract.yaml | ✅ 已对齐 |
 
 ---
 
@@ -82,26 +82,26 @@ changelog:
 | RCI 覆盖 | 每个 GP 标注 RCI | docs/paths/GOLDEN-PATHS.md | ✅ |
 | 统计信息 | 总计数据 | docs/paths/GOLDEN-PATHS.md | ✅ |
 
-### B3. Optimal Paths 🔴
+### B3. Optimal Paths ✅
 
 | 检查项 | 要求 | 文件 | 状态 |
 |--------|------|------|------|
-| 从 registry 生成 | optimal_path 提取 | docs/paths/OPTIMAL-PATHS.md | 🔴 待创建 |
-| 推荐体验路径 | 优化后的流程 | docs/paths/OPTIMAL-PATHS.md | 🔴 待创建 |
+| 从 registry 生成 | optimal_path 提取 | docs/paths/OPTIMAL-PATHS.md | ✅ 已生成 |
+| 推荐体验路径 | 优化后的流程 | docs/paths/OPTIMAL-PATHS.md | ✅ 已生成 |
 
 ---
 
 ## C. DRCA 更新验收
 
-### C1. DRCA v2.0 🔴
+### C1. DRCA v2.0 ✅
 
 | 检查项 | 要求 | 文件 | 状态 |
 |--------|------|------|------|
-| 事件驱动闭环 | CI fail → 修复 → push → 退出 | docs/runbooks/DRCA-v2.md | 🔴 待创建 |
-| 触发源 | CI fail / DevGate fail / Regression fail | docs/runbooks/DRCA-v2.md | 🔴 待创建 |
-| 输入 | gh pr checks 输出 + failing job | docs/runbooks/DRCA-v2.md | 🔴 待创建 |
-| 动作 | 修复 → push → exit（不等待）| docs/runbooks/DRCA-v2.md | 🔴 待创建 |
-| 出口 | CI pass → p2 → auto-merge | docs/runbooks/DRCA-v2.md | 🔴 待创建 |
+| 事件驱动闭环 | CI fail → 修复 → push → 退出 | docs/runbooks/DRCA-v2.md | ✅ 已创建 |
+| 触发源 | CI fail / DevGate fail / Regression fail | docs/runbooks/DRCA-v2.md | ✅ 已定义 |
+| 输入 | gh pr checks 输出 + failing job | docs/runbooks/DRCA-v2.md | ✅ 已定义 |
+| 动作 | 修复 → push → exit（不等待）| docs/runbooks/DRCA-v2.md | ✅ 已定义 |
+| 出口 | CI pass → p2 → auto-merge | docs/runbooks/DRCA-v2.md | ✅ 已定义 |
 
 ---
 
@@ -135,26 +135,36 @@ changelog:
 | 旧 Golden Paths 文档 | 可能存在 | 检查并标记 deprecated | 🔴 |
 | 旧 Minimal/Optimal Paths | 可能存在 | 检查并标记 deprecated | 🔴 |
 
-### E2. FEATURES.md 更新 🔴
+### E2. FEATURES.md 更新 ✅
 
 | 检查项 | 要求 | 文件 | 状态 |
 |--------|------|------|------|
-| W1 描述更新 | "Two-Phase Dev Workflow" | FEATURES.md | 🔴 仍是 "11 步流程" |
-| W5 处理 | 删除或更新为"阶段检测" | FEATURES.md | 🔴 仍是 "四模式" |
-| H7 添加 | Stop Hook Quality Gate | FEATURES.md | 🔴 缺失 |
-| 指向 registry | 添加说明：本文件视图，真源是 registry | FEATURES.md | 🔴 待添加 |
+| W1 描述更新 | "Two-Phase Dev Workflow" | FEATURES.md | ✅ 已更新 |
+| W5 处理 | 删除或更新为"阶段检测" | FEATURES.md | ✅ 已更新为 Phase Detection |
+| H7 添加 | Stop Hook Quality Gate | FEATURES.md | ✅ 已添加 |
+| 指向 registry | 添加说明：本文件视图，真源是 registry | FEATURES.md | ✅ v2.0.0 section 已添加 |
 
 ---
 
 ## F. 生成脚本验收
 
-### F1. generate-path-views.sh 🔴
+### F1. generate-path-views.sh ✅
 
 | 检查项 | 要求 | 文件 | 状态 |
 |--------|------|------|------|
-| 从 registry 生成 | 读取 feature-registry.yml | scripts/generate-path-views.sh | 🔴 待创建 |
-| 生成 3 个视图 | MINIMAL/OPTIMAL/GOLDEN-PATHS.md | scripts/generate-path-views.sh | 🔴 待创建 |
-| YAML 解析 | 正确解析 YAML 结构 | scripts/generate-path-views.sh | 🔴 待创建 |
+| 从 registry 生成 | 读取 feature-registry.yml | scripts/generate-path-views.sh | ✅ 已创建并测试 |
+| 生成 3 个视图 | MINIMAL/OPTIMAL/GOLDEN-PATHS.md | scripts/generate-path-views.sh | ✅ 已实现 |
+| YAML 解析 | 正确解析 YAML 结构 | scripts/generate-path-views.sh | ✅ 使用 yq 工具 |
+
+### F2. CI contract-drift-check ✅
+
+| 检查项 | 要求 | 文件 | 状态 |
+|--------|------|------|------|
+| CI job 定义 | contract-drift-check job | .github/workflows/ci.yml | ✅ 已添加 |
+| 生成视图 | 运行 generate-path-views.sh | .github/workflows/ci.yml | ✅ 已实现 |
+| 检测 drift | git diff --exit-code | .github/workflows/ci.yml | ✅ 已实现 |
+| 错误提示 | 明确修复步骤 | .github/workflows/ci.yml | ✅ 已实现 |
+| 依赖安装 | 安装 yq 工具 | .github/workflows/ci.yml | ✅ 已实现 |
 
 ---
 
@@ -196,43 +206,62 @@ changelog:
 
 | 类别 | 完成 | 总计 | 完成率 |
 |------|------|------|--------|
-| **A. 核心产物** | 3/4 | 4 | 75% |
-| **B. 视图文档** | 2/3 | 3 | 67% |
-| **C. DRCA** | 0/1 | 1 | 0% |
-| **D. CI 集成** | 2/2 | 2 | 100% |
-| **E. 旧文档** | 0/2 | 2 | 0% |
-| **F. 生成脚本** | 0/1 | 1 | 0% |
-| **G. 验收测试** | 3/3 | 3 | 100% |
-| **总计** | **10/16** | **16** | **63%** |
+| **A. 核心产物** | 4/4 | 4 | 100% ✅ |
+| **B. 视图文档** | 3/3 | 3 | 100% ✅ |
+| **C. DRCA** | 1/1 | 1 | 100% ✅ |
+| **D. CI 集成** | 2/2 | 2 | 100% ✅ |
+| **E. 旧文档** | 1/2 | 2 | 50% 🟡 |
+| **F. 自动化** | 2/2 | 2 | 100% ✅ |
+| **G. 验收测试** | 3/3 | 3 | 100% ✅ |
+| **总计** | **16/17** | **17** | **94%** ✅ |
 
 ### 剩余任务
 
-**必须完成（阻塞）**:
-1. 🔴 添加 H7 RCI 到 regression-contract.yaml
-2. 🔴 更新 FEATURES.md（W1/W5/H7）
-3. 🔴 创建 DRCA-v2.md
-
 **可选完成**:
-4. 🟡 创建 OPTIMAL-PATHS.md
-5. 🟡 创建 generate-path-views.sh
-6. 🟡 标记旧文档 deprecated
+1. 🟡 标记旧文档 deprecated（如有）
 
-### 下一步行动
+### 已完成核心任务 ✅
 
-**立即执行**（按优先级）:
-1. 更新 regression-contract.yaml（添加 H7-00X RCI）
-2. 更新 FEATURES.md（对齐 registry）
-3. 创建 DRCA-v2.md（事件驱动闭环）
+1. ✅ features/feature-registry.yml - 单一事实源
+2. ✅ docs/contracts/WORKFLOW-CONTRACT.md - 两阶段工作流契约
+3. ✅ docs/contracts/QUALITY-CONTRACT.md - 三套质量分层
+4. ✅ docs/paths/MINIMAL-PATHS.md - 最小验收路径（自动生成）
+5. ✅ docs/paths/GOLDEN-PATHS.md - 端到端成功路径（自动生成）
+6. ✅ docs/paths/OPTIMAL-PATHS.md - 推荐体验路径（自动生成）
+7. ✅ docs/runbooks/DRCA-v2.md - 事件驱动诊断闭环
+8. ✅ scripts/generate-path-views.sh - 视图生成脚本
+9. ✅ .github/workflows/ci.yml - contract-drift-check job
+10. ✅ regression-contract.yaml - 添加 H7-001/002/003
+11. ✅ FEATURES.md - 更新 H7/W1/W5，指向 registry
 
-**稍后执行**:
-4. 创建 OPTIMAL-PATHS.md
-5. 创建自动生成脚本
+### 关键成就
+
+**🎯 防漂移自动化**:
+- ✅ 单一事实源建立（features/feature-registry.yml）
+- ✅ 自动生成派生视图（3 个路径文档）
+- ✅ CI 强制同步检查（contract-drift-check）
+- ✅ 错误提示清晰（修复步骤明确）
+
+**📊 文档体系升级**:
+- ✅ 机器可读 + 人类可读双轨
+- ✅ Platform Core 5 + Product Core 5 完整定义
+- ✅ 10 个 feature 的 golden_path / minimal_paths / RCI 对齐
+- ✅ 两阶段工作流契约化
 
 ---
 
 **验收人**: User
 **验收日期**: 2026-01-24
-**验收状态**: 🟡 63% 完成，核心产物已就绪
+**验收状态**: ✅ 94% 完成，核心体系建立 + 自动化防漂移就位
+
+**核心突破**:
+- ✅ 单一事实源（features/feature-registry.yml）
+- ✅ 自动生成派生视图（防止手动漂移）
+- ✅ CI 强制同步检查（contract-drift-check）
+- ✅ 两阶段工作流契约化（WORKFLOW-CONTRACT.md）
+- ✅ 事件驱动诊断闭环（DRCA-v2.md）
+
+**系统特性**: 可持续自动维护，不会"2 周后又漂移"
 
 ---
 
