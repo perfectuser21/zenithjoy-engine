@@ -377,6 +377,66 @@ hooks:
     test: "tests/hooks/detect-priority.test.ts"
 
   # --------------------------------------------------------------------------
+  # H7: Stop Hook Quality Gate (v2.0.0 核心)
+  # --------------------------------------------------------------------------
+  - id: H7-001
+    feature: H7
+    name: "p0 阶段质检门禁"
+    scope: hook
+    priority: P0
+    trigger: [PR, Release]
+    method: auto
+    tags: [stop-hook, quality-gate, p0, v2.0.0]
+    owner: infra
+    steps:
+      given: "p0 阶段（无 PR）"
+      when: "会话尝试结束（StopHook 触发）"
+      then: "检查 L2A (AUDIT-REPORT.md PASS) + L1 (.quality-gate-passed) + PR 创建，全部通过则 exit 0，否则 exit 2"
+    evidence:
+      type: code
+      file: "hooks/stop.sh"
+      contains: "PHASE: p0"
+    test: "tests/hooks/stop-hook.test.ts"
+
+  - id: H7-002
+    feature: H7
+    name: "p1 阶段 CI 状态检查"
+    scope: hook
+    priority: P0
+    trigger: [PR, Release]
+    method: auto
+    tags: [stop-hook, ci-check, p1, v2.0.0]
+    owner: infra
+    steps:
+      given: "p1 阶段（PR + CI fail）"
+      when: "会话尝试结束（StopHook 触发）"
+      then: "检查 CI 状态：FAILURE → exit 2 | PENDING → exit 0 | SUCCESS → exit 0"
+    evidence:
+      type: code
+      file: "hooks/stop.sh"
+      contains: "PHASE: p1"
+    test: "tests/hooks/stop-hook.test.ts"
+
+  - id: H7-003
+    feature: H7
+    name: "阶段检测集成"
+    scope: hook
+    priority: P0
+    trigger: [PR, Release]
+    method: auto
+    tags: [stop-hook, phase-detection, v2.0.0]
+    owner: infra
+    steps:
+      given: "任意阶段"
+      when: "StopHook 触发"
+      then: "调用 scripts/detect-phase.sh 检测当前阶段（p0/p1/p2/pending/unknown），根据阶段执行对应检查"
+    evidence:
+      type: command
+      run: "bash scripts/detect-phase.sh"
+      contains: "PHASE:"
+    test: "tests/hooks/stop-hook.test.ts"
+
+  # --------------------------------------------------------------------------
   # H3: Phase 3 - Hook Core 多仓库治理
   # --------------------------------------------------------------------------
   - id: H3-001
