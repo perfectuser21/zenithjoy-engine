@@ -1,62 +1,50 @@
 # QA Decision
 
-Decision: MUST_ADD_RCI
-Priority: P1
+Decision: NO_RCI
+Priority: P2
 RepoType: Engine
 
 ## 分析
 
-**改动类型**: feature (核心工作流改动)
-- P1 阶段从"事件驱动"改为"轮询循环"
-- Step 8 不再调用 Step 9（让 Stop Hook 触发）
-- Step 9 改为完整的 while 循环（在 P1 阶段执行）
+**改动类型**: test（压力测试）
+- 临时测试 P1 轮询循环功能
+- 不影响生产代码
+- 测试完成后会清理
 
 **影响范围**:
-- 修改 skills/dev/steps/08-pr.md（P0 阶段结束逻辑）
-- 重写 skills/dev/steps/09-ci.md（P1 阶段轮询循环）
-- 更新 skills/dev/SKILL.md（流程图）
-- 两阶段分离的核心机制变更
+- 添加临时测试文件
+- 验证 P1 轮询循环机制
 
 **测试策略**:
-- P0 阶段：manual 验证 Step 8 不调用 Step 9
-- Stop Hook：manual 验证 PR 创建后触发 exit 0
-- P1 阶段：manual 验证轮询循环持续到成功
-- 向后兼容：auto 回归测试
+- 手动验证 P1 轮询循环工作流程
 
 ## Tests
 
-- dod_item: "Step 8 创建 PR 后不调用 Step 9"
+- dod_item: "P0: PR 创建成功"
   method: manual
-  location: manual:code-review
+  location: manual:pr-link
 
-- dod_item: "Stop Hook 在 PR 创建后能够触发 exit 0"
+- dod_item: "P1: 检测到 CI 失败"
   method: manual
-  location: manual:hook-test
+  location: manual:ci-status
 
-- dod_item: "Step 9 包含完整的 while 轮询循环"
+- dod_item: "P1: 成功修复并 push"
   method: manual
-  location: manual:code-review
+  location: manual:code-fix
 
-- dod_item: "P1 阶段能够持续循环直到成功"
+- dod_item: "P1: 继续轮询"
   method: manual
-  location: manual:e2e-test
+  location: manual:loop-verify
 
-- dod_item: "npm run typecheck 通过"
-  method: auto
-  location: npm run typecheck
-
-- dod_item: "npm run test 通过"
-  method: auto
-  location: npm run test
+- dod_item: "P1: 自动合并"
+  method: manual
+  location: manual:pr-merged
 
 ## RCI
 
-new:
-  - W1-008  # P1 阶段轮询循环（新增）
-
-update:
-  - W1-004  # p0 阶段完整流程（Step 8 不调用 Step 9）
+new: []
+update: []
 
 ## Reason
 
-核心工作流两阶段分离机制变更，P1 从事件驱动改为轮询循环，必须纳入回归契约确保不会退化。
+临时压力测试，不需要纳入回归契约。
