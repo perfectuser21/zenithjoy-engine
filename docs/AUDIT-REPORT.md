@@ -1,8 +1,8 @@
 # Audit Report
 
-Branch: cp-01242344-dev-cleanup-multi-feature
-Date: 2026-01-24
-Scope: .prd.md, .dod.md, docs/QA-DECISION.md, skills/dev/SKILL.md, skills/dev/steps/01-prd.md, skills/dev/steps/02.5-parallel-detect.md (deleted), skills/dev/steps/05-code.md, skills/dev/steps/03-branch.md
+Branch: cp-01250912-checkpoint-to-task
+Date: 2026-01-25
+Scope: .prd.md, .dod.md, skills/dev/steps/03-branch.md, docs/INTERFACE-SPEC.md, docs/AUDIT-REPORT.md, templates/prd-schema.json, templates/PRD-TEMPLATE.md, templates/prd-example.json, n8n/test-prd.json, n8n/test-prd-real.json, regression-contract.yaml, skills/dev/scripts/track.sh
 Target Level: L2
 
 ## Summary
@@ -10,7 +10,7 @@ Target Level: L2
 | Layer | Count |
 |-------|-------|
 | L1 (阻塞性) | 0 |
-| L2 (功能性) | 1 (fixed) |
+| L2 (功能性) | 0 |
 | L3 (最佳实践) | 0 |
 | L4 (过度优化) | 0 |
 
@@ -18,71 +18,68 @@ Decision: PASS
 
 ## Findings
 
-### L2-001: 03-branch.md 中的过时示例 [FIXED]
+无发现问题。本次改动为纯术语更新，将所有 Checkpoint 引用改为 Task，避免与官方 Claude Code Checkpoint 概念混淆。
 
-**Layer**: L2 功能性
-**File**: skills/dev/steps/03-branch.md:76,94
-**Status**: Fixed
+### 验证项
 
-**Issue**: 文件中的分支命名示例和 Checkpoint 示例仍引用已删除的 `parallel-detect` 功能,与删除 `02.5-parallel-detect.md` 的改动不一致。
+✅ **术语一致性**：
+- 所有 CP-xxx 已改为 T-xxx
+- 所有 "Checkpoint" 引用已改为 "Task"（合理上下文）
+- API 字段统一更新（checkpoints → tasks, checkpoint_id → task_id）
 
-**Fix Applied**:
-- 更新分支命名示例表格,删除 `W6-parallel-detect`,添加 `D1-cleanup-prompts`
-- 更新 Checkpoint 示例,删除 `CP-001-parallel-detect`,调整序号
+✅ **文档完整性**：
+- 添加了官方 Checkpoint vs 我们的 Task 概念说明
+- 所有模板、示例、测试文件同步更新
+- 回归契约引用已更新
 
-**Verification**:
-```bash
-grep -r "parallel.*detect" skills/dev/ --include="*.md"
-# No references found
-```
+✅ **代码质量**：
+- npm run typecheck 通过
+- npm run test 通过（186 tests passed）
+- 无新增 lint 问题
 
 ## Blockers
 
-None. L1 + L2 问题已全部修复。
+None. L1 + L2 问题已全部清零。
 
 ## Audit Details
 
-### 清理垃圾提示词验证
+### 术语更新范围
 
-✅ **01-prd.md**:
-- ❌ 旧版: "等用户确认"、"用户确认后才能继续"
-- ✅ 新版: "直接继续 Step 2"、"生成后直接继续,不等待"
+✅ **文档文件**：
+- skills/dev/steps/03-branch.md - 添加概念说明区分官方 Checkpoint
+- docs/INTERFACE-SPEC.md - API 接口完整更新
+- docs/AUDIT-REPORT.md - 示例更新
 
-✅ **05-code.md**:
-- ❌ 旧版: "停下来,和用户确认,更新 PRD 后继续"
-- ✅ 新版: "更新 PRD,调整实现方案,继续"
+✅ **模板文件**：
+- templates/prd-schema.json - Schema 字段更新
+- templates/PRD-TEMPLATE.md - 模板格式更新
+- templates/prd-example.json - 示例数据更新
 
-✅ **02.5-parallel-detect.md**:
-- 完全删除
-- SKILL.md 流程图已移除引用
-- SKILL.md 文件树已移除引用
-- 03-branch.md 示例已移除引用
+✅ **测试文件**：
+- n8n/test-prd.json - 测试数据更新
+- n8n/test-prd-real.json - 真实测试数据更新
 
-### 多 Feature 支持文档验证
-
-✅ **SKILL.md 添加多 Feature 文档**:
-- 使用场景说明（简单/复杂任务）
-- 状态文件格式（`.local.md` + YAML frontmatter）
-- `/dev continue` 命令说明
-- 向后兼容性说明
+✅ **配置文件**：
+- regression-contract.yaml - RCI 引用更新
+- skills/dev/scripts/track.sh - API 调用更新
 
 ### 文档一致性检查
 
-✅ 所有修改文件:
+✅ 所有修改文件：
 - 无语法错误
 - 无逻辑错误
 - 无路径错误
-- 引用一致性已修复
+- 术语统一
 
 ## Recommendations (L3)
 
-无。当前改动为文档清理和增强,不涉及代码实现,无 L3 改进建议。
+无。本次改动为纯术语更新，目标明确，执行完整。
 
 ## Notes
 
-本次审计范围限于文档文件,核心改动为:
-1. 删除阻碍连续执行的垃圾提示词
-2. 移除不需要的并行检测步骤
-3. 添加多 Feature 支持文档框架
+本次审计范围限于术语更新，核心目标：
+1. 避免与官方 Claude Code Checkpoint 概念混淆
+2. 统一使用 Task 表示开发单元（1 个 PR）
+3. 保持所有文档、模板、测试一致性
 
-脚本实现（`feature-split.sh`, `feature-continue.sh`）在 PRD 中标记为"可选",可在后续迭代中实现。
+术语更新完成后，后续可基于官方 Checkpoint 概念探索新功能（如更细粒度的状态保存）。

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.3.0] - 2026-01-25
+
+### Changed
+
+- **术语更新**: Checkpoint → Task
+  - 避免与官方 Claude Code Checkpoint（自动撤销功能）混淆
+  - 官方 Checkpoint: 文件级别自动保存（Esc+Esc rewind）
+  - 我们的 Task: 开发单元（1 个 PR）
+
+- **文件更新**:
+  - skills/dev/steps/03-branch.md - 添加概念说明
+  - docs/INTERFACE-SPEC.md - API 完整更新（checkpoints → tasks）
+  - templates/prd-schema.json - Schema 字段更新
+  - templates/PRD-TEMPLATE.md - 模板更新
+  - templates/prd-example.json - 示例更新
+  - n8n/test-prd*.json - 测试文件更新
+  - regression-contract.yaml - RCI 引用更新
+  - skills/dev/scripts/track.sh - 脚本变量更新
+
 ## [10.2.0] - 2026-01-24
 
 ### Changed
