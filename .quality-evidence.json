@@ -1,9 +1,9 @@
 {
-  "sha": "5ffc7aaddb14ffe5e34a273c6d7ead8792b8f75a",
-  "branch": "cp-01251311-pending-wait-fix",
+  "sha": "c4164d1c045c16e59af4d581b5ce37560fd947fe",
+  "branch": "cp-01251425-remove-fast-mode",
   "qa_gate_passed": true,
   "audit_decision": "PASS",
-  "timestamp": "2026-01-25T13:50:38+08:00",
+  "timestamp": "2026-01-25T14:33:22+08:00",
   "evidence": {
     "typecheck": "passed",
     "tests": "passed",

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.4.3] - 2026-01-25
+
+### Fixed
+
+- 移除 hooks/pr-gate-v2.sh 中的 FAST_MODE 配置
+- 本地 PR Gate 强制执行 L1 + L2A 检查
+- 统一本地和 CI 的分层标准：
+  - 本地: L1 + L2A（失败 → Ralph Loop 无限循环修复）
+  - CI → develop: L1 + L2A + L2B
+  - CI → main: L1 ~ L4
+
 ## [10.4.2] - 2026-01-25
 
 ### Fixed
