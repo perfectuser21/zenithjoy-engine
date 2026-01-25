@@ -24,11 +24,11 @@ Decision: PASS
 **File**: skills/dev/steps/03-branch.md:76,94
 **Status**: Fixed
 
-**Issue**: 文件中的分支命名示例和 Checkpoint 示例仍引用已删除的 `parallel-detect` 功能,与删除 `02.5-parallel-detect.md` 的改动不一致。
+**Issue**: 文件中的分支命名示例和 Task 示例仍引用已删除的 `parallel-detect` 功能,与删除 `02.5-parallel-detect.md` 的改动不一致。
 
 **Fix Applied**:
 - 更新分支命名示例表格,删除 `W6-parallel-detect`,添加 `D1-cleanup-prompts`
-- 更新 Checkpoint 示例,删除 `CP-001-parallel-detect`,调整序号
+- 更新 Task 示例,删除 `T-001-parallel-detect`,调整序号
 
 **Verification**:
 ```bash
