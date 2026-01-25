@@ -1,7 +1,7 @@
 # Quality Gate Passed
-# Generated: 2026-01-25T14:33:22+08:00
-# Branch: cp-01251425-remove-fast-mode
-# Commit: c4164d1
+# Generated: 2026-01-25T14:45:13+08:00
+# Branch: cp-01251439-really-remove-fast-mode
+# Commit: cf98f1b
 
 typecheck: PASS
 test: PASS
