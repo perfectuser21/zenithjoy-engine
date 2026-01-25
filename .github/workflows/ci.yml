@@ -112,10 +112,25 @@ jobs:
         run: |
           set -e
           npm ci
-          # DoD 检查项（按顺序）
+          # L1: 自动化测试（按顺序）
           npm run typecheck --if-present   # 类型检查
           npm run test --if-present        # 单元测试
           npm run build --if-present       # 构建验证
+
+      # L2A: PRD/DoD/QA/Audit 远端检查
+      - name: L2A Check
+        if: steps.detect.outputs.type == 'npm'
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  L2A: PRD/DoD/QA/Audit 检查"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          # L2A check 在 L1 之后、DevGate 之前
+          if [ -f "scripts/devgate/l2a-check.sh" ]; then
+            bash scripts/devgate/l2a-check.sh pr || exit 1
+          else
+            echo "⚠️ l2a-check.sh not found, skipping"
+            echo "   (仓库可能还未升级到 L2A 远端检查)"
+          fi
 
       # Python
       - name: Setup Python
@@ -397,6 +412,38 @@ jobs:
           echo "  ✅ Evidence Gate 通过"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
+  # develop PR 的 L3 子集（防止 develop 分支腐烂）
+  regression-pr:
+    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+    needs: [test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: L3 Regression Tests (PR subset)
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  L3: PR 回归测试（子集）"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "防止 develop 分支积累回归风险"
+          echo "跑 trigger 包含 PR 的 RCI 子集"
+          echo ""
+          bash scripts/run-regression.sh pr
+
   # Release 检查（仅 develop → main 的 PR）
   release-check:
     if: github.event_name == 'pull_request' && github.base_ref == 'main'
@@ -417,6 +464,18 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # L2A Release 模式（更严格）
+      - name: L2A Check (release mode)
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  L2A: Release 模式（更严格检查）"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          if [ -f "scripts/devgate/l2a-check.sh" ]; then
+            bash scripts/devgate/l2a-check.sh release || exit 1
+          else
+            echo "⚠️ l2a-check.sh not found, skipping"
+          fi
 
       - name: L3 Regression Tests
         run: |
@@ -482,15 +541,19 @@ jobs:
 
   # CI 通过后通知（不自动合并，需要手动确认）
   # 注意：此 job 只在 pull_request 事件时运行，push 事件时跳过
-  # A4 fix: PR to main 时必须等 release-check 完成
+  # v10.5.0: 修复条件 needs，正确处理 regression-pr 和 release-check
   ci-passed:
-    needs: [version-check, test, impact-check, evidence-gate, release-check]
+    needs: [version-check, test, contract-drift-check, impact-check, evidence-gate, regression-pr, release-check]
+    # 使用 always() 确保即使某些 job 被跳过也能运行
     if: |
+      always() &&
       github.event_name == 'pull_request' &&
       needs.test.result == 'success' &&
+      needs.contract-drift-check.result == 'success' &&
       (needs.version-check.result == 'success' || needs.version-check.result == 'skipped') &&
       (needs.impact-check.result == 'success' || needs.impact-check.result == 'skipped') &&
       (needs.evidence-gate.result == 'success' || needs.evidence-gate.result == 'skipped') &&
+      (needs.regression-pr.result == 'success' || needs.regression-pr.result == 'skipped') &&
       (needs.release-check.result == 'success' || needs.release-check.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -502,6 +565,16 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo ""
           echo "PR #${{ github.event.pull_request.number }} CI 检查通过"
+          echo ""
+          echo "已通过的检查："
+          echo "  ✅ test (L1 + L2A + L2B DevGate)"
+          echo "  ✅ contract-drift-check"
+          if [ "${{ needs.regression-pr.result }}" = "success" ]; then
+            echo "  ✅ regression-pr (L3 子集)"
+          fi
+          if [ "${{ needs.release-check.result }}" = "success" ]; then
+            echo "  ✅ release-check (L3 全量 + L4)"
+          fi
           echo ""
           echo "下一步："
           echo "  1. 手动 review（如有需要）"
