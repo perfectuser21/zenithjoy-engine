@@ -1,9 +1,9 @@
 {
-  "sha": "8b91dda8825067e82e89627fb4e1606b3b1ffe7c",
+  "sha": "3b460ab4b4a4959e708b37233714290b42992426",
   "branch": "cp-01251439-really-remove-fast-mode",
   "qa_gate_passed": true,
   "audit_decision": "PASS",
-  "timestamp": "2026-01-25T14:54:38+08:00",
+  "timestamp": "2026-01-25T15:00:14+08:00",
   "evidence": {
     "typecheck": "passed",
     "tests": "passed",

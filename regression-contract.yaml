@@ -169,15 +169,19 @@ hooks:
     priority: P0
     trigger: [PR, Release]
     method: auto
-    tags: [pr, gate, quality]
+    tags: [pr, gate, quality, v10.4.4]
     owner: infra
     steps:
       given: "npm run qa 全绿"
       when: "执行 gh pr create"
       then: "Hook 放行（exit 0）"
+    note: "v10.4.4: 移除 FAST_MODE，100% 强制本地 L1+L2A 检查（无快速跳过）"
     evidence:
       type: log
       contains: "✅ PR Gate 通过"
+    verification:
+      - desc: "确认 hooks/pr-gate-v2.sh 中不含 FAST_MODE"
+        command: "! grep -q 'FAST_MODE' hooks/pr-gate-v2.sh"
     test: "tests/hooks/pr-gate.test.ts"
 
   - id: H2-004
