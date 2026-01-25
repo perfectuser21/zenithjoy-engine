@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.4.2] - 2026-01-25
+
+### Fixed
+
+- 修复 pending 阶段行为描述，明确应该等待 CI 结果而不是退出
+- 更新 scripts/detect-phase.sh 中 pending 阶段的 ACTION 说明
+- 更新 skills/dev/SKILL.md 添加 pending 等待流程图
+- 新增 skills/dev/steps/09.5-pending-wait.md 文档说明等待循环逻辑
+
 ## [10.4.0] - 2026-01-25
 
 ### Changed
