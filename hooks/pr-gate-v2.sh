@@ -12,10 +12,7 @@
 set -euo pipefail
 
 # ===== 配置 =====
-# 快速模式：true=只检查产物，false=运行完整测试
-FAST_MODE=true
-
-# 测试命令超时时间（秒）- 仅在 FAST_MODE=false 时使用
+# 测试命令超时时间（秒）
 COMMAND_TIMEOUT=120
 
 # ===== 工具函数 =====
@@ -245,16 +242,6 @@ fi
 echo "" >&2
 echo "  [L1: 自动化测试]" >&2
 
-# v4.0: 快速模式检查
-if [ "$FAST_MODE" = "true" ]; then
-    echo "  ⚡ 快速模式：跳过本地测试，交给 CI" >&2
-    echo "    (会话结束时 SessionEnd Hook 会检查 CI 状态)" >&2
-    echo "" >&2
-else
-    echo "  🐢 完整模式：本地运行所有测试" >&2
-    echo "" >&2
-fi
-
 # L3 修复: 改用位标志检测项目类型
 PROJECT_TYPE=0  # 位标志: 1=node, 2=python, 4=go
 [[ -f "$PROJECT_ROOT/package.json" ]] && PROJECT_TYPE=$((PROJECT_TYPE | 1))
@@ -268,7 +255,7 @@ trap 'rm -f "$TEST_OUTPUT_FILE"' EXIT
 # Node.js 项目 (PROJECT_TYPE & 1)
 if (( PROJECT_TYPE & 1 )); then
     # Typecheck
-    if grep -q '"typecheck"' package.json 2>/dev/null && [ "$FAST_MODE" != "true" ]; then
+    if grep -q '"typecheck"' package.json 2>/dev/null; then
         echo -n "  typecheck... " >&2
         CHECK_COUNT=$((CHECK_COUNT + 1))
         # L2 修复: 保存测试输出到文件
@@ -290,7 +277,7 @@ if (( PROJECT_TYPE & 1 )); then
     fi
 
     # Lint
-    if grep -q '"lint"' package.json 2>/dev/null && [ "$FAST_MODE" != "true" ]; then
+    if grep -q '"lint"' package.json 2>/dev/null; then
         echo -n "  lint... " >&2
         CHECK_COUNT=$((CHECK_COUNT + 1))
         if run_with_timeout "$COMMAND_TIMEOUT" npm run lint >"$TEST_OUTPUT_FILE" 2>&1; then
@@ -309,7 +296,7 @@ if (( PROJECT_TYPE & 1 )); then
     fi
 
     # Test
-    if grep -q '"test"' package.json 2>/dev/null && [ "$FAST_MODE" != "true" ]; then
+    if grep -q '"test"' package.json 2>/dev/null; then
         echo -n "  test... " >&2
         CHECK_COUNT=$((CHECK_COUNT + 1))
         if run_with_timeout "$COMMAND_TIMEOUT" npm test >"$TEST_OUTPUT_FILE" 2>&1; then
@@ -328,7 +315,7 @@ if (( PROJECT_TYPE & 1 )); then
     fi
 
     # Build
-    if grep -q '"build"' package.json 2>/dev/null && [ "$FAST_MODE" != "true" ]; then
+    if grep -q '"build"' package.json 2>/dev/null; then
         echo -n "  build... " >&2
         CHECK_COUNT=$((CHECK_COUNT + 1))
         if run_with_timeout "$COMMAND_TIMEOUT" npm run build >"$TEST_OUTPUT_FILE" 2>&1; then
