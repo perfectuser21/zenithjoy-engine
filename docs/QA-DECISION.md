@@ -5,28 +5,36 @@ Priority: P2
 RepoType: Engine
 
 Tests:
-  - dod_item: "detect-phase.sh 正确描述 pending 行为"
+  - dod_item: "删除遗留的 .prd.md"
     method: manual
-    location: manual:grep-pending-description
+    location: manual:git-diff
 
-  - dod_item: "SKILL.md 包含 pending 等待流程图"
+  - dod_item: "删除遗留的 .dod.md"
     method: manual
-    location: manual:grep-pending-flowchart
+    location: manual:git-diff
 
-  - dod_item: "创建 09.5-pending-wait.md"
+  - dod_item: "删除遗留的 .quality-evidence.json"
     method: manual
-    location: manual:file-exists
+    location: manual:git-diff
+
+  - dod_item: "删除遗留的 .quality-gate-passed"
+    method: manual
+    location: manual:git-diff
 
   - dod_item: "typecheck 通过"
     method: auto
-    location: manual:qa-gate
+    location: manual:qa-output
 
   - dod_item: "test 通过"
     method: auto
-    location: manual:qa-gate
+    location: manual:qa-output
+
+  - dod_item: "build 通过"
+    method: auto
+    location: manual:qa-output
 
 RCI:
   new: []
   update: []
 
-Reason: 文档修复，不改变核心逻辑，无需进回归契约。现有 W1-001（/dev 流程可启动）已覆盖工作流可用性。
+Reason: 清理工作文件，不涉及功能变更，无需进回归契约。
