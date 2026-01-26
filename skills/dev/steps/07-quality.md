@@ -86,6 +86,14 @@ Findings:
 Blockers: []  # L1 + L2 问题列表
 ```
 
+### ⚡ Audit Node 完成后的强制指令
+
+**生成 AUDIT-REPORT.md 后，立即继续质检循环**：
+
+1. **不要**输出"审计报告已生成！"
+2. **不要**停顿或等待确认
+3. **立即**继续 Step 7.2：检查 Blocker
+
 ---
 
 ## Step 7.2: Blocker 检查

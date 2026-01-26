@@ -5,28 +5,40 @@ Priority: P1
 RepoType: Engine
 
 Tests:
-  - dod_item: "SKILL.md 包含明确的自动执行规则章节"
+  - dod_item: "QA Node 完成后立即进入 DoD 定稿"
     method: manual
-    location: "manual:检查 skills/dev/SKILL.md 是否包含 '⚡ 自动执行规则' 章节"
+    location: manual:step4-qa-node-continue
 
-  - dod_item: "步骤文件的'完成后'包含强制性指令"
+  - dod_item: "Audit Node 完成后立即运行 qa:gate"
     method: manual
-    location: "manual:检查 skills/dev/steps/04-dod.md、05-code.md、06-test.md、07-quality.md 的'完成后'章节"
+    location: manual:step7-audit-node-continue
 
-  - dod_item: "不存在矛盾的指令"
+  - dod_item: "/qa Skill 完成后立即返回调用方"
     method: manual
-    location: "manual:grep '等待确认\\|输出总结' skills/dev/**/*.md 确保没有矛盾指令"
+    location: manual:qa-skill-return
 
-  - dod_item: "AI 完成 Step 4 后立即执行 Step 5"
+  - dod_item: "/audit Skill 完成后立即返回调用方"
     method: manual
-    location: "manual:重新运行 /dev 流程，观察是否在 Step 4 后停顿"
+    location: manual:audit-skill-return
 
-  - dod_item: "AI 一直执行到 Step 8 创建 PR"
+  - dod_item: "Stop Hook 输出改为命令性且说明 Ralph Loop"
     method: manual
-    location: "manual:观察完整 /dev 流程是否无中断执行到 PR 创建"
+    location: manual:stop-hook-semantic
+
+  - dod_item: "Pending 状态立即退出不循环"
+    method: manual
+    location: manual:pending-no-loop
+
+  - dod_item: "文档更新：feature-registry.yml 版本号"
+    method: manual
+    location: manual:registry-update
+
+  - dod_item: "npm run qa 通过"
+    method: auto
+    location: contract:C2-001
 
 RCI:
   new: []
   update: []
 
-Reason: 纯文档类修改（Skill 指令强化），无核心逻辑变更，无需 RCI，手动验证 AI 行为即可
+Reason: 纯文档类修改（强化 Skill 指令措辞），无核心逻辑变更，无需 RCI
