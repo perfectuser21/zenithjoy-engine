@@ -1,44 +1,32 @@
 # QA Decision
 
-Decision: PASS
-Priority: P0
+Decision: NO_RCI
+Priority: P1
 RepoType: Engine
 
 Tests:
-  - dod_item: "detect-phase.sh 脚本创建完成"
+  - dod_item: "SKILL.md 包含明确的自动执行规则章节"
     method: manual
-    location: "manual: 验证文件存在且可执行"
+    location: "manual:检查 skills/dev/SKILL.md 是否包含 '⚡ 自动执行规则' 章节"
 
-  - dod_item: "脚本能正确检测 p0 阶段（无 PR）"
+  - dod_item: "步骤文件的'完成后'包含强制性指令"
     method: manual
-    location: "manual: 在无 PR 分支执行脚本，验证输出 PHASE: p0"
+    location: "manual:检查 skills/dev/steps/04-dod.md、05-code.md、06-test.md、07-quality.md 的'完成后'章节"
 
-  - dod_item: "脚本能正确检测 p1 阶段（PR + CI fail）"
+  - dod_item: "不存在矛盾的指令"
     method: manual
-    location: "manual: 模拟 CI fail 场景，验证输出 PHASE: p1"
+    location: "manual:grep '等待确认\\|输出总结' skills/dev/**/*.md 确保没有矛盾指令"
 
-  - dod_item: "脚本能正确检测 p2 阶段（PR + CI pass）"
+  - dod_item: "AI 完成 Step 4 后立即执行 Step 5"
     method: manual
-    location: "manual: 模拟 CI pass 场景，验证输出 PHASE: p2"
+    location: "manual:重新运行 /dev 流程，观察是否在 Step 4 后停顿"
 
-  - dod_item: "脚本能正确检测 pending 阶段（PR + CI pending）"
+  - dod_item: "AI 一直执行到 Step 8 创建 PR"
     method: manual
-    location: "manual: 模拟 CI pending 场景，验证输出 PHASE: pending"
-
-  - dod_item: "脚本能正确处理 gh API 错误返回 unknown"
-    method: manual
-    location: "manual: 模拟 gh 命令失败场景，验证输出 PHASE: unknown"
-
-  - dod_item: "Stop Hook 能成功调用脚本不再报错"
-    method: manual
-    location: "manual: 在功能分支执行，验证 Stop Hook 不再报 detect-phase.sh 缺失错误"
-
-  - dod_item: "输出格式符合规范（PHASE: xxx / DESCRIPTION: xxx / ACTION: xxx）"
-    method: manual
-    location: "manual: 验证所有输出格式符合规范"
+    location: "manual:观察完整 /dev 流程是否无中断执行到 PR 创建"
 
 RCI:
-  new: ["W1-004"]
+  new: []
   update: []
 
-Reason: detect-phase.sh 是质检系统核心组件，Stop Hook 依赖它判断阶段。缺失导致质检门控失效（P0 blocker）。必须纳入回归契约确保该脚本存在且功能正确。
+Reason: 纯文档类修改（Skill 指令强化），无核心逻辑变更，无需 RCI，手动验证 AI 行为即可
