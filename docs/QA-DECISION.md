@@ -5,21 +5,41 @@ Priority: P2
 RepoType: Engine
 
 Tests:
-  - dod_item: "09.5-pending-wait.md 恢复 while 循环（持续运行到合并）"
+  - dod_item: "develop 分支上的 PRD/DoD 已删除（待 cleanup 阶段处理）"
     method: manual
-    location: manual:pending-loop-restored
+    location: manual:develop-cleanup
 
-  - dod_item: "Stop hook 阻止 p1/pending 阶段结束"
+  - dod_item: "scripts/squash-evidence.sh 已实现"
     method: manual
-    location: manual:stop-hook-p1-block
+    location: manual:script-squash-evidence
 
-  - dod_item: "Session-start hook 识别并提示阶段"
+  - dod_item: "scripts/auto-generate-views.sh 已实现"
     method: manual
-    location: manual:session-start-prompt
+    location: manual:script-auto-generate-views
 
-  - dod_item: "文档更新：feature-registry.yml 版本号"
+  - dod_item: "scripts/post-pr-checklist.sh 已实现"
     method: manual
-    location: manual:registry-update
+    location: manual:script-post-pr-checklist
+
+  - dod_item: "detect-priority.cjs 已优化（不再误识别文本）"
+    method: manual
+    location: manual:detect-priority-optimized
+
+  - dod_item: "/dev 流程 Step 7/8/11 已更新"
+    method: manual
+    location: manual:dev-steps-updated
+
+  - dod_item: "CI workflow 已添加 PRD/DoD 检查"
+    method: manual
+    location: manual:ci-prd-dod-check
+
+  - dod_item: "docs/SELF-EVOLUTION.md 已创建并记录本次问题"
+    method: manual
+    location: manual:self-evolution-doc
+
+  - dod_item: "所有自动化脚本都有可执行权限"
+    method: manual
+    location: manual:script-permissions
 
   - dod_item: "npm run qa 通过"
     method: auto
@@ -29,4 +49,4 @@ RCI:
   new: []
   update: []
 
-Reason: 纯流程修复（恢复 while 循环 + 增强 hook），无核心功能变更，无需 RCI。虽然阻塞无头模式，但不是用户面向的核心功能，设为 P2。
+Reason: 工具链优化，建立自动化预防机制，不涉及核心功能变更，无需 RCI。虽然提升工程质量，但属于内部工具改进，设为 P2。

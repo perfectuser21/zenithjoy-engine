@@ -119,6 +119,25 @@ npm run qa  # = typecheck + test + build
 
 ---
 
+## Step 7.4: 自动化检查（新增）
+
+测试通过后，运行自动化检查：
+
+```bash
+# 检查派生视图是否同步
+bash scripts/auto-generate-views.sh
+
+# 暂存 evidence（不 commit，留到 Step 8）
+git add .quality-evidence.json .quality-gate-passed .history/
+```
+
+**说明**：
+- `auto-generate-views.sh` 检测 `feature-registry.yml` 变更并自动生成派生视图
+- Evidence 暂存但不 commit，避免 SHA 不匹配问题
+- Step 8 会一次性提交（代码 + evidence）
+
+---
+
 ## PR 模式检查项 (L1 + L2A)
 
 - [ ] `npm run typecheck` 通过 (L1)
