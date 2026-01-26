@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.8.2] - 2026-01-26
+
+### Fixed
+
+- **修复 DoD 文件：恢复 detect-phase.sh 完整 DoD**
+  - 恢复 12 项 DoD（detect-phase.sh 功能验收项）
+  - 为每项添加正确的 Evidence 引用（使用反引号格式）
+  - 修复 release-check 失败问题
+
 ## [10.8.1] - 2026-01-26
 
 ### Changed
