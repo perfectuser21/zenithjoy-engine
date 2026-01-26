@@ -1,9 +1,9 @@
 {
-  "sha": "18bbe6b30002b55dbe1d5b516ccb931cd9e1f232",
+  "sha": "751155c07199e20151e013878c5685cf2f5a138c",
   "branch": "cp-01260826-release-evidence",
   "qa_gate_passed": true,
   "audit_decision": "PASS",
-  "timestamp": "2026-01-26T08:30:36+08:00",
+  "timestamp": "2026-01-26T08:32:04+08:00",
   "evidence": {
     "typecheck": "passed",
     "tests": "passed",
