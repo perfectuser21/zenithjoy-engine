@@ -113,9 +113,13 @@ if [[ ! -f "$AUDIT_REPORT" ]]; then
     echo "" >&2
     echo "  找不到: docs/AUDIT-REPORT.md" >&2
     echo "" >&2
-    echo "  你需要:" >&2
-    echo "    1. 调用 /audit Skill 生成审计报告" >&2
-    echo "    2. 或手动创建 docs/AUDIT-REPORT.md" >&2
+    echo "  ⚡ Ralph Loop 自动重试机制：" >&2
+    echo "    1. Hook 返回 exit 2 = 阻止会话结束" >&2
+    echo "    2. 你应该立即执行修复步骤" >&2
+    echo "    3. 修复后会自动重新进入此检查" >&2
+    echo "" >&2
+    echo "  立即执行：" >&2
+    echo "    → 调用 /audit Skill 生成审计报告" >&2
     echo "" >&2
     echo "  参考: skills/dev/steps/07-quality.md" >&2
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
@@ -132,13 +136,15 @@ if [[ "$AUDIT_DECISION" != "PASS" ]]; then
     echo "" >&2
     echo "  Audit 报告显示有 blocker（L1/L2 问题）" >&2
     echo "" >&2
-    echo "  你需要:" >&2
+    echo "  ⚡ Ralph Loop 自动重试机制：" >&2
+    echo "    1. Hook 返回 exit 2 = 阻止会话结束" >&2
+    echo "    2. 你应该立即执行修复步骤" >&2
+    echo "    3. 修复后会自动重新进入此检查" >&2
+    echo "" >&2
+    echo "  立即执行：" >&2
     echo "    1. 查看 docs/AUDIT-REPORT.md 中的 Findings" >&2
     echo "    2. 修复所有 L1 和 L2 问题" >&2
-    echo "    3. 重新运行 /audit" >&2
-    echo "    4. 确保 Decision: PASS" >&2
-    echo "" >&2
-    echo "  (Retry Loop: Audit → FAIL → 修复 → 重新审计)" >&2
+    echo "    3. 重新运行 /audit，确保 Decision: PASS" >&2
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
     exit 2
 fi
@@ -155,13 +161,15 @@ if [[ ! -f "$QUALITY_GATE_FILE" ]]; then
     echo "" >&2
     echo "  找不到质检门控文件: .quality-gate-passed" >&2
     echo "" >&2
-    echo "  你需要:" >&2
-    echo "    1. 运行: npm run qa:gate" >&2
-    echo "    2. 确保 typecheck + test + build 全部通过" >&2
-    echo "    3. 生成 .quality-gate-passed 文件" >&2
+    echo "  ⚡ Ralph Loop 自动重试机制：" >&2
+    echo "    1. Hook 返回 exit 2 = 阻止会话结束" >&2
+    echo "    2. 你应该立即执行修复步骤" >&2
+    echo "    3. 修复后会自动重新进入此检查" >&2
     echo "" >&2
-    echo "  如果测试失败，请修复后重新运行 npm run qa:gate" >&2
-    echo "  (Retry Loop: 失败 → 修复 → 再试，直到通过)" >&2
+    echo "  立即执行：" >&2
+    echo "    1. 运行: npm run qa:gate" >&2
+    echo "    2. 如果测试失败，修复后重新运行" >&2
+    echo "    3. 确保 typecheck + test + build 全部通过" >&2
     echo "" >&2
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
     exit 2
@@ -188,7 +196,13 @@ if (( LATEST_CODE_MTIME > GATE_MTIME )); then
     echo "  最新代码修改: $(date -d @$LATEST_CODE_MTIME '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date -r $LATEST_CODE_MTIME '+%Y-%m-%d %H:%M:%S' 2>/dev/null)" >&2
     echo "  质检文件时间: $(date -d @$GATE_MTIME '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date -r $GATE_MTIME '+%Y-%m-%d %H:%M:%S' 2>/dev/null)" >&2
     echo "" >&2
-    echo "  请重新运行质检: npm run qa" >&2
+    echo "  ⚡ Ralph Loop 自动重试机制：" >&2
+    echo "    1. Hook 返回 exit 2 = 阻止会话结束" >&2
+    echo "    2. 你应该立即执行修复步骤" >&2
+    echo "    3. 修复后会自动重新进入此检查" >&2
+    echo "" >&2
+    echo "  立即执行：" >&2
+    echo "    → 运行 npm run qa:gate 重新质检" >&2
     echo "" >&2
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
 
@@ -223,6 +237,14 @@ if command -v gh &>/dev/null; then
         echo "  ⚠️  Step 8: PR 未创建" >&2
         echo "" >&2
         echo "  质检已通过，但 PR 尚未创建。" >&2
+        echo "" >&2
+        echo "  ⚡ Ralph Loop 自动重试机制：" >&2
+        echo "    1. Hook 返回 exit 2 = 阻止会话结束" >&2
+        echo "    2. 你应该立即执行修复步骤" >&2
+        echo "    3. PR 创建后会自动重新进入此检查" >&2
+        echo "" >&2
+        echo "  立即执行：" >&2
+        echo "    → 创建 PR (gh pr create 或通过 /dev Step 8)" >&2
         echo "" >&2
         echo "  下一步: 创建 PR" >&2
         echo "    gh pr create --title \"feat: ...\" --body \"...\"" >&�
@@ -289,11 +311,15 @@ if command -v gh &>/dev/null; then
             echo "" >&2
             echo "  CI 状态: FAILURE" >&2
             echo "" >&2
-            echo "  下一步: 分析并修复 CI 失败" >&2
+            echo "  ⚡ Ralph Loop 自动重试机制：" >&2
+            echo "    1. Hook 返回 exit 2 = 阻止会话结束" >&2
+            echo "    2. 你应该立即执行修复步骤" >&2
+            echo "    3. 推送修复后会自动重新进入此检查" >&2
+            echo "" >&2
+            echo "  立即执行：" >&2
             echo "    1. 查看失败详情: gh pr checks $PR_NUMBER" >&2
             echo "    2. 修复问题" >&2
-            echo "    3. push 代码: git push" >&2
-            echo "    4. 再次尝试结束（触发 CI 状态检查）" >&2
+            echo "    3. 推送代码: git push" >&2
             echo "" >&2
             echo "  (p1 事件驱动循环: CI fail → 修复 → push → 退出 → 等下次唤醒)" >&2
             echo "" >&2

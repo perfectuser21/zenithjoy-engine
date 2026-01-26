@@ -15,9 +15,10 @@
 # - product_features:  引擎核心能力（工作流、测试、报告、自动化）
 # ============================================================================
 
-version: "2.8.0"
+version: "2.9.0"
 updated: "2026-01-26"
 changelog:
+  - 2.9.0: v10.8.5 - 彻底修复 AI 停顿点（Skill Node 强制继续 + Stop Hook 语义 + Pending 退出）
   - 2.8.0: v10.8.4 - 修复 /dev 自动执行 + PR Gate 质检缓存（W1 + H2）
   - 2.7.0: W1 v10.8.0 - 修复阶段检测（detect-phase.sh 脚本新增）
   - 2.6.0: Q4 v10.6.0 - CI 分层完善（L2B + L3-fast + Preflight + AI Review）

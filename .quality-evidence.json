@@ -1,9 +1,9 @@
 {
-  "sha": "81e8e5105338381bbba73667d7f4ab51d64da781",
-  "branch": "cp-01261145-fix-auto-execution",
+  "sha": "9b854fee6c7254cb278be354f94bb86f082e84b5",
+  "branch": "cp-01261700-fix-all-pause-points",
   "qa_gate_passed": true,
   "audit_decision": "PASS",
-  "timestamp": "2026-01-26T16:49:25+08:00",
+  "timestamp": "2026-01-26T17:22:32+08:00",
   "evidence": {
     "typecheck": "passed",
     "tests": "passed",
