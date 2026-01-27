@@ -1,1 +1,1 @@
-{"sha":"bb1c6ce72ee99d692aa5bf848a5cbfb2fa1321b0","branch":"cp-third-cleanup-prd-dod","qa_gate_passed":true,"audit_decision":"PASS","timestamp":"2026-01-27T08:19:26+08:00","evidence":{"typecheck":"passed","tests":"passed (24 known failures)","build":"success","audit_l1":0,"audit_l2":0}}
+{"sha":"1a765529fc4611e94df5c67841419f26a913e6b1","branch":"cp-third-cleanup-prd-dod","qa_gate_passed":true,"audit_decision":"PASS","timestamp":"2026-01-27T08:20:10+08:00","evidence":{"typecheck":"passed","tests":"passed (24 known failures)","build":"success","audit_l1":0,"audit_l2":0}}
