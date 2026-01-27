@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.12.0] - 2026-01-27
+
 ### Changed
 
 - **Ralph Loop Wrapper 修复（用户直接调用）**
@@ -18,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 简化职责：/dev 只负责流程编排
   - 完成信号统一为 DONE
   - 更新 ~/.claude/CLAUDE.md Ralph Loop 使用规则
+  - 更新 RCI: W7-001, W7-003
 
 ## [10.11.0] - 2026-01-27
 
