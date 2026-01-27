@@ -17,6 +17,10 @@ RepoType: Engine
 - CHANGELOG.md
 - FEATURES.md
 - docs/QA-DECISION.md
+- .dod.md
+- .prd-qa-audit-refactor.md
+- .prd.md
+- hook-core/VERSION
 
 ## Forbidden
 
@@ -27,25 +31,25 @@ RepoType: Engine
 - dist/*
 
 Tests:
-  - dod_item: "scripts/qa/risk-score.js 实现并可运行"
+  - dod_item: "scripts/qa/risk-score.cjs 实现并可运行"
     method: manual
     location: manual:执行_risk-score_输出JSON
-  - dod_item: "scripts/qa/detect-scope.js 实现并可运行"
+  - dod_item: "scripts/qa/detect-scope.cjs 实现并可运行"
     method: manual
     location: manual:执行_detect-scope_输出范围
-  - dod_item: "scripts/qa/detect-forbidden.js 实现并可运行"
+  - dod_item: "scripts/qa/detect-forbidden.cjs 实现并可运行"
     method: manual
     location: manual:执行_detect-forbidden_输出禁区
-  - dod_item: "scripts/audit/compare-scope.js 实现并可运行"
+  - dod_item: "scripts/audit/compare-scope.cjs 实现并可运行"
     method: manual
     location: manual:执行_compare-scope_对比结果
-  - dod_item: "scripts/audit/check-forbidden.js 实现并可运行"
+  - dod_item: "scripts/audit/check-forbidden.cjs 实现并可运行"
     method: manual
     location: manual:执行_check-forbidden_检查结果
-  - dod_item: "scripts/audit/check-proof.js 实现并可运行"
+  - dod_item: "scripts/audit/check-proof.cjs 实现并可运行"
     method: manual
     location: manual:执行_check-proof_验证结果
-  - dod_item: "scripts/audit/generate-report.js 实现并可运行"
+  - dod_item: "scripts/audit/generate-report.cjs 实现并可运行"
     method: manual
     location: manual:执行_generate-report_生成报告
   - dod_item: "templates/QA-DECISION.md 创建结构化模板"

@@ -132,7 +132,7 @@ description: |
 
 ```bash
 # 对比实际改动与 QA-DECISION.md 中允许的 Scope
-node scripts/audit/compare-scope.js --base develop --head HEAD
+node scripts/audit/compare-scope.cjs --base develop --head HEAD
 
 # 输出：
 {
@@ -155,7 +155,7 @@ node scripts/audit/compare-scope.js --base develop --head HEAD
 
 ```bash
 # 检查是否触碰禁止修改的区域
-node scripts/audit/check-forbidden.js --base develop --head HEAD
+node scripts/audit/check-forbidden.cjs --base develop --head HEAD
 
 # 输出：
 {
@@ -169,7 +169,7 @@ node scripts/audit/check-forbidden.js --base develop --head HEAD
 
 ```bash
 # 验证 Tests 字段对应的测试是否完成
-node scripts/audit/check-proof.js --qa-decision docs/QA-DECISION.md
+node scripts/audit/check-proof.cjs --qa-decision docs/QA-DECISION.md
 
 # 输出：
 {
@@ -185,7 +185,7 @@ node scripts/audit/check-proof.js --qa-decision docs/QA-DECISION.md
 
 ```bash
 # 聚合所有审计结果，生成 AUDIT-REPORT.md
-node scripts/audit/generate-report.js --base develop --head HEAD --output docs/AUDIT-REPORT.md
+node scripts/audit/generate-report.cjs --base develop --head HEAD --output docs/AUDIT-REPORT.md
 
 # 输出：
 {
@@ -201,16 +201,16 @@ node scripts/audit/generate-report.js --base develop --head HEAD --output docs/A
 
 ```bash
 # 1. Scope 验证
-node scripts/audit/compare-scope.js || exit 1
+node scripts/audit/compare-scope.cjs || exit 1
 
 # 2. Forbidden 检查
-node scripts/audit/check-forbidden.js || exit 1
+node scripts/audit/check-forbidden.cjs || exit 1
 
 # 3. Proof 验证
-node scripts/audit/check-proof.js || exit 1
+node scripts/audit/check-proof.cjs || exit 1
 
 # 4. 生成报告
-node scripts/audit/generate-report.js || exit 1
+node scripts/audit/generate-report.cjs || exit 1
 
 # 5. 检查 Decision
 if grep -q "Decision: PASS" docs/AUDIT-REPORT.md; then
@@ -223,10 +223,10 @@ fi
 
 ### 相关脚本
 
-- `scripts/audit/compare-scope.js` - Scope 对比
-- `scripts/audit/check-forbidden.js` - Forbidden 检查
-- `scripts/audit/check-proof.js` - Proof 验证
-- `scripts/audit/generate-report.js` - 报告生成
+- `scripts/audit/compare-scope.cjs` - Scope 对比
+- `scripts/audit/check-forbidden.cjs` - Forbidden 检查
+- `scripts/audit/check-proof.cjs` - Proof 验证
+- `scripts/audit/generate-report.cjs` - 报告生成
 
 ---
 

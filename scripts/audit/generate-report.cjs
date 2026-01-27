@@ -72,9 +72,9 @@ function generateReport() {
   const changedFiles = getChangedFiles();
 
   // Run all audit checks
-  const scopeCheck = runScript('scripts/audit/compare-scope.js');
-  const forbiddenCheck = runScript('scripts/audit/check-forbidden.js');
-  const proofCheck = runScript('scripts/audit/check-proof.js');
+  const scopeCheck = runScript('scripts/audit/compare-scope.cjs');
+  const forbiddenCheck = runScript('scripts/audit/check-forbidden.cjs');
+  const proofCheck = runScript('scripts/audit/check-proof.cjs');
 
   // Determine overall decision
   const scopePass = scopeCheck.scopeCheck?.pass ?? scopeCheck.pass ?? false;

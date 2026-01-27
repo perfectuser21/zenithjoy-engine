@@ -95,7 +95,7 @@ description: |
 
 ```bash
 # 计算 RISK SCORE
-node scripts/qa/risk-score.js --base develop --head HEAD
+node scripts/qa/risk-score.cjs --base develop --head HEAD
 
 # 输出示例：
 {
@@ -127,7 +127,7 @@ node scripts/qa/risk-score.js --base develop --head HEAD
 
 ```bash
 # Step 3: 计算风险分数
-RISK_SCORE=$(node scripts/qa/risk-score.js --base develop --head HEAD)
+RISK_SCORE=$(node scripts/qa/risk-score.cjs --base develop --head HEAD)
 
 if [ $? -eq 1 ]; then
   echo "RISK SCORE >= 3, 执行 QA Decision Node"
@@ -160,9 +160,9 @@ fi
 
 ### 相关脚本
 
-- `scripts/qa/risk-score.js` - RISK SCORE 计算引擎
-- `scripts/qa/detect-scope.js` - 自动建议 Scope
-- `scripts/qa/detect-forbidden.js` - 列出常见禁区
+- `scripts/qa/risk-score.cjs` - RISK SCORE 计算引擎
+- `scripts/qa/detect-scope.cjs` - 自动建议 Scope
+- `scripts/qa/detect-forbidden.cjs` - 列出常见禁区
 
 ---
 
