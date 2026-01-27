@@ -278,65 +278,55 @@ done
 
 ## Ralph Loop 使用（自动循环机制）
 
-**Ralph Loop 是 Claude Code 官方插件**，与 Stop Hook 自动配合实现循环重试。
+**Ralph Loop 是 Claude Code 官方插件**，通过检测 `<promise>` 标记实现自动循环。
 
 ### 工作原理
 
 ```
-Ralph Loop (外层循环框架)
+Ralph Loop (循环框架)
     ↓
 AI 执行任务
     ↓
-AI 尝试结束会话
-    ↓
-Stop Hook 检查状态
-    ├─ exit 2（未完成）→ Ralph Loop 自动重新注入任务
-    └─ exit 0（已完成）→ AI 输出 <promise>SIGNAL</promise> → Ralph Loop 结束
+AI 检查完成条件
+    ├─ 未满足 → 不输出 promise → Ralph Loop 自动重新注入任务
+    └─ 全部满足 → 输出 <promise>SIGNAL</promise> → Ralph Loop 结束
 ```
 
 **关键点**：
 - Ralph Loop 插件已在 `~/.claude/settings.json` 中启用
-- Stop Hook 返回 `exit 2` → Ralph Loop 自动重试
-- AI 输出 `<promise>SIGNAL</promise>` → Ralph Loop 检测到后结束循环
+- AI 根据任务完成条件决定是否输出 promise
+- Ralph Loop 检测不到 promise → 自动重试
+- Ralph Loop 检测到 promise → 结束循环
 - 每次迭代 AI 都能看到之前的工作和错误信息
 
 ### P0 阶段使用（质检循环）
 
 **启动命令**：
 ```bash
-/ralph-loop "实现 <功能描述>，完成质检后输出 <promise>QUALITY_GATE_PASSED</promise>" \
-    --max-iterations 20 \
-    --completion-promise "QUALITY_GATE_PASSED"
+/ralph-loop "实现 <功能描述>，完成质检并创建 PR 后输出 <promise>DONE</promise>" \
+    --completion-promise "DONE"
 ```
 
 **循环机制**：
 ```
 Ralph Loop 启动
     ↓
-AI 执行 Step 1-6（PRD → 分支 → DoD → 代码 → 测试）
+AI 执行 Step 1-8（PRD → 分支 → DoD → 代码 → 测试 → 质检 → PR）
     ↓
-AI 执行 Step 7（质检）
-    ├─ Audit Node → AUDIT-REPORT.md
-    ├─ npm run qa (L1)
+AI 检查完成条件：
+    ├─ Audit Decision: PASS？
+    ├─ .quality-gate-passed 存在？
+    ├─ PR 已创建？
     ↓
-AI 尝试结束会话
-    ↓
-Stop Hook 检查（hooks/stop.sh p0 部分）
-    ├─ Decision: FAIL → exit 2 → Ralph 继续
-    ├─ .quality-gate-passed 不存在 → exit 2 → Ralph 继续
-    └─ 全部通过 → exit 0 → AI 输出 <promise>QUALITY_GATE_PASSED</promise>
-        ↓
-    AI 继续 Step 8（创建 PR）
-        ↓
-    Stop Hook: PR 已创建 → exit 0 → 会话结束 ✅
+条件未满足 → 修复并继续下一轮
+条件全部满足 → 输出 <promise>DONE</promise> → 结束 ✅
 ```
 
 ### P1 阶段使用（CI 修复循环）
 
 **启动命令**：
 ```bash
-/ralph-loop "修复 CI 失败，CI 通过后输出 <promise>CI_PASSED</promise>" \
-    --max-iterations 10 \
+/ralph-loop "修复 CI 失败，CI 通过并合并后输出 <promise>CI_PASSED</promise>" \
     --completion-promise "CI_PASSED"
 ```
 
@@ -344,54 +334,28 @@ Stop Hook 检查（hooks/stop.sh p0 部分）
 ```
 Ralph Loop 启动
     ↓
-AI 检查 CI 状态（gh pr checks）
+AI 检查 CI 状态
     ↓
 Case CI_STATUS:
-    ├─ PENDING/QUEUED → AI 等待 → Stop Hook exit 0 → Ralph 继续（未输出 promise）
-    ├─ FAILURE → AI 修复 → push → Stop Hook exit 2 → Ralph 继续
-    └─ SUCCESS → AI 合并 PR → 输出 <promise>CI_PASSED</promise>
-        ↓
-Ralph Loop 检测到 completion-promise → 结束循环 ✅
-```
-
-### Stop Hook 配合
-
-**P0 阶段**（`hooks/stop.sh`）：
-```bash
-if [ 质检未通过 ]; then
-    exit 2  # Ralph Loop 继续
-elif [ PR 未创建 ]; then
-    exit 2  # Ralph Loop 继续
-else
-    exit 0  # 允许结束
-fi
-```
-
-**P1 阶段**（`hooks/stop.sh`）：
-```bash
-if [ CI == FAILURE ]; then
-    exit 2  # Ralph Loop 继续修复
-elif [ CI == PENDING ]; then
-    exit 0  # 允许结束（AI 未输出 promise，Ralph 会继续）
-elif [ CI == SUCCESS ]; then
-    exit 0  # AI 输出 promise，Ralph 结束
-fi
+    ├─ PENDING/QUEUED → 不输出 promise → Ralph 继续（轮询）
+    ├─ FAILURE → 修复代码 → push → 不输出 promise → Ralph 继续
+    └─ SUCCESS → 合并 PR → 输出 <promise>CI_PASSED</promise> → 结束 ✅
 ```
 
 ### 优势
 
-1. **自动重试**：Stop Hook 返回 exit 2 时无需手动催促，Ralph 自动继续
+1. **自动重试**：AI 未输出 promise 时，Ralph 自动继续
 2. **上下文保持**：每次迭代都能看到之前的代码、报告、错误信息
 3. **明确完成**：通过 `<promise>` 标记明确告知完成，避免过早退出
-4. **防止无限循环**：`--max-iterations` 参数限制最大迭代次数
+4. **防止无限循环**：可选 `--max-iterations` 参数限制最大迭代次数
 
 ### 典型使用场景
 
 | 场景 | 命令 | Promise 标记 |
 |------|------|-------------|
-| 新功能开发 | `/ralph-loop "实现功能X..." --completion-promise "QUALITY_GATE_PASSED"` | `<promise>QUALITY_GATE_PASSED</promise>` |
-| CI 修复 | `/ralph-loop "修复CI..." --completion-promise "CI_PASSED"` | `<promise>CI_PASSED</promise>` |
-| Bug 修复 | `/ralph-loop "修复Bug#123..." --completion-promise "DONE"` | `<promise>DONE</promise>` |
+| 新功能开发 | `/ralph-loop "实现功能X，完成质检并创建 PR" --completion-promise "DONE"` | `<promise>DONE</promise>` |
+| CI 修复 | `/ralph-loop "修复CI，CI 通过并合并" --completion-promise "CI_PASSED"` | `<promise>CI_PASSED</promise>` |
+| Bug 修复 | `/ralph-loop "修复Bug#123" --completion-promise "FIXED"` | `<promise>FIXED</promise>` |
 
 ---
 
