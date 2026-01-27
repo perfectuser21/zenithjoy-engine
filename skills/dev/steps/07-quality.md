@@ -122,9 +122,9 @@ npm run qa  # = typecheck + test + build
 
 ---
 
-## Step 7.4: 自动化检查 + 一次性提交
+## Step 7.4: 自动化检查 + 提交
 
-测试通过后，运行自动化检查并一次性提交所有改动：
+测试通过后，运行自动化检查并提交改动：
 
 ```bash
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -145,33 +145,24 @@ fi
 # 4. 检查并修复 DoD 格式
 bash scripts/auto-fix-dod.sh
 
-# 5. 暂存所有改动
+# 5. 暂存所有改动并提交
 git add -A
-
-# 6. 运行质检（生成 evidence）
-npm run qa:gate || true
-
-# 7. 暂存 evidence
-git add .quality-evidence.json .quality-gate-passed .history/ || true
-
-# 8. 一次性提交（代码+版本号+registry+视图+evidence）
 COMMIT_MSG=$(git log develop..HEAD --oneline | head -1 | cut -d' ' -f2-)
 git commit -m "$COMMIT_MSG
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>" || echo "No changes to commit"
 
-# 9. Push
+# 6. Push
 git push origin HEAD
 
 echo "✅ Quality 检查完成，所有改动已提交"
 ```
 
 **关键改动说明**：
-- **一次性提交**：所有改动（代码、版本号、registry、视图、evidence）在一个 commit
-- **qa:gate 在 git add 之后运行**：确保 evidence SHA = 当前 commit SHA
-- **避免 SHA 不匹配死循环**：单次 commit 确保 CI 检查时 evidence SHA 正确
 - **版本号自动更新**：根据 commit 类型（feat/fix/feat!）自动更新 package.json
 - **Registry 自动更新**：检测核心文件变更并提示更新
+- **DoD 格式修复**：自动补全缺失字段
+- **Evidence 由 CI 生成**：本地不再生成 Evidence，CI 自动生成（v10.11.0+）
 - **DoD 格式自动修复**：自动补全缺失的 QA 引用和验收标准章节
 
 ---
