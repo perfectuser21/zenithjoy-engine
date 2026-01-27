@@ -202,7 +202,8 @@ function main() {
   }
 
   // 1. docs/QA-DECISION.md（最高优先级，明确来源）
-  if (!priority) {
+  // 跳过条件：SKIP_GIT_DETECTION=1（测试环境）
+  if (!priority && !process.env.SKIP_GIT_DETECTION) {
     const p = detectFromQADecision();
     if (p) {
       priority = p;
