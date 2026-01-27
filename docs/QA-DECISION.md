@@ -17,6 +17,7 @@ RepoType: Engine
 - CHANGELOG.md
 - FEATURES.md
 - docs/QA-DECISION.md
+- docs/AUDIT-REPORT.md
 - .dod.md
 - .prd-qa-audit-refactor.md
 - .prd.md

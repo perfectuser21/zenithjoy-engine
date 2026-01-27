@@ -2,7 +2,7 @@
 
 Branch: cp-qa-audit-refactor
 Date: 2026-01-27
-Scope: .dod.md, .prd-qa-audit-refactor.md, .prd.md, CHANGELOG.md, FEATURES.md, docs/QA-DECISION.md, hook-core/VERSION, package.json, scripts/audit/check-forbidden.cjs, scripts/audit/check-proof.cjs, scripts/audit/compare-scope.cjs, scripts/audit/generate-report.cjs, scripts/qa/detect-forbidden.cjs, scripts/qa/detect-scope.cjs, scripts/qa/risk-score.cjs, skills/audit/SKILL.md, skills/qa/SKILL.md, templates/AUDIT-REPORT.md, templates/QA-DECISION.md
+Scope: .dod.md, .prd-qa-audit-refactor.md, .prd.md, CHANGELOG.md, FEATURES.md, docs/AUDIT-REPORT.md, docs/QA-DECISION.md, hook-core/VERSION, package.json, scripts/audit/check-forbidden.cjs, scripts/audit/check-proof.cjs, scripts/audit/compare-scope.cjs, scripts/audit/generate-report.cjs, scripts/qa/detect-forbidden.cjs, scripts/qa/detect-scope.cjs, scripts/qa/risk-score.cjs, skills/audit/SKILL.md, skills/qa/SKILL.md, templates/AUDIT-REPORT.md, templates/QA-DECISION.md
 Target Level: L2
 
 ## Summary
@@ -14,7 +14,7 @@ Target Level: L2
 
 ## Decision
 
-**PASS**
+Decision: PASS
 
 All checks passed. Safe to proceed.
 
@@ -42,4 +42,4 @@ None
 
 ---
 
-Generated: 2026-01-27T23:46:17.234Z
+Generated: 2026-01-27T23:53:40.634Z

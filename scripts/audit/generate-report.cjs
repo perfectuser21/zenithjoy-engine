@@ -155,7 +155,7 @@ Target Level: L2
 
 ## Decision
 
-**${overallPass ? 'PASS' : 'FAIL'}**
+Decision: ${overallPass ? 'PASS' : 'FAIL'}
 
 ${overallPass ? 'All checks passed. Safe to proceed.' : 'Blockers found. Must fix before proceeding.'}
 

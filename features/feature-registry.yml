@@ -15,9 +15,10 @@
 # - product_features:  引擎核心能力（工作流、测试、报告、自动化）
 # ============================================================================
 
-version: "2.16.0"
+version: "2.17.0"
 updated: "2026-01-27"
 changelog:
+  - 2.17.0: v11.0.0 - QA/Audit 三层架构重构（Q1 RISK SCORE + Q2 Structured Audit）
   - 2.16.0: v10.13.1 - /dev 文档修复（循环机制说明） + pr-gate 降级为提示型（exit 0）
   - 2.15.0: v10.13.0 - /dev Skill v2.2.0（删除阶段检测，统一完成条件，强制 Task Checkpoint）
   - 2.14.0: v10.12.0 - Ralph Loop Wrapper 修复（用户直接调用，dev-with-loop 命令，v2.1.0）
@@ -425,6 +426,97 @@ platform_features:
       - Q4-004  # CI Preflight 脚本
       - Q4-005  # PR Gate Part 0.5 集成
       - Q4-006  # AI Review CI job
+
+  # --------------------------------------------------------------------------
+  # Q1: RISK SCORE Trigger - QA Decision 自动触发机制
+  # --------------------------------------------------------------------------
+  - id: Q1
+    name: RISK SCORE Trigger
+    status: Committed
+    priority: P1
+    version: "11.0.0"
+    updated: "2026-01-27"
+    description: |
+      基于 R1-R8 规则的 RISK SCORE 自动触发机制：
+      - 每个规则 1 分，≥3 分自动触发 QA Decision Node
+      - 三层架构：Skills (SKILL.md) + Scripts (*.cjs) + Templates (*.md)
+      - 集成到 /dev 工作流 Step 3
+
+    entrypoints:
+      - type: script
+        file: scripts/qa/risk-score.cjs
+      - type: script
+        file: scripts/qa/detect-scope.cjs
+      - type: script
+        file: scripts/qa/detect-forbidden.cjs
+      - type: skill
+        file: skills/qa/SKILL.md
+
+    golden_path: |
+      /dev Step 3 → risk-score.cjs (计算分数) → ≥3 分 → 执行完整 QA Decision Node →
+      生成 docs/QA-DECISION.md
+
+    minimal_paths:
+      - "risk-score.cjs: 计算 R1-R8 规则，输出 JSON"
+      - "detect-scope.cjs: 自动建议允许的 Scope"
+      - "detect-forbidden.cjs: 列出常见禁区"
+
+    tests:
+      - type: manual
+        description: 手动验证脚本执行正确
+        coverage: Q1-001, Q1-002
+
+    rcis:
+      - Q1-001  # RISK SCORE 计算准确性
+      - Q1-002  # ≥3 分触发 QA Node
+
+  # --------------------------------------------------------------------------
+  # Q2: Structured Audit - 结构化 Audit 验证流程
+  # --------------------------------------------------------------------------
+  - id: Q2
+    name: Structured Audit
+    status: Committed
+    priority: P1
+    version: "11.0.0"
+    updated: "2026-01-27"
+    description: |
+      结构化 Audit 验证流程，四步自动化检查：
+      - Scope 验证：对比实际改动与 QA-DECISION.md
+      - Forbidden 检查：确保未触碰禁区
+      - Proof 验证：检查测试证据完成度
+      - Report 生成：自动生成 AUDIT-REPORT.md
+
+    entrypoints:
+      - type: script
+        file: scripts/audit/compare-scope.cjs
+      - type: script
+        file: scripts/audit/check-forbidden.cjs
+      - type: script
+        file: scripts/audit/check-proof.cjs
+      - type: script
+        file: scripts/audit/generate-report.cjs
+      - type: skill
+        file: skills/audit/SKILL.md
+
+    golden_path: |
+      /dev Step 6 → compare-scope.cjs (验证范围) → check-forbidden.cjs (检查禁区) →
+      check-proof.cjs (验证证据) → generate-report.cjs (生成报告) →
+      AUDIT-REPORT.md (Decision: PASS/FAIL)
+
+    minimal_paths:
+      - "compare-scope.cjs: 对比实际改动与允许范围"
+      - "check-forbidden.cjs: 检查是否触碰禁区"
+      - "check-proof.cjs: 验证 Tests 字段完成度"
+      - "generate-report.cjs: 生成结构化报告"
+
+    tests:
+      - type: manual
+        description: 手动验证脚本执行正确
+        coverage: Q2-001, Q2-002
+
+    rcis:
+      - Q2-001  # Scope/Forbidden/Proof 验证准确性
+      - Q2-002  # AUDIT-REPORT.md 生成正确
 
 # ============================================================================
 # Product Core 5 - 引擎核心能力
