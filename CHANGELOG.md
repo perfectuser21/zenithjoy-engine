@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.9.5] - 2026-01-27
+
+### Changed
+
+- **Ralph Loop 文档修正**
+  - 删除 docs/RALPH-LOOP-INTERCEPTION.md 中关于项目 Stop Hook 的错误描述
+  - 明确说明 Ralph Loop 插件自己实现循环机制，通过 AI 检查条件并输出 promise 来控制
+  - 删除 skills/dev/SKILL.md 中的 "Stop Hook 配合" 章节
+  - 简化 Ralph Loop 工作原理描述，移除与 Stop Hook 的混淆
+  - 禁用 .claude/settings.json 中的 Stop Hook 配置
+
 ## [10.9.4] - 2026-01-27
 
 ### Fixed
