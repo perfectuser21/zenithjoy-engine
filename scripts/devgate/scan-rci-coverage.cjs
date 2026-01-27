@@ -46,6 +46,8 @@ const EXCLUDE_PATTERNS = [
   /^scripts\/setup-/,          // 配置脚本
   /^scripts\/run-gate-tests/,  // Gate 执行器（在 GCI）
   /^scripts\/rc-filter/,       // 内部过滤工具
+  /^scripts\/auto-/,           // Ralph Loop 内部自动化工具
+  /^scripts\/update-/,         // Ralph Loop 内部更新工具
   /^hooks\/session-start/,     // 内部 Hook
   /^hooks\/pr-gate/,           // Gate Hook（在 GCI）
   /^hooks\/branch-protect/,    // Gate Hook（在 GCI）
