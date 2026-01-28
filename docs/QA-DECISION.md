@@ -1,7 +1,7 @@
 # QA Decision
 
 Decision: NO_RCI
-Priority: P1
+Priority: P2
 RepoType: Engine
 
 Tests:
