@@ -1,32 +1,32 @@
 # QA Decision
 
 Decision: NO_RCI
-Priority: P1
+Priority: P2
 RepoType: Engine
 
 Tests:
-  - dod_item: "track.sh 原子写入"
-    method: auto
-    location: CI shell syntax check
-
-  - dod_item: "状态文件分支隔离"
+  - dod_item: "移除硬编码路径"
     method: manual
-    location: manual:多分支并发验证
+    location: manual:code-review
 
-  - dod_item: "cecelia-api 命令修复"
+  - dod_item: ".git 目录检测兼容 worktree"
     method: manual
-    location: manual:检查 track.sh 不调用不存在的命令
+    location: manual:worktree-test
 
-  - dod_item: "pr-gate-v2.sh trap 修复"
-    method: auto
-    location: CI shell syntax check
-
-  - dod_item: "quality-gate 文件分支隔离"
+  - dod_item: "项目根目录检测兼容 worktree"
     method: manual
-    location: manual:多分支验证
+    location: manual:worktree-test
+
+  - dod_item: "develop 分支存在性检查"
+    method: manual
+    location: manual:code-review
+
+  - dod_item: "cleanup.sh worktree 安全检查"
+    method: manual
+    location: manual:worktree-test
 
 RCI:
   new: []
   update: []
 
-Reason: 内部并发安全修复，不改变外部行为或 API，无需新增回归契约。修复竞态条件和文件命名，属于 bug fix 类型。
+Reason: 跨仓库和 Worktree 兼容性修复，不改变核心功能行为，只是增强环境适应性。
