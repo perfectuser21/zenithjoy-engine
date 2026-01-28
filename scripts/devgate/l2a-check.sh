@@ -25,8 +25,13 @@ set -euo pipefail
 
 MODE="${1:-pr}"
 
-# 获取当前分支名
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+# 获取当前分支名（v1.1: 支持 CI 环境）
+# CI 中优先使用 GITHUB_HEAD_REF（PR 源分支）
+if [[ -n "${GITHUB_HEAD_REF:-}" ]]; then
+  CURRENT_BRANCH="$GITHUB_HEAD_REF"
+else
+  CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+fi
 
 # 文件路径（v1.1: 支持分支级别文件，向后兼容旧格式）
 # 优先使用分支级别文件，再 fallback 到旧格式
