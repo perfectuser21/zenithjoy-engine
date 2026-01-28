@@ -18,7 +18,7 @@
 
 # NOTE: version 需要与 package.json 保持同步
 # 更新 package.json 时同步更新此处
-version: "11.2.8"
+version: "11.2.9"
 updated: "2026-01-28"
 
 # ============================================================================
@@ -380,22 +380,12 @@ hooks:
       contains: "CRITICAL|HIGH|security"
     test: "tests/hooks/detect-priority.test.ts"
 
-  - id: H7-004
-    feature: H7
-    name: "stop.sh v10.0.0 两阶段语义对齐"
-    scope: hook
-    priority: P1
-    trigger: [PR, Release]
-    method: manual
-    tags: [stop-hook, v10.0.0, contract-rebase]
-    owner: infra
-    steps:
-      given: "v10.0.0 Contract Rebase"
-      when: "hooks/stop.sh 执行"
-      then: "使用 v2.0.0 两阶段语义（p0/p1/p2），不再使用旧的 Loop/Ralph 术语"
-    evidence:
-      type: manual
-      desc: "代码审查确认无旧术语残留"
+  # [DEPRECATED] H7 Stop Hook 从未实现，已被 Ralph Loop + PR Gate 替代
+  # - id: H7-004
+  #   feature: H7
+  #   name: "stop.sh v10.0.0 两阶段语义对齐"
+  #   deprecated_since: "11.2.9"
+  #   deprecated_reason: "hooks/stop.sh 从未实现"
 
   # --------------------------------------------------------------------------
   # H8: Session End Hook
