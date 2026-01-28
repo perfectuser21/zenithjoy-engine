@@ -170,8 +170,15 @@ main() {
   fi
 
   # 执行检查
-  check_prd
-  check_dod
+  # Release 模式：跳过 PRD/DoD 检查（release 只是发布，不是新功能）
+  if [[ "$MODE" == "release" ]]; then
+    echo ""
+    echo "  [Release 模式] 跳过 PRD/DoD 检查"
+    PASSED=$((PASSED + 2))
+  else
+    check_prd
+    check_dod
+  fi
   check_qa_decision
   check_audit_report
 

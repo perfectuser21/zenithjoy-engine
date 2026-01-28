@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.2.4] - 2026-01-28
+
+### Fixed
+
+- **Release 模式跳过 PRD/DoD 检查**
+  - l2a-check.sh release 模式不再要求 .prd.md 和 .dod.md
+  - 修复 release PR 需要添加假文件的问题
+
 ## [11.2.3] - 2026-01-28
 
 ### Fixed
