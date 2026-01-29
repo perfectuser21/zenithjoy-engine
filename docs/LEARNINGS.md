@@ -1,9 +1,10 @@
 ---
 id: engine-learnings
-version: 1.1.0
+version: 1.2.0
 created: 2026-01-16
-updated: 2026-01-23
+updated: 2026-01-29
 changelog:
+  - 1.2.0: 添加 Task Checkpoint 强制执行经验
   - 1.1.0: 添加 Task/Subagent 对比测试结论
   - 1.0.0: 初始版本
 ---
@@ -1073,4 +1074,41 @@ sha256(branch | timestamp | quality_hash | loop_count | secret)
 
 #### 影响程度
 - Medium - 明确了 Task 的定位，避免误用
+
+### [2026-01-29] Task Checkpoint 强制执行
+
+#### 开发内容
+在 /dev 流程中强制使用官方 Task Checkpoint 系统追踪进度。
+
+#### 实现方案
+
+1. **Step 3 创建 11 个 Task**
+   - PRD 确认、环境检测、分支创建、DoD 定稿、写代码、写测试、质检、提交 PR、CI 监控、Learning 记录、清理
+   - .dev-mode 添加 `tasks_created: true` 字段
+
+2. **branch-protect.sh v18 检查**
+   - 在 PRD/DoD 检查后增加 tasks_created 检查
+   - 缺少 `tasks_created: true` 时阻止写代码
+
+3. **每个 step 文件添加 TaskUpdate 指令**
+   - 开始时: `TaskUpdate({ taskId: "N", status: "in_progress" })`
+   - 完成时: `TaskUpdate({ taskId: "N", status: "completed" })`
+
+#### 经验
+
+1. **进度可见性**
+   - 用户可实时看到 /dev 流程进度
+   - 比日志更直观
+
+2. **Task ID 管理**
+   - 每次 /dev 都会创建新的 Task
+   - ID 是递增的，不是固定的 1-11
+   - Step 文件中的 TaskUpdate 示例只是示意
+
+3. **流程顺畅**
+   - 从 session summary 恢复后继续执行顺利
+   - CI 一次修复后通过（只需更新 feature-registry）
+
+#### 影响程度
+- Low - 增强用户体验，不影响核心流程
 
