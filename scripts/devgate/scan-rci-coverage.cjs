@@ -55,8 +55,11 @@ const EXCLUDE_PATTERNS = [
   /^scripts\/squash-/,         // 合并工具（内部维护）
   /^scripts\/post-pr-/,        // PR 后工具（内部流程）
   /^hooks\/session-start/,     // 内部 Hook
+  /^hooks\/session-end/,       // 内部 Hook
   /^hooks\/pr-gate/,           // Gate Hook（在 GCI）
   /^hooks\/branch-protect/,    // Gate Hook（在 GCI）
+  /^hooks\/stop/,              // Gate Hook（在 GCI）- 循环控制器
+  /^hooks\/credential-guard/,  // Gate Hook（在 GCI）- 凭据保护
 ];
 
 /**

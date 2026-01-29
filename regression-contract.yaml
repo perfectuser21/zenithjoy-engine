@@ -18,8 +18,8 @@
 
 # NOTE: version 需要与 package.json 保持同步
 # 更新 package.json 时同步更新此处
-version: "11.2.11"
-updated: "2026-01-28"
+version: "11.3.0"
+updated: "2026-01-29"
 
 # ============================================================================
 # Hooks 回归契约
@@ -122,6 +122,63 @@ hooks:
       file: "hooks/branch-protect.sh"
       contains: "reject_path_traversal"
     test: "tests/hooks/branch-protect.test.ts"
+
+  # --------------------------------------------------------------------------
+  # H7: stop.sh - 循环控制器
+  # --------------------------------------------------------------------------
+  - id: H7-001
+    feature: H7
+    name: "Stop Hook 检测 .dev-mode 文件"
+    scope: hook
+    priority: P0
+    trigger: [PR, Release]
+    method: manual
+    tags: [stop, loop, dev-mode]
+    owner: infra
+    steps:
+      given: "会话尝试结束"
+      when: "Stop Hook 触发"
+      then: "检测 .dev-mode 文件，存在则检查完成条件"
+    evidence:
+      type: code
+      file: "hooks/stop.sh"
+      contains: ".dev-mode"
+
+  - id: H7-002
+    feature: H7
+    name: "Stop Hook 检查完成条件"
+    scope: hook
+    priority: P0
+    trigger: [PR, Release]
+    method: manual
+    tags: [stop, loop, completion]
+    owner: infra
+    steps:
+      given: ".dev-mode 文件存在"
+      when: "Stop Hook 检查完成条件"
+      then: "检查 PR 创建 + CI 通过 + PR 合并"
+    evidence:
+      type: code
+      file: "hooks/stop.sh"
+      contains: "gh pr list"
+
+  - id: H7-003
+    feature: H7
+    name: "Stop Hook exit 2 阻止会话结束"
+    scope: hook
+    priority: P0
+    trigger: [PR, Release]
+    method: manual
+    tags: [stop, loop, continue]
+    owner: infra
+    steps:
+      given: ".dev-mode 存在且完成条件未满足"
+      when: "Stop Hook 检查结果"
+      then: "返回 exit 2 阻止会话结束"
+    evidence:
+      type: code
+      file: "hooks/stop.sh"
+      contains: "exit 2"
 
   # --------------------------------------------------------------------------
   # H2: pr-gate-v2

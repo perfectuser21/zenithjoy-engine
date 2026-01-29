@@ -1,12 +1,12 @@
 ---
 id: minimal-paths
-version: 2.25.0
-created: 2026-01-28
-updated: 2026-01-28
+version: 2.26.0
+created: 2026-01-29
+updated: 2026-01-29
 source: features/feature-registry.yml
 generation: auto-generated (scripts/generate-path-views.sh)
 changelog:
-  - 2.25.0: 从 feature-registry.yml 自动生成
+  - 2.26.0: 从 feature-registry.yml 自动生成
 ---
 
 # Minimal Paths - 最小验收路径
@@ -28,9 +28,13 @@ changelog:
 
 ---
 
-### H7: Stop Hook Quality Gate
+### H7: Stop Hook Loop Controller
 
-（暂无 minimal paths）
+1. ✅ **无 .dev-mode → exit 0 (普通会话)**
+2. ✅ **有 .dev-mode + PR 未创建 → exit 2 (继续)**
+3. ✅ **有 .dev-mode + PR 已合并 → 删除 .dev-mode + exit 0 (完成)**
+
+**RCI 覆盖**: H7-001,H7-002,H7-003
 
 ---
 
@@ -198,5 +202,5 @@ changelog:
 ---
 
 **来源**: features/feature-registry.yml
-**版本**: 2.25.0
-**生成时间**: 2026-01-28
+**版本**: 2.26.0
+**生成时间**: 2026-01-29

@@ -15,9 +15,10 @@
 # - product_features:  引擎核心能力（工作流、测试、报告、自动化）
 # ============================================================================
 
-version: "2.25.0"
-updated: "2026-01-28"
+version: "2.26.0"
+updated: "2026-01-29"
 changelog:
+  - 2.26.0: v11.3.0 - Stop Hook 循环控制器（替代 Ralph Loop，H7 重新激活）
   - 2.25.0: v11.2.12 - Credential Guard Hook（凭据保护，防止代码泄露）
   - 2.24.0: v11.2.10 - rm -rf 安全验证（safe_rm_rf 函数，路径验证防误删）
   - 2.23.0: v11.2.9 - 关键清理（删除 contracts/、H7/W5 废弃、移除未实现脚本引用）
@@ -87,22 +88,44 @@ platform_features:
       - H1-011  # 路径遍历防护
 
   # --------------------------------------------------------------------------
-  # H7: Stop Hook Quality Gate - 已废弃
+  # H7: Stop Hook Loop Controller - 循环控制器
   # --------------------------------------------------------------------------
   - id: H7
-    name: Stop Hook Quality Gate
-    status: Deprecated
-    priority: P2
+    name: Stop Hook Loop Controller
+    status: Committed
+    priority: P0
+    version: "11.3.0"
+    updated: "2026-01-29"
     description: |
-      [DEPRECATED] 已被 Ralph Loop + PR Gate 替代
-      原设计：两阶段工作流的质检强制门禁
-      废弃原因：hooks/stop.sh 和 scripts/detect-phase.sh 从未实现
-      替代方案：使用 Ralph Loop (/ralph-loop) + PR Gate (pr-gate-v2.sh) 实现质检
+      Stop Hook 作为 /dev 工作流的循环控制器，替代 Ralph Loop 插件：
+      - 检测 .dev-mode 文件决定是否为 /dev 会话
+      - 检查完成条件：PR 创建 + CI 通过 + PR 合并
+      - 未完成时 exit 2 阻止会话结束，Claude 继续执行
+      - 完成时删除 .dev-mode 并 exit 0
+      - 无头模式 (CECELIA_HEADLESS=true) 直接 exit 0，由外部循环控制
+      v11.3.0: 首次实现，替代 Ralph Loop 插件
 
-    deprecated_since: "11.2.9"
-    deprecated_reason: "未实现的设计，已被 Ralph Loop + PR Gate 替代"
+    entrypoints:
+      - type: hook
+        event: Stop
+        file: hooks/stop.sh
 
-    rcis: []  # 无有效 RCI
+    golden_path: |
+      会话结束 → 检测 .dev-mode → 检查完成条件 → exit 2 (继续) | exit 0 (结束)
+
+    minimal_paths:
+      - "无 .dev-mode → exit 0 (普通会话)"
+      - "有 .dev-mode + PR 未创建 → exit 2 (继续)"
+      - "有 .dev-mode + PR 已合并 → 删除 .dev-mode + exit 0 (完成)"
+
+    tests:
+      - type: manual
+        evidence: manual:stop-hook-loop-controller
+
+    rcis:
+      - H7-001  # .dev-mode 检测
+      - H7-002  # 完成条件检查
+      - H7-003  # exit 2 阻止会话结束
 
   # --------------------------------------------------------------------------
   # H2: PR Gate (Dual Mode) - 提交门禁
