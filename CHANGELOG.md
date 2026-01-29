@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.4.0] - 2026-01-29
+
+### Added
+
+- **Task Checkpoint 强制执行**
+  - `hooks/branch-protect.sh v18`: 检查 `.dev-mode` 中的 `tasks_created: true` 字段
+  - `skills/dev/steps/03-branch.md`: 分支创建后自动创建 11 个 Task（Step 1-11）
+  - 所有 step 文件添加 TaskUpdate 指令（开始/完成状态）
+  - 用户可实时看到 /dev 流程进度
+
+### Changed
+
+- **branch-protect.sh 升级到 v18**
+  - 在 PRD/DoD 检查后增加 Task Checkpoint 检查
+  - 缺少 `tasks_created: true` 时阻止写代码
+
 ## [11.3.0] - 2026-01-29
 
 ### Added

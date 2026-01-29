@@ -294,7 +294,27 @@ if [[ "$CURRENT_BRANCH" =~ ^cp-[a-zA-Z0-9][-a-zA-Z0-9_]*$ ]] || \
         exit 2
     fi
 
-    # PRD 和 DoD 都存在且已更新，放行
+    # v18: 检查 Task Checkpoint 是否已创建
+    DEV_MODE_FILE="$PROJECT_ROOT/.dev-mode"
+    if [[ -f "$DEV_MODE_FILE" ]]; then
+        TASKS_CREATED=$(grep "^tasks_created:" "$DEV_MODE_FILE" 2>/dev/null | cut -d' ' -f2 || echo "")
+        if [[ "$TASKS_CREATED" != "true" ]]; then
+            echo "" >&2
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+            echo "  [ERROR] Task Checkpoint 未创建" >&2
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+            echo "" >&2
+            echo "当前分支: $CURRENT_BRANCH" >&2
+            echo ".dev-mode 缺少 tasks_created: true" >&2
+            echo "" >&2
+            echo "请在 /dev Step 3 创建所有 Task 后再写代码" >&2
+            echo "" >&2
+            echo "[SKILL_REQUIRED: dev]" >&2
+            exit 2
+        fi
+    fi
+
+    # PRD, DoD, Tasks 都存在且已更新，放行
     exit 0
 fi
 

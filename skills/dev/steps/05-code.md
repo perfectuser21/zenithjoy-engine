@@ -2,6 +2,8 @@
 
 > 根据 PRD 实现功能代码
 
+**Task Checkpoint**: `TaskUpdate({ taskId: "5", status: "in_progress" })`
+
 ---
 
 ## 原则
@@ -37,6 +39,8 @@ A: 调整方案，重新实现。
 ---
 
 ## 完成后
+
+**Task Checkpoint**: `TaskUpdate({ taskId: "5", status: "completed" })`
 
 **立即执行下一步**：
 

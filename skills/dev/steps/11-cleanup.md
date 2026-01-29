@@ -2,6 +2,8 @@
 
 > 生成任务报告 + 清理分支和配置
 
+**Task Checkpoint**: `TaskUpdate({ taskId: "11", status: "in_progress" })`
+
 ---
 
 ## 任务报告生成
@@ -173,6 +175,8 @@ git remote prune origin 2>/dev/null || true
 ---
 
 ## 完成
+
+**Task Checkpoint**: `TaskUpdate({ taskId: "11", status: "completed" })`
 
 ```bash
 echo "🎉 本轮开发完成！"

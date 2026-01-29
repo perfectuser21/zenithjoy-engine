@@ -2,6 +2,8 @@
 
 > 记录开发经验（必须步骤）
 
+**Task Checkpoint**: `TaskUpdate({ taskId: "10", status: "in_progress" })`
+
 ---
 
 ## 为什么必须记录？
@@ -106,5 +108,7 @@ IS_TEST=$(git config branch."$BRANCH_NAME".is-test 2>/dev/null)
 
 - [ ] 至少有一条 Learning 记录（Engine 或项目层面）
 - [ ] Learning 已提交并推送
+
+**Task Checkpoint**: `TaskUpdate({ taskId: "10", status: "completed" })`
 
 **完成后进入 Step 11: Cleanup**

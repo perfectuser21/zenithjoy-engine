@@ -2,6 +2,8 @@
 
 > 定义验收标准（Definition of Done）
 
+**Task Checkpoint**: `TaskUpdate({ taskId: "4", status: "in_progress" })`
+
 ---
 
 ## 流程
@@ -146,6 +148,8 @@ PR Gate 会检查：
 ---
 
 ## 完成后
+
+**Task Checkpoint**: `TaskUpdate({ taskId: "4", status: "completed" })`
 
 **立即执行下一步**：
 

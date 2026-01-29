@@ -3,6 +3,8 @@
 > Audit Node 做代码审计，然后跑测试
 > **Stop Hook 控制循环：质检失败时阻止会话结束（exit 2），AI 继续修复**
 
+**Task Checkpoint**: `TaskUpdate({ taskId: "7", status: "in_progress" })`
+
 ---
 
 ## 质检分层定义
@@ -236,6 +238,8 @@ Release Check 额外检查：
 ---
 
 ## 完成后
+
+**Task Checkpoint**: `TaskUpdate({ taskId: "7", status: "completed" })`
 
 **立即执行下一步**：
 

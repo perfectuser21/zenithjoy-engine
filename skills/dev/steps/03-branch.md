@@ -139,6 +139,59 @@ started: 2026-01-29T10:00:00+00:00
 
 ---
 
+## 创建 Task Checkpoint（CRITICAL）
+
+**分支和 .dev-mode 创建后，必须创建所有 11 个 Task**，让用户看到进度：
+
+```javascript
+// 使用官方 Task 工具创建所有步骤
+TaskCreate({ subject: "PRD 确认", description: "确认 PRD 文件存在且有效", activeForm: "确认 PRD" })
+TaskCreate({ subject: "环境检测", description: "检测项目环境和配置", activeForm: "检测环境" })
+TaskCreate({ subject: "分支创建", description: "创建或切换到功能分支", activeForm: "创建分支" })
+TaskCreate({ subject: "DoD 定稿", description: "生成 DoD 并调用 QA 决策", activeForm: "定稿 DoD" })
+TaskCreate({ subject: "写代码", description: "根据 PRD 实现功能", activeForm: "写代码" })
+TaskCreate({ subject: "写测试", description: "为功能编写测试", activeForm: "写测试" })
+TaskCreate({ subject: "质检", description: "代码审计 + 自动化测试", activeForm: "质检中" })
+TaskCreate({ subject: "提交 PR", description: "版本号更新 + 创建 PR", activeForm: "提交 PR" })
+TaskCreate({ subject: "CI 监控", description: "等待 CI 通过并修复失败", activeForm: "监控 CI" })
+TaskCreate({ subject: "Learning 记录", description: "记录开发经验", activeForm: "记录经验" })
+TaskCreate({ subject: "清理", description: "清理临时文件", activeForm: "清理中" })
+```
+
+**创建后更新 .dev-mode**：
+
+```bash
+# 添加 tasks_created 标记
+echo "tasks_created: true" >> .dev-mode
+
+echo "✅ Task Checkpoint 已创建（11 个步骤）"
+```
+
+**更新后的 .dev-mode 格式**：
+```
+dev
+branch: H7-task-checkpoint
+prd: .prd.md
+started: 2026-01-29T10:00:00+00:00
+tasks_created: true
+```
+
+**Hook 检查**：
+- branch-protect.sh 检查 `tasks_created: true`
+- 缺少此字段时阻止写代码，提示运行 /dev
+
+**然后标记前 3 个 Task 完成**：
+
+```javascript
+// Step 1-3 已完成
+TaskUpdate({ taskId: "1", status: "completed" })  // PRD 确认
+TaskUpdate({ taskId: "2", status: "completed" })  // 环境检测
+TaskUpdate({ taskId: "3", status: "completed" })  // 分支创建
+TaskUpdate({ taskId: "4", status: "in_progress" }) // DoD 定稿 - 下一步
+```
+
+---
+
 ## 分支命名规则
 
 **格式**：`{Feature ID}-{任务名}`

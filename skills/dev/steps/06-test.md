@@ -2,6 +2,8 @@
 
 > 每个功能必须有对应的测试
 
+**Task Checkpoint**: `TaskUpdate({ taskId: "6", status: "in_progress" })`
+
 ---
 
 ## 核心原则
@@ -72,6 +74,8 @@ describe('login', () => {
 ---
 
 ## 完成后
+
+**Task Checkpoint**: `TaskUpdate({ taskId: "6", status: "completed" })`
 
 **立即执行下一步**：
 
