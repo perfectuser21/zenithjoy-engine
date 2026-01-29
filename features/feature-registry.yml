@@ -15,9 +15,10 @@
 # - product_features:  引擎核心能力（工作流、测试、报告、自动化）
 # ============================================================================
 
-version: "2.28.0"
+version: "2.29.0"
 updated: "2026-01-29"
 changelog:
+  - 2.29.0: v11.4.0 - Task Checkpoint 强制执行（branch-protect v18 检查 tasks_created 字段）
   - 2.28.0: v11.3.2 - 移除 Ralph Loop（统一用 Stop Hook，.dev-mode 移到 Step 3 创建）
   - 2.27.0: v11.3.1 - Worktree 强制检查（Step 3 阻止主仓库有活跃任务时创建分支，P5 重新激活）
   - 2.26.0: v11.3.0 - Stop Hook 循环控制器（H7 重新激活）
@@ -58,10 +59,11 @@ platform_features:
     name: Branch Protection
     status: Committed
     priority: P0
-    version: "11.2.6"
-    updated: "2026-01-28"
+    version: "11.4.0"
+    updated: "2026-01-29"
     description: |
       防止在 main/develop 分支直接写代码，强制使用 cp-*/feature/* 工作分支
+      v11.4.0: 添加 Task Checkpoint 检查（.dev-mode 必须包含 tasks_created: true）
       v11.2.6: 移除硬编码路径 + develop/main 自动检测 fallback
       v11.2.0: 支持分支级别 PRD/DoD 文件（.prd-{branch}.md，向后兼容 .prd.md）
 
