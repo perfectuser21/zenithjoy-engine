@@ -15,7 +15,7 @@
 # - product_features:  引擎核心能力（工作流、测试、报告、自动化）
 # ============================================================================
 
-version: "2.33.0"
+version: "2.34.0"
 updated: "2026-01-30"
 changelog:
   - 2.33.0: v11.7.0 - Gate 强制执行机制（签名防伪 + pr-gate-v2 检查）
@@ -821,7 +821,7 @@ product_features:
     name: Gate Skill Family
     status: Committed
     priority: P1
-    version: "11.7.0"
+    version: "11.7.1"
     updated: "2026-01-30"
     description: |
       独立质量审核 Skill 家族，每个 gate 是"守门 Subagent"：

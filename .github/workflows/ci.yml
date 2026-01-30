@@ -320,6 +320,17 @@ jobs:
             echo "ℹ️ scan-rci-coverage.cjs not found, skipping"
           fi
 
+          # Gate 文件检查（v20: 提示型，gate 文件不提交到仓库）
+          # 本地 Hook 强制检查，CI 只提示（gate 文件在 .gitignore 中）
+          if [ -f "scripts/gate/verify-gate-signature.sh" ]; then
+            echo ""
+            echo "  [Gate 审核文件检查 - 提示型]"
+            echo "  ℹ️ Gate 文件不提交到仓库（在 .gitignore 中）"
+            echo "  ℹ️ 本地 Hook 已强制检查，CI 此处仅提示"
+          else
+            echo "ℹ️ verify-gate-signature.sh not found, skipping gate check"
+          fi
+
           echo ""
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "  ✅ DevGate 检查通过"
