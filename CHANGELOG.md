@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.8.1] - 2026-01-30
+
+### Fixed
+
+- **Gate 签名算法安全修复**
+  - `head_sha` 加入签名算法，防止跨 commit 复用 gate 文件
+  - `head_sha` 成为必需字段，旧版 gate 文件会被拒绝
+  - 参数命名统一：`timestamp` → `generated_at`
+  - 工具版本号更新到 2.1.0
+
 ## [11.8.0] - 2026-01-30
 
 ### Added

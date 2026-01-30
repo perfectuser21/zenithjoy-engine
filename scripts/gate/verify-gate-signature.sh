@@ -10,6 +10,8 @@
 #   4 - 输入格式错误/JSON 解析失败
 #   5 - 签名/校验失败
 #   6 - 分支/任务不匹配
+#
+# v2.1: head_sha 加入签名算法，防止跨 commit 复用
 
 set -e
 
@@ -47,14 +49,17 @@ get_current_branch() {
 }
 
 # 生成签名（与 generate-gate-file.sh 保持一致）
+# v2.1: 增加 head_sha 参数
 generate_signature() {
     local gate="$1"
     local decision="$2"
     local generated_at="$3"
     local branch="$4"
-    local secret="$5"
+    local head_sha="$5"
+    local secret="$6"
 
-    echo -n "${gate}:${decision}:${generated_at}:${branch}:${secret}" | sha256sum | cut -d' ' -f1
+    # 签名算法 v2.1: sha256("{gate}:{decision}:{generated_at}:{branch}:{head_sha}:{secret}")
+    echo -n "${gate}:${decision}:${generated_at}:${branch}:${head_sha}:${secret}" | sha256sum | cut -d' ' -f1
 }
 
 # 主逻辑
@@ -103,6 +108,12 @@ main() {
         echo "❌ Gate 文件缺少 'signature' 字段: $GATE_FILE" >&2
         exit $EXIT_FORMAT_ERROR
     fi
+    # v2.1: head_sha 成为必需字段
+    if [[ -z "$head_sha" || "$head_sha" == "null" ]]; then
+        echo "❌ Gate 文件缺少 'head_sha' 字段: $GATE_FILE" >&2
+        echo "   此文件是旧版本生成的，请重新运行 generate-gate-file.sh" >&2
+        exit $EXIT_FORMAT_ERROR
+    fi
 
     # 检查分支匹配
     if [[ "$branch" != "$current_branch" ]]; then
@@ -112,9 +123,9 @@ main() {
         exit $EXIT_BRANCH_MISMATCH
     fi
 
-    # 验证签名
+    # 验证签名（v2.1: 包含 head_sha）
     local expected_signature
-    expected_signature=$(generate_signature "$gate" "$decision" "$generated_at" "$branch" "$secret")
+    expected_signature=$(generate_signature "$gate" "$decision" "$generated_at" "$branch" "$head_sha" "$secret")
 
     if [[ "$signature" != "$expected_signature" ]]; then
         echo "❌ Gate 文件签名无效" >&2

@@ -7,13 +7,14 @@
 # 输出: .gate-<type>-passed 文件
 #
 # v2: 添加 head_sha/generated_at/task_id/tool_version 字段
+# v2.1: head_sha 加入签名算法，防止跨 commit 复用
 
 set -e
 
 GATE_TYPE="${1:-}"
 SECRET_FILE="$HOME/.claude/.gate-secret"
 GATE_FILE=".gate-${GATE_TYPE}-passed"
-TOOL_VERSION="2.0.0"
+TOOL_VERSION="2.1.0"
 
 # 验证参数
 if [[ -z "$GATE_TYPE" ]]; then
@@ -67,15 +68,17 @@ get_task_id() {
 }
 
 # 生成签名
+# v2.1: 增加 head_sha 参数，防止跨 commit 复用
 generate_signature() {
     local gate="$1"
     local decision="$2"
-    local timestamp="$3"
+    local generated_at="$3"
     local branch="$4"
-    local secret="$5"
+    local head_sha="$5"
+    local secret="$6"
 
-    # 签名算法: sha256("{gate}:{decision}:{timestamp}:{branch}:{secret}")
-    echo -n "${gate}:${decision}:${timestamp}:${branch}:${secret}" | sha256sum | cut -d' ' -f1
+    # 签名算法 v2.1: sha256("{gate}:{decision}:{generated_at}:{branch}:{head_sha}:{secret}")
+    echo -n "${gate}:${decision}:${generated_at}:${branch}:${head_sha}:${secret}" | sha256sum | cut -d' ' -f1
 }
 
 # 主逻辑
@@ -99,9 +102,9 @@ main() {
 
     local decision="PASS"
 
-    # 签名包含所有关键字段
+    # 签名包含所有关键字段（v2.1: 增加 head_sha）
     local signature
-    signature=$(generate_signature "$GATE_TYPE" "$decision" "$generated_at" "$branch" "$secret")
+    signature=$(generate_signature "$GATE_TYPE" "$decision" "$generated_at" "$branch" "$head_sha" "$secret")
 
     # 生成 JSON 文件（使用 jq 防止特殊字符破坏 JSON）
     jq -n \
