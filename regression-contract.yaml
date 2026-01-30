@@ -18,7 +18,7 @@
 
 # NOTE: version 需要与 package.json 保持同步
 # 更新 package.json 时同步更新此处
-version: "11.12.1"
+version: "11.12.2"
 updated: "2026-01-30"
 
 # ============================================================================
@@ -1361,6 +1361,70 @@ ci:
       file: "scripts/devgate/check-dod-mapping.cjs"
       contains: "!verification.actor || !verification.timestamp || !verification.evidence"
     test: "tests/gate/scan-rci-coverage.test.ts"
+
+  # --------------------------------------------------------------------------
+  # C10: CI Security Fixes (P0 v11.12.2)
+  # --------------------------------------------------------------------------
+  - id: C10-001
+    feature: C10
+    name: "auto-merge 不再有 check_suite 触发器"
+    scope: ci
+    priority: P0
+    trigger: [PR, Release]
+    method: auto
+    tags: [ci, security, auto-merge, v11.12.2]
+    owner: infra
+    steps:
+      given: "auto-merge.yml 文件存在"
+      when: "检查触发器配置"
+      then: "不包含 check_suite 触发器"
+    note: "v11.12.2 P0-1: 防止外部 CI 绕过 approval 直接合并"
+    evidence:
+      type: code
+      file: ".github/workflows/auto-merge.yml"
+      not_contains: "check_suite:"
+    test: "tests/ci/auto-merge.test.ts"
+
+  - id: C10-002
+    feature: C10
+    name: "ci-passed 条件根据目标分支检查"
+    scope: ci
+    priority: P0
+    trigger: [PR, Release]
+    method: auto
+    tags: [ci, security, ci-passed, v11.12.2]
+    owner: infra
+    steps:
+      given: "ci.yml 中 ci-passed job 定义"
+      when: "PR 到 develop 时"
+      then: "regression-pr 必须成功（不允许 skipped）"
+    note: "v11.12.2 P0-2: 防止关键检查被静默跳过"
+    evidence:
+      type: code
+      file: ".github/workflows/ci.yml"
+      contains: "github.base_ref != 'develop' || needs.regression-pr.result == 'success'"
+    test: "tests/ci/ci-passed.test.ts"
+
+  - id: C10-003
+    feature: C10
+    name: "ai-review 不再有 continue-on-error"
+    scope: ci
+    priority: P1
+    trigger: [PR, Release]
+    method: auto
+    tags: [ci, security, ai-review, v11.12.2]
+    owner: infra
+    steps:
+      given: "ci.yml 中 ai-review job 定义"
+      when: "检查错误处理配置"
+      then: "不包含 continue-on-error: true"
+    note: "v11.12.2 P1-1: 让 AI review 失败正确报告"
+    evidence:
+      type: code
+      file: ".github/workflows/ci.yml"
+      job: "ai-review"
+      not_contains: "continue-on-error: true"
+    test: "tests/ci/ai-review.test.ts"
 
 # ============================================================================
 # Export 回归契约

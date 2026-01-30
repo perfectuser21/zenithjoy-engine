@@ -3,20 +3,19 @@ name: Auto Merge
 on:
   pull_request_review:
     types: [submitted]
-  check_suite:
-    types: [completed]
+  # SECURITY FIX: 移除 check_suite 触发器
+  # 原因: check_suite 事件可被外部 CI 系统触发，允许绕过 approval 直接合并
+  # 修复: 只在 pull_request_review approved 时触发，CI 状态在后续步骤中验证
 
 # 每个 PR 只允许一个合并工作流运行
 concurrency:
-  group: merge-${{ github.event.pull_request.number || github.event.check_suite.pull_requests[0].number }}
+  group: merge-${{ github.event.pull_request.number }}
   cancel-in-progress: false
 
 jobs:
   auto-merge:
-    # 只在 PR approved 且 CI 通过时才合并
-    if: |
-      (github.event_name == 'pull_request_review' && github.event.review.state == 'approved') ||
-      (github.event_name == 'check_suite' && github.event.check_suite.conclusion == 'success')
+    # SECURITY FIX: 只在 PR approved 时触发（CI 状态在 Check PR status 步骤验证）
+    if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -26,17 +25,8 @@ jobs:
       - name: Get PR number
         id: pr
         run: |
-          if [ "${{ github.event_name }}" = "pull_request_review" ]; then
-            echo "number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
-          else
-            # check_suite 事件需要从 API 获取 PR 号
-            PR_NUMBER=$(echo '${{ toJSON(github.event.check_suite.pull_requests) }}' | jq -r '.[0].number // empty')
-            if [ -z "$PR_NUMBER" ]; then
-              echo "No PR associated with this check suite"
-              exit 0
-            fi
-            echo "number=$PR_NUMBER" >> $GITHUB_OUTPUT
-          fi
+          # SECURITY FIX: 只支持 pull_request_review 事件
+          echo "number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
 
       - name: Check PR status
         id: check

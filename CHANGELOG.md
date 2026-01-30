@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.12.2] - 2026-01-30
+
+### Security
+
+- **P0-1: auto-merge check_suite 漏洞修复**
+  - 移除 `on.check_suite` 触发器，防止外部 CI 绕过 approval 直接合并
+  - 简化 job if 条件和 concurrency group
+
+- **P0-2: ci-passed 跳过逻辑修复**
+  - PR 到 develop 时：regression-pr 必须成功（不允许 skipped）
+  - PR 到 main 时：release-check 必须成功（不允许 skipped）
+
+- **P1-1: ai-review continue-on-error 移除**
+  - 不再隐藏 AI review 失败
+  - 脚本内部已有 secret 缺失时的优雅跳过逻辑
+
 ## [11.12.1] - 2026-01-30
 
 ### Security

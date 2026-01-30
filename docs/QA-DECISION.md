@@ -1,4 +1,4 @@
-# QA Decision: CI 硬化
+# QA Decision: CI 安全漏洞修复
 
 Decision: PASS
 Priority: P0
@@ -8,46 +8,36 @@ RepoType: Engine
 
 | 文件 | 类型 | 影响 |
 |------|------|------|
-| ci/scripts/generate-evidence.sh | Shell | Evidence 生成逻辑 |
-| ci/scripts/evidence-gate.sh | Shell | Evidence 验证逻辑 |
-| scripts/devgate/check-dod-mapping.cjs | Node | DoD→Test 映射检查 |
-| scripts/devgate/l2a-check.sh | Shell | L2A 内容验证 |
-| scripts/devgate/l2b-check.sh | Shell | L2B 内容验证 |
-| scripts/devgate/scan-rci-coverage.cjs | Node | RCI 覆盖率匹配 |
-| .github/workflows/ci.yml | YAML | CI check 输出 |
+| .github/workflows/auto-merge.yml | YAML | 移除 check_suite 触发 |
+| .github/workflows/ci.yml | YAML | 修复 ci-passed 条件 + 移除 continue-on-error |
 
 ## 测试决策
 
-### 测试级别: L1 (Unit) + L2A (Integration)
+### 测试级别: L1 (配置验证)
 
 **理由**:
-- P0 安全修复：Evidence 硬编码和 manual: 后门是严重漏洞
-- 必须有自动化测试验证拦截逻辑
-- 每个修复点都需要反例测试
+- 这是 YAML 配置修改，不是代码逻辑
+- 主要验证方式是 CI 自身运行
+- 无需新增单元测试
 
 Tests:
-  - dod_item: "Evidence 从真实 checks 汇总"
-    method: auto
-    location: tests/ci/evidence.test.ts
+  - dod_item: "auto-merge 不再有 check_suite"
+    method: manual
+    location: .github/workflows/auto-merge.yml
+    verification: grep 检查无 check_suite
 
-  - dod_item: "evidence-gate 验证事实"
-    method: auto
-    location: tests/ci/evidence.test.ts
+  - dod_item: "ci-passed 条件正确"
+    method: manual
+    location: .github/workflows/ci.yml
+    verification: CI 实际运行验证
 
-  - dod_item: "manual: 必须有 manual_verifications"
-    method: auto
-    location: tests/gate/scan-rci-coverage.test.ts
-
-  - dod_item: "L2A 检查结构+密度"
-    method: auto
-    location: tests/devgate/l2a-check.test.ts
-
-  - dod_item: "RCI coverage 精确匹配"
-    method: auto
-    location: tests/gate/scan-rci-coverage.test.ts
+  - dod_item: "ai-review 无 continue-on-error"
+    method: manual
+    location: .github/workflows/ci.yml
+    verification: grep 检查
 
 RCI:
   new: []
-  update: [C8-001]
+  update: []
 
-Reason: P0 安全修复，必须在 CI 层面强制验证真实结果，堵死硬编码和 bypass 漏洞。
+Reason: 纯配置修改，CI 自测即验证。
