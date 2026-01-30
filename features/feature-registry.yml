@@ -15,9 +15,10 @@
 # - product_features:  引擎核心能力（工作流、测试、报告、自动化）
 # ============================================================================
 
-version: "2.30.0"
+version: "2.31.0"
 updated: "2026-01-30"
 changelog:
+  - 2.31.0: v11.5.0 - 放宽 skills 保护（只保护 Engine skills：dev, qa, audit, semver）
   - 2.30.0: v11.4.1 - 修复 Stop Hook 跳过 Cleanup bug（cleanup_done 检测 + PR 合并时 exit 2）
   - 2.29.0: v11.4.0 - Task Checkpoint 强制执行（branch-protect v18 检查 tasks_created 字段）
   - 2.28.0: v11.3.2 - 移除 Ralph Loop（统一用 Stop Hook，.dev-mode 移到 Step 3 创建）
@@ -60,10 +61,11 @@ platform_features:
     name: Branch Protection
     status: Committed
     priority: P0
-    version: "11.4.0"
-    updated: "2026-01-29"
+    version: "11.5.0"
+    updated: "2026-01-30"
     description: |
       防止在 main/develop 分支直接写代码，强制使用 cp-*/feature/* 工作分支
+      v11.5.0: 放宽 skills 保护（只保护 Engine skills：dev, qa, audit, semver，其他 skills 可从任何 repo 部署）
       v11.4.0: 添加 Task Checkpoint 检查（.dev-mode 必须包含 tasks_created: true）
       v11.2.6: 移除硬编码路径 + develop/main 自动检测 fallback
       v11.2.0: 支持分支级别 PRD/DoD 文件（.prd-{branch}.md，向后兼容 .prd.md）

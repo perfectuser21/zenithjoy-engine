@@ -88,7 +88,6 @@ describe("branch-protect.sh", () => {
 
   it("should protect important directories", () => {
     const protectedPaths = [
-      "/project/skills/dev/SKILL.md",
       "/project/hooks/test.sh",
       "/project/.github/workflows/ci.yml",
     ];
@@ -114,5 +113,93 @@ describe("branch-protect.sh", () => {
       // The hook should run (either pass or fail) without crashing
       expect(didThrow === true || didThrow === false).toBe(true);
     }
+  });
+
+  // v18: Skills protection relaxation tests
+  describe("skills protection (v18)", () => {
+    it("should protect Engine skills (dev, qa, audit, semver)", () => {
+      const engineSkillPaths = [
+        `${process.env.HOME}/.claude/skills/dev/SKILL.md`,
+        `${process.env.HOME}/.claude/skills/qa/SKILL.md`,
+        `${process.env.HOME}/.claude/skills/audit/SKILL.md`,
+        `${process.env.HOME}/.claude/skills/semver/SKILL.md`,
+      ];
+
+      for (const testPath of engineSkillPaths) {
+        const input = JSON.stringify({
+          tool_name: "Write",
+          tool_input: { file_path: testPath },
+        });
+
+        // Engine skills should be blocked (exit 2)
+        let exitCode = 0;
+        try {
+          execSync(`echo '${input}' | bash "${HOOK_PATH}"`, {
+            encoding: "utf-8",
+            stdio: ["pipe", "pipe", "pipe"],
+          });
+        } catch (e: unknown) {
+          const err = e as { status?: number };
+          exitCode = err.status || 1;
+        }
+        expect(exitCode).toBe(2);
+      }
+    });
+
+    it("should allow non-Engine skills", () => {
+      const nonEngineSkillPaths = [
+        `${process.env.HOME}/.claude/skills/chrome/SKILL.md`,
+        `${process.env.HOME}/.claude/skills/frontend-design/SKILL.md`,
+        `${process.env.HOME}/.claude/skills/my-custom-skill/test.ts`,
+      ];
+
+      for (const testPath of nonEngineSkillPaths) {
+        const input = JSON.stringify({
+          tool_name: "Write",
+          tool_input: { file_path: testPath },
+        });
+
+        // Non-engine skills should pass (exit 0)
+        let exitCode = -1;
+        try {
+          execSync(`echo '${input}' | bash "${HOOK_PATH}"`, {
+            encoding: "utf-8",
+            stdio: ["pipe", "pipe", "pipe"],
+          });
+          exitCode = 0;
+        } catch (e: unknown) {
+          const err = e as { status?: number };
+          exitCode = err.status || 1;
+        }
+        expect(exitCode).toBe(0);
+      }
+    });
+
+    it("should still protect hooks directory", () => {
+      const hookPaths = [
+        `${process.env.HOME}/.claude/hooks/test.sh`,
+        `${process.env.HOME}/.claude/hooks/branch-protect.sh`,
+      ];
+
+      for (const testPath of hookPaths) {
+        const input = JSON.stringify({
+          tool_name: "Write",
+          tool_input: { file_path: testPath },
+        });
+
+        // Hooks should be blocked (exit 2)
+        let exitCode = 0;
+        try {
+          execSync(`echo '${input}' | bash "${HOOK_PATH}"`, {
+            encoding: "utf-8",
+            stdio: ["pipe", "pipe", "pipe"],
+          });
+        } catch (e: unknown) {
+          const err = e as { status?: number };
+          exitCode = err.status || 1;
+        }
+        expect(exitCode).toBe(2);
+      }
+    });
   });
 });
