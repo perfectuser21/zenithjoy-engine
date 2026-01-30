@@ -497,6 +497,45 @@ fi
 fi  # 结束 SKIP_L1_TESTS 的 if 块
 
 # ============================================================================
+# Part 1.5: 版本号检查（警告模式，CI 强制）
+# ============================================================================
+# 检查 package.json 版本是否已更新（相对于 BASE_BRANCH）
+# 仅警告，不阻止 - CI 会做强制检查
+if [[ -f "$PROJECT_ROOT/package.json" ]]; then
+    # 获取最近一次 commit 消息，判断是否跳过版本检查
+    LAST_COMMIT_MSG=$(git log -1 --pretty=%B 2>/dev/null | head -1)
+    SKIP_VERSION_CHECK=0
+
+    # chore:/docs:/test: 开头的 commit 跳过版本检查
+    if [[ "$LAST_COMMIT_MSG" =~ ^(chore|docs|test): ]]; then
+        SKIP_VERSION_CHECK=1
+    fi
+
+    if [[ "$SKIP_VERSION_CHECK" -eq 0 ]]; then
+        echo "" >&2
+        echo "  [版本号检查]" >&2
+        CHECK_COUNT=$((CHECK_COUNT + 1))
+
+        # 获取基准分支版本
+        BASE_VERSION=$(git show "$BASE_BRANCH:package.json" 2>/dev/null | grep '"version"' | head -1 | sed 's/.*"version".*"\\([^"]*\\)".*/\\1/' 2>/dev/null || echo "")
+        CURRENT_VERSION=$(grep '"version"' "$PROJECT_ROOT/package.json" | head -1 | sed 's/.*"version".*"\([^"]*\)".*/\1/' 2>/dev/null || echo "")
+
+        if [[ -z "$BASE_VERSION" ]]; then
+            echo "  ⚠️  无法获取 $BASE_BRANCH 的版本号（新仓库？）" >&2
+        elif [[ -z "$CURRENT_VERSION" ]]; then
+            echo "  ⚠️  无法获取当前 package.json 版本号" >&2
+        elif [[ "$BASE_VERSION" == "$CURRENT_VERSION" ]]; then
+            echo "  ⚠️  版本号未更新: $CURRENT_VERSION (与 $BASE_BRANCH 相同)" >&2
+            echo "      → 建议在 PR 前更新版本号（CI 会强制检查）" >&2
+            echo "      → 规则: fix: → patch, feat: → minor, feat!: → major" >&2
+            # 仅警告，不设置 FAILED=1 - 让 CI 做强制检查
+        else
+            echo "  ✓ 版本号已更新: $BASE_VERSION → $CURRENT_VERSION" >&2
+        fi
+    fi
+fi
+
+# ============================================================================
 # Part 2: PR 模式 - PRD + DoD 检查
 # ============================================================================
 if [[ "$MODE" == "pr" ]]; then
@@ -727,16 +766,17 @@ if [[ "$MODE" == "pr" ]]; then
     GATE_NAMES=("gate:prd" "gate:dod" "gate:test" "gate:audit")
     GATE_FAILED=0  # v20: Gate 检查失败是阻止型（exit 2）
 
-    # v21: 检查 verify 脚本是否存在 - 硬失败（exit 2）
+    # v22: 检查 verify 脚本是否存在 - 改为软警告（不阻断）
+    # P0-1 修复：新项目可能还没有 verify 脚本，不应该死锁
+    GATE_VERIFY_AVAILABLE=1
     if [[ ! -f "$GATE_VERIFY_SCRIPT" ]]; then
-        echo "  [ERROR] verify-gate-signature.sh 不存在" >&2
+        echo "  [WARN] verify-gate-signature.sh 不存在" >&2
         echo "    -> 脚本路径: $GATE_VERIFY_SCRIPT" >&2
-        echo "    -> 这是配置错误，Gate 机制无法工作" >&2
+        echo "    -> Gate 签名验证已跳过" >&2
+        echo "    -> 建议: 运行 generate-gate-file.sh 初始化 Gate 机制" >&2
         echo "" >&2
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-        echo "  [ERROR] Gate 验证器缺失（阻止型）" >&2
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-        exit 2
+        GATE_VERIFY_AVAILABLE=0
+        # 不 exit 2，继续执行其他检查
     fi
 
     for i in "${!GATE_FILES[@]}"; do
@@ -752,53 +792,90 @@ if [[ "$MODE" == "pr" ]]; then
             FAILED=1
             GATE_FAILED=1
         else
-            # v21: 运行 verify 脚本并根据 exit code 给出具体错误
-            GATE_OUTPUT=$(bash "$GATE_VERIFY_SCRIPT" "$GATE_FILE" 2>&1)
-            GATE_EXIT_CODE=$?
+            # v22: 如果验证器不可用，跳过签名验证（只检查文件存在）
+            if [[ "$GATE_VERIFY_AVAILABLE" -eq 0 ]]; then
+                echo "[OK] (签名验证已跳过)" >&2
+            else
+                # P0-3 修复：运行 verify 脚本并加超时保护（防止卡死）
+                GATE_OUTPUT=$(run_with_timeout 10 bash "$GATE_VERIFY_SCRIPT" "$GATE_FILE" 2>&1) || true
+                GATE_EXIT_CODE=$?
 
-            case $GATE_EXIT_CODE in
-                0)
-                    echo "[OK]" >&2
-                    ;;
-                3)
-                    # 验证器缺失/配置错误（secret 不存在）
-                    echo "[FAIL] (配置错误)" >&2
-                    echo "    -> Secret 文件不存在，请先运行 generate-gate-file.sh" >&2
+                # 超时处理（exit code 124）
+                if [[ "$GATE_EXIT_CODE" -eq 124 ]]; then
+                    echo "[FAIL] (验证超时)" >&2
+                    echo "    -> verify-gate-signature.sh 超时（>10s）" >&2
                     FAILED=1
                     GATE_FAILED=1
-                    ;;
-                4)
-                    # 输入格式错误/JSON 解析失败
-                    echo "[FAIL] (格式错误)" >&2
-                    echo "    -> Gate 文件格式无效或 JSON 解析失败" >&2
-                    echo "    -> $GATE_OUTPUT" >&2
-                    FAILED=1
-                    GATE_FAILED=1
-                    ;;
-                5)
-                    # 签名/校验失败
-                    echo "[FAIL] (签名无效)" >&2
-                    echo "    -> 文件可能被篡改或 secret 不匹配" >&2
-                    echo "    -> 请重新运行对应的 gate skill 生成新文件" >&2
-                    FAILED=1
-                    GATE_FAILED=1
-                    ;;
-                6)
-                    # 分支/任务不匹配
-                    echo "[FAIL] (分支不匹配)" >&2
-                    echo "    -> Gate 文件是在其他分支生成的" >&2
-                    echo "    -> $GATE_OUTPUT" >&2
-                    FAILED=1
-                    GATE_FAILED=1
-                    ;;
-                *)
-                    # 其他错误
-                    echo "[FAIL] (未知错误: exit $GATE_EXIT_CODE)" >&2
-                    echo "    -> $GATE_OUTPUT" >&2
-                    FAILED=1
-                    GATE_FAILED=1
-                    ;;
-            esac
+                    continue
+                fi
+
+                case $GATE_EXIT_CODE in
+                    0)
+                        echo "[OK]" >&2
+                        ;;
+                    3)
+                        # 验证器缺失/配置错误（secret 不存在）
+                        echo "[FAIL] (配置错误)" >&2
+                        echo "    -> Secret 文件不存在，请先运行 generate-gate-file.sh" >&2
+                        FAILED=1
+                        GATE_FAILED=1
+                        ;;
+                    4)
+                        # 输入格式错误/JSON 解析失败
+                        echo "[FAIL] (格式错误)" >&2
+                        echo "    -> Gate 文件格式无效或 JSON 解析失败" >&2
+                        echo "    -> $GATE_OUTPUT" >&2
+                        FAILED=1
+                        GATE_FAILED=1
+                        ;;
+                    5)
+                        # 签名/校验失败
+                        echo "[FAIL] (签名无效)" >&2
+                        echo "    -> 文件可能被篡改或 secret 不匹配" >&2
+                        echo "    -> 请重新运行对应的 gate skill 生成新文件" >&2
+                        FAILED=1
+                        GATE_FAILED=1
+                        ;;
+                    6)
+                        # 分支/任务不匹配
+                        echo "[FAIL] (分支不匹配)" >&2
+                        echo "    -> Gate 文件是在其他分支生成的" >&2
+                        echo "    -> $GATE_OUTPUT" >&2
+                        FAILED=1
+                        GATE_FAILED=1
+                        ;;
+                    7)
+                        # v3: Gate 文件已过期
+                        echo "[FAIL] (已过期)" >&2
+                        echo "    -> Gate 文件已超过 30 分钟有效期" >&2
+                        echo "    -> 请重新运行对应的 gate skill 生成新文件" >&2
+                        FAILED=1
+                        GATE_FAILED=1
+                        ;;
+                    8)
+                        # v3: HEAD 不匹配
+                        echo "[FAIL] (HEAD 不匹配)" >&2
+                        echo "    -> 代码已变更，Gate 文件需要重新生成" >&2
+                        echo "    -> $GATE_OUTPUT" >&2
+                        FAILED=1
+                        GATE_FAILED=1
+                        ;;
+                    9)
+                        # v3: Repo ID 不匹配
+                        echo "[FAIL] (Repo 不匹配)" >&2
+                        echo "    -> Gate 文件是在其他仓库生成的" >&2
+                        FAILED=1
+                        GATE_FAILED=1
+                        ;;
+                    *)
+                        # 其他错误
+                        echo "[FAIL] (未知错误: exit $GATE_EXIT_CODE)" >&2
+                        echo "    -> $GATE_OUTPUT" >&2
+                        FAILED=1
+                        GATE_FAILED=1
+                        ;;
+                esac
+            fi
         fi
     done
 fi

@@ -11,6 +11,8 @@
 #   - PR 合并？
 #   全部满足 → 删除 .dev-mode → exit 0
 #   未满足 → 输出提示 → exit 2（阻止结束，继续执行）
+#
+# v11.11.0: P0-2 修复 - 添加 flock 并发锁 + 原子写入防止竞态条件
 # ============================================================================
 
 set -euo pipefail
@@ -18,6 +20,25 @@ set -euo pipefail
 # ===== 无头模式：直接退出，让外部循环控制 =====
 if [[ "${CECELIA_HEADLESS:-false}" == "true" ]]; then
     exit 0
+fi
+
+# ===== P0-2 修复：获取并发锁，防止多个会话同时操作 =====
+# 锁文件放在 .git 目录，确保同一仓库同一时间只有一个 stop hook 在运行
+LOCK_DIR="$(git rev-parse --show-toplevel 2>/dev/null)/.git" || LOCK_DIR="/tmp"
+LOCK_FILE="$LOCK_DIR/cecelia-stop.lock"
+
+# 获取锁：等待最多 2 秒，拿不到就退出
+exec 200>"$LOCK_FILE"
+if ! flock -w 2 200; then
+    echo "" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    echo "  [Stop Hook: 并发锁获取失败]" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    echo "" >&2
+    echo "  另一个会话正在执行 Stop Hook，请稍后重试" >&2
+    echo "" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    exit 2
 fi
 
 # ===== 读取 Hook 输入（JSON） =====
@@ -113,9 +134,37 @@ if [[ "$PR_STATE" == "merged" ]]; then
     echo "  ✅ 条件 3: PR 已合并" >&2
     echo "" >&2
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-    echo "  ➡️  下一步: 执行 Step 11 (Cleanup)" >&2
+    echo "  🧹 自动执行 Cleanup..." >&2
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-    exit 2  # 继续执行 cleanup，不要直接退出
+
+    # P0-2 修复：PR 合并后自动执行 cleanup，不要只提示然后悬空
+    # 删除 .dev-mode 文件（循环控制信号）
+    if [[ -f "$DEV_MODE_FILE" ]]; then
+        rm -f "$DEV_MODE_FILE"
+        echo "  ✅ .dev-mode 已删除" >&2
+    fi
+
+    # 切换到 develop 分支
+    BASE_BRANCH=$(git config --get branch."$BRANCH_NAME".base-branch 2>/dev/null || echo "develop")
+    echo "  ✅ 切换到 $BASE_BRANCH 分支..." >&2
+    git checkout "$BASE_BRANCH" 2>/dev/null || true
+    git pull origin "$BASE_BRANCH" 2>/dev/null || true
+
+    # 删除本地功能分支
+    if git branch --list "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
+        git branch -D "$BRANCH_NAME" 2>/dev/null || true
+        echo "  ✅ 本地分支 $BRANCH_NAME 已删除" >&2
+    fi
+
+    # 清理 git config
+    git config --unset branch."$BRANCH_NAME".base-branch 2>/dev/null || true
+
+    echo "" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    echo "  🎉 /dev 流程完成！" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+
+    exit 0  # 完成，允许会话结束
 fi
 
 # ===== 条件 2: CI 状态？（PR 未合并时检查） =====

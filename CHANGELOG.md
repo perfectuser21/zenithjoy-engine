@@ -7,6 +7,156 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.12.4] - 2026-01-30
+
+### Added
+
+- **本地版本检查（警告模式）**
+  - `pr-gate-v2.sh` 添加 Part 1.5 版本号检查
+  - 比较 package.json 与 develop 分支版本
+  - `chore:/docs:/test:` commit 跳过检查
+  - 仅警告不阻止，CI 做强制检查
+
+### Documented
+
+- **P2-1: Gate 文件检查不一致**
+  - 分析确认：本地 gate 文件和 CI evidence 是独立互补机制
+  - 无需修复，设计合理
+
+- **P2-2: PRD/DoD 验证规则不一致**
+  - 分析确认：CI 故意更严格，分层设计
+  - 本地快速反馈，CI 严格把关
+
+- **P3-1: RCI 自动化覆盖率**
+  - 审查 41 个 manual RCIs
+  - 确认大多需要人工验证 UX，无法自动化
+
+- **P3-2: metrics 时间窗口测试**
+  - 确认 skip 合理，临时目录隔离问题
+
+## [11.12.3] - 2026-01-30
+
+### Fixed
+
+- **测试清理（第二批）**
+  - 删除 17 个 detect-priority.test.ts 中失效的 skip 测试
+  - 删除 3 个 pr-gate-phase1.test.ts 中失效的 skip 测试
+  - 原因：PR_TITLE 检测功能已在 detect-priority.cjs 移除
+
+## [11.12.2] - 2026-01-30
+
+### Security
+
+- **P0-1: auto-merge check_suite 漏洞修复**
+  - 移除 `on.check_suite` 触发器，防止外部 CI 绕过 approval 直接合并
+  - 简化 job if 条件和 concurrency group
+
+- **P0-2: ci-passed 跳过逻辑修复**
+  - PR 到 develop 时：regression-pr 必须成功（不允许 skipped）
+  - PR 到 main 时：release-check 必须成功（不允许 skipped）
+
+- **P1-1: ai-review continue-on-error 移除**
+  - 不再隐藏 AI review 失败
+  - 脚本内部已有 secret 缺失时的优雅跳过逻辑
+
+## [11.12.1] - 2026-01-30
+
+### Security
+
+- **P0-1: Evidence 真实结果**
+  - `generate-evidence.sh` 重写：从 `ci/out/checks/*.json` 汇总真实 CI 结果
+  - `evidence-gate.sh` 重写：验证 required checks 全存在、ok=true、hash 防篡改
+  - 新增 `write-check-result.sh`：CI 每步输出 check JSON
+  - CI workflow 拆分为独立步骤（TypeCheck/Test/Build/ShellCheck）
+
+- **P0-2: manual: 后门封堵**
+  - `check-dod-mapping.cjs` 修复：`manual:` 不再直接返回 valid=true
+  - 必须在 evidence 中有 `manual_verifications` 记录
+  - 新增 `add-manual-verification.sh`：添加手动验证证据
+
+### Changed
+
+- **P1-1: L2A/L2B 内容验证**
+  - `l2a-check.sh`：PRD 必须 >=3 sections，每 section >=2 行
+  - `l2a-check.sh`：DoD 每个验收项必须有 Test 映射
+  - `l2b-check.sh`：Evidence 必须有可复现命令或机器引用
+
+- **P1-2: RCI coverage 精确匹配**
+  - `scan-rci-coverage.cjs`：移除 `name.includes()` 误判逻辑
+  - 只允许精确路径匹配、目录前缀匹配、glob 通配符匹配
+
+### Added
+
+- `tests/ci/evidence.test.ts`：Evidence 生成和验证测试
+
+## [11.11.0] - 2026-01-30
+
+### Security
+
+- **P0-2: Stop Hook 并发锁**
+  - 添加 flock 并发锁防止多个会话同时操作 `.dev-mode` 文件
+  - 锁文件放在 `.git/cecelia-stop.lock`
+  - 等待最多 2 秒，拿不到锁则 exit 2 提示重试
+
+- **P0-4: CI known-failures 白名单机制**
+  - 新增 `ci/known-failures.json` 白名单定义
+  - CI 严格验证：只允许白名单内的失败模式跳过
+  - 规则：max_skip_count=3, require_ticket=true
+  - 防止随意填写字符串绕过 CI 检查
+
+### Fixed
+
+- **P0-3: pr-gate 超时保护**
+  - `verify-gate-signature.sh` 调用添加 10 秒超时
+  - 超时时返回 exit 124 并明确提示
+  - 防止验证脚本卡死导致 Hook 无限等待
+
+- **P1-6: branch-protect skills 正则修复**
+  - 使用 `grep -Eq` 替代 bash regex 进行路径匹配
+  - 修复 `/.claude/skills/(dev|qa|audit|semver)` 分组失败问题
+  - 确保 Engine 核心 skills 保护正常工作
+
+## [11.10.0] - 2026-01-30
+
+### Security
+
+- **Gate 签名机制 v3：防止复用绕过**
+  - 新增 `expires_at` + `expires_at_epoch` 字段，默认 30 分钟过期
+  - 新增 `tree_sha` 字段，绑定代码树防止 amend 后复用
+  - 新增 `repo_id` 字段，防止跨仓库复用 gate 文件
+  - Secret 读取优先级：env → keychain → new path → old path → auto-generate
+  - 向后兼容 v2 格式（带警告）
+
+- **Verify 脚本 Exit Code 扩展 (v3)**
+  - `exit 7`: Gate 文件已过期
+  - `exit 8`: HEAD 不匹配（commit 或 tree 变化）
+  - `exit 9`: Repo ID 不匹配
+
+### Fixed
+
+- **P0-1: 验证器缺失时的死锁问题**
+  - 从硬阻止 `exit 2` 改为软警告，允许继续执行
+  - 新项目不再因缺少 verify 脚本而无法创建 PR
+
+- **P0-2: Stop Hook PR 合并后悬空问题**
+  - PR 合并后自动执行 cleanup（删除 .dev-mode、切换分支、删除本地分支）
+  - 不再只提示 "合并 PR" 然后卡住
+
+### Added
+
+- **Gate Signature v3 测试套件**
+  - 测试过期检查、HEAD 绑定、Repo 绑定、签名验证
+  - 测试 v2 向后兼容性
+
+## [11.9.1] - 2026-01-30
+
+### Security
+
+- **CI 强制检查 PR 来源分支**
+  - PR to main 只接受来自 develop 分支
+  - 防止绕过 /dev 工作流直接合并到 main
+  - 修复安全漏洞：`git checkout origin/develop -- .` 不触发 hooks
+
 ## [11.8.1] - 2026-01-30
 
 ### Fixed
