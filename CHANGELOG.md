@@ -7,6 +7,105 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.8.1] - 2026-01-30
+
+### Fixed
+
+- **Gate 签名算法安全修复**
+  - `head_sha` 加入签名算法，防止跨 commit 复用 gate 文件
+  - `head_sha` 成为必需字段，旧版 gate 文件会被拒绝
+  - 参数命名统一：`timestamp` → `generated_at`
+  - 工具版本号更新到 2.1.0
+
+## [11.8.0] - 2026-01-30
+
+### Added
+
+- **Gate 文件防误用字段（方案 A）**
+  - `head_sha`: 当前 commit SHA，防止旧文件跨 commit 复用
+  - `generated_at`: ISO8601 时间戳，替代 `timestamp`
+  - `task_id`: 从分支名提取（cp-xxx → xxx）
+  - `tool_version`: 工具版本号 (2.0.0)
+
+- **Verify 脚本 Exit Code 分层**
+  - `exit 0`: 验证通过
+  - `exit 3`: 验证器缺失/配置错误（secret 不存在）
+  - `exit 4`: 输入格式错误/JSON 解析失败
+  - `exit 5`: 签名/校验失败
+  - `exit 6`: 分支/任务不匹配
+
+- **PR Gate 硬失败机制**
+  - `verify-gate-signature.sh` 不存在时直接 `exit 2`（不再跳过）
+  - 根据不同 exit code 给出具体错误提示
+
+### Changed
+
+- **设计哲学（方案 A）**
+  - Gate 文件是本地工作流的"自我约束"
+  - CI 是"真正裁判"，运行自己的测试
+  - Gate 文件留在 `.gitignore`，不进仓库
+
+## [11.7.1] - 2026-01-30
+
+### Fixed
+
+- **Gate 签名机制 bug 修复**
+  - Secret 读取时去除换行符 (`tr -d '\n\r'`)
+  - 使用 `jq -n --arg` 生成 JSON，防止特殊字符破坏
+  - 处理 jq 返回的 "null" 字符串
+
+- **Gate 检查改为阻止型**
+  - `pr-gate-v2.sh` v20: Gate 检查失败时 `exit 2` 阻止 PR 创建
+  - CI DevGate checks: 添加 gate 文件签名验证
+
+## [11.7.0] - 2026-01-30
+
+### Added
+
+- **Gate 强制执行机制** - 防止跳过 gate 审核
+  - `scripts/gate/generate-gate-file.sh`: 生成带签名的 gate 通过文件
+  - `scripts/gate/verify-gate-signature.sh`: 验证 gate 文件签名
+  - `hooks/pr-gate-v2.sh` v19: 创建 PR 时检查所有 4 个 gate 文件
+
+- **签名防伪机制**
+  - Secret 存储在 `~/.claude/.gate-secret`（首次运行自动生成）
+  - 签名算法: `sha256("{gate}:{decision}:{timestamp}:{branch}:{secret}")`
+  - 验证分支匹配，防止跨分支复用
+
+## [11.6.0] - 2026-01-30
+
+### Added
+
+- **Gate Skill 家族** - 独立质量审核机制
+  - `skills/gate/SKILL.md`: Gate skill 入口定义
+  - `skills/gate/gates/prd.md`: PRD 完整性、需求可验收性审核
+  - `skills/gate/gates/dod.md`: PRD↔DoD 覆盖率、Test 映射有效性审核
+  - `skills/gate/gates/test.md`: 测试↔DoD 覆盖率、边界用例审核
+  - `skills/gate/gates/audit.md`: 审计证据真实性、风险点识别审核
+
+- **/dev 流程集成 Gate 审核**
+  - Step 1 后可调用 gate:prd
+  - Step 4 后推荐调用 gate:dod（审核循环）
+  - Step 6 后推荐调用 gate:test
+  - Step 7 后推荐调用 gate:audit
+
+### Changed
+
+- **Gatekeeper Subagent 模式** - 解决"主 Agent 自己写、自己检查"问题
+  - 每个 gate 通过 Task tool 启动独立 Subagent
+  - FAIL 时返回具体问题和修复要求
+  - 主 agent 必须修到 PASS 才能继续
+
+## [11.5.0] - 2026-01-30
+
+### Changed
+
+- **放宽 skills 目录保护**（branch-protect.sh v18）
+  - `hooks/branch-protect.sh`: 只保护 Engine 核心 skills（dev, qa, audit, semver）
+  - 其他 skills（如 script-manager, credentials）可从任何 repo 部署
+  - hooks 目录仍然全部保护（不变）
+  - 支持 HR (Cecelia-OS) 和业务 repo 部署自己的 skills
+
 ## [11.4.1] - 2026-01-30
 
 ### Fixed

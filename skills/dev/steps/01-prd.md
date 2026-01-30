@@ -83,11 +83,47 @@ Claude 直接使用 PRD → 继续
 
 ---
 
-## 完成后
+## 完成后：gate:prd 审核（必须）
 
-```bash
-echo "✅ Step 1 完成 (PRD 已生成)"
+PRD 生成后，**必须**调用 gate:prd 进行独立审核：
+
+```javascript
+// 审核循环（阻止型：FAIL 就不能继续）
+while (true) {
+  const result = await Task({
+    subagent_type: "general-purpose",
+    prompt: `你是独立的 PRD 审核员。审核以下 PRD 文件：
+      - 文件：${prd_file}
+
+      检查内容：
+      1. 需求来源是否清晰
+      2. 功能描述是否具体可执行
+      3. 成功标准是否可验收
+      4. 涉及文件是否合理
+
+      输出格式：
+      Decision: PASS | FAIL
+      Findings: [检查结果列表]
+      Required Fixes: [如果 FAIL，具体修复要求]`,
+    description: "Gate: PRD 审核"
+  });
+
+  if (result.decision === "PASS") {
+    // 生成 gate 文件
+    await Bash({ command: `bash scripts/gate/generate-gate-file.sh prd PASS` });
+    break;  // 继续 Step 2
+  }
+
+  // FAIL: 根据 Required Fixes 修改 PRD
+  // ...修改后再次循环审核
+}
 ```
+
+**审核标准**：参考 `skills/gate/gates/prd.md`
+
+**Task Checkpoint**: `TaskUpdate({ taskId: "1", status: "completed" })`
+
+---
 
 继续 → Step 2
 

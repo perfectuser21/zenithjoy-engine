@@ -9,8 +9,10 @@
 ## 流程
 
 ```
-DoD 草稿 → QA Decision Node → QA 决策产物 → DoD 定稿
+DoD 草稿 → DoD 定稿 → gate:dod + QA (并行 subagents) → 继续
 ```
+
+**关键变化 (v3)**：gate:dod 和 QA Decision 并行执行，两个都 PASS 才能继续。
 
 ---
 
@@ -144,6 +146,63 @@ PR Gate 会检查：
 1. `.dod.md` 存在且内容有效
 2. `.dod.md` 包含 `QA: docs/QA-DECISION.md` 引用
 3. `docs/QA-DECISION.md` 存在
+
+---
+
+## Step 4.4: 并行审核（必须）
+
+DoD 定稿后，**并行**启动两个 Subagent：
+
+```javascript
+// 并行启动 gate:dod 和 QA Decision
+const [dodResult, qaResult] = await Promise.all([
+  // Subagent 1: gate:dod 审核
+  Task({
+    subagent_type: "general-purpose",
+    prompt: `你是独立的 DoD 审核员。审核以下文件：
+      - PRD: ${prd_file}
+      - DoD: ${dod_file}
+
+      检查内容：
+      1. PRD ↔ DoD 覆盖率（每个成功标准都有对应验收项）
+      2. 验收项具体性（可验证、可量化）
+      3. Test 字段有效性（格式正确）
+
+      输出格式：
+      Decision: PASS | FAIL
+      Findings: [检查结果列表]
+      Required Fixes: [如果 FAIL，具体修复要求]`,
+    description: "Gate: DoD 审核"
+  }),
+
+  // Subagent 2: QA Decision
+  Task({
+    subagent_type: "general-purpose",
+    prompt: `你是 QA 决策员。根据 PRD 和 DoD 做测试决策：
+      - PRD: ${prd_file}
+      - DoD: ${dod_file}
+
+      参考 skills/qa/SKILL.md 规则，输出 docs/QA-DECISION.md：
+      - Decision: NO_RCI | MUST_ADD_RCI | UPDATE_RCI
+      - Priority: P0 | P1 | P2
+      - Tests: [每个 DoD 条目的测试方式]
+      - RCI: [涉及的回归契约]
+      - Reason: 决策理由`,
+    description: "QA Decision"
+  })
+]);
+
+// 两个都 PASS 才能继续
+if (dodResult.decision === "FAIL" || qaResult.decision === "FAIL") {
+  // 根据 Required Fixes 修改，再次并行审核
+  // ...
+}
+
+// 生成 gate 文件
+await Bash({ command: `bash scripts/gate/generate-gate-file.sh dod PASS` });
+```
+
+**审核标准**：参考 `skills/gate/gates/dod.md`
 
 ---
 
