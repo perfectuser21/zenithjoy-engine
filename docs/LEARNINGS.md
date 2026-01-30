@@ -1,9 +1,10 @@
 ---
 id: engine-learnings
-version: 1.2.0
+version: 1.3.0
 created: 2026-01-16
-updated: 2026-01-29
+updated: 2026-01-30
 changelog:
+  - 1.3.0: 添加 Gate Skill 家族开发经验
   - 1.2.0: 添加 Task Checkpoint 强制执行经验
   - 1.1.0: 添加 Task/Subagent 对比测试结论
   - 1.0.0: 初始版本
@@ -1111,4 +1112,81 @@ sha256(branch | timestamp | quality_hash | loop_count | secret)
 
 #### 影响程度
 - Low - 增强用户体验，不影响核心流程
+
+### [2026-01-30] Gate Skill 家族 - 独立质量审核
+
+#### 开发内容
+实现 Gatekeeper Subagent 模式：主 Agent 产出后，由独立的 Gate Subagent 审核质量。
+
+#### 核心设计
+
+**问题发现**：CI 检查只验证文件存在和格式正确，不验证内容质量。PRD/DoD/QA/Audit 可能都是"垃圾"但 CI 仍能通过。
+
+**解决方案**：在关键步骤后调用独立 Subagent 审核
+
+| Gate | 触发时机 | 检查内容 | 优先级 |
+|------|---------|---------|--------|
+| gate:prd | Step 1 后 | PRD 完整性、需求可验收性 | A档 |
+| gate:dod | Step 4 后 | PRD↔DoD 覆盖率、Test 映射 | A档 |
+| gate:test | Step 6 后 | 测试↔DoD 覆盖率、边界用例 | A档 |
+| gate:audit | Step 7 后 | 审计证据真实性 | A档 |
+
+**审核循环**：
+```
+主 Agent 产出 → Gate Subagent 审核 → FAIL → 修改 → 再审核 → PASS → 继续
+```
+
+#### 踩的坑
+
+1. **VERSION 文件双份**
+   - 问题：根目录 VERSION 和 hook-core/VERSION 需要同步更新
+   - 发现：install-hooks.test.ts 对比的是 hook-core/VERSION
+   - 解决：两处都要更新
+   - 影响程度：Low
+
+2. **DoD Test 字段格式**
+   - 问题：check-dod-mapping.cjs 正则不支持空格
+   - 发现：`Test: manual:实际测试 gate:dod` 被截断为 `manual:实际测试`
+   - 解决：改用 hyphen-separated 格式 `manual:gate-dod-subagent-test`
+   - 影响程度：Low
+
+3. **Hook blocked Write**
+   - 问题：创建 skills/gate/ 文件时被阻止
+   - 原因：branch-protect.sh 检查 PRD/DoD 必须存在
+   - 解决：`git add -f` 强制添加被 .gitignore 忽略的 PRD/DoD 文件
+   - 影响程度：Low
+
+#### 关键经验
+
+1. **Subagent 独立性**
+   - Gate Subagent 是全新的 AI 实例，没有主 Agent 的偏见
+   - 不知道主 Agent 走过哪些"捷径"
+   - 只根据审核标准判断
+
+2. **结构化输出**
+   ```yaml
+   Decision: PASS | FAIL
+   Findings:
+     - id: F1
+       severity: CRITICAL | HIGH | MEDIUM | LOW
+       issue: 问题描述
+       fix: 修复建议
+   Required Fixes: [F1, F2, ...]
+   Evidence: {...}
+   ```
+
+3. **分层 Gate**
+   - A档（必须）：prd, dod, test, audit
+   - B档（可选）：code（后续再加）
+   - C档（跳过）：纯机械步骤
+
+#### 经验总结
+
+- **CI 不是质量保证** - 只是格式检查，内容可以是垃圾
+- **独立审核有效** - Subagent 没有主 Agent 的上下文偏见
+- **审核循环强制修复** - FAIL 后必须修改并重新审核
+- **Task tool 适合审核** - 启动独立 Subagent，返回结构化结果
+
+#### 影响程度
+- High - 解决了 PRD/DoD/QA/Audit 可能都是垃圾的核心问题
 
