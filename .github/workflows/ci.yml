@@ -214,23 +214,6 @@ jobs:
             exit $EXIT_CODE
           fi
 
-      # Evidence 生成（CI-only，SSOT）
-      - name: Generate Evidence
-        if: steps.detect.outputs.type == 'npm'
-        run: |
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "  Evidence 生成（CI-only）"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          bash ci/scripts/generate-evidence.sh
-
-      - name: Evidence Gate
-        if: steps.detect.outputs.type == 'npm'
-        run: |
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "  Evidence Gate 校验"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          bash ci/scripts/evidence-gate.sh
-
       # L2A: PRD/DoD/QA/Audit 远端检查
       # PRD/DoD Residue Check (develop/main only)
       - name: Check for PRD/DoD in develop/main
@@ -340,6 +323,23 @@ jobs:
             bash ci/scripts/write-check-result.sh shell-check false 1 "bash -n *.sh" "Failed:$FAIL_LIST"
             exit 1
           fi
+
+      # Evidence 生成（CI-only，SSOT）- 必须在所有 check 步骤之后
+      - name: Generate Evidence
+        if: steps.detect.outputs.type == 'npm'
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  Evidence 生成（CI-only）"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          bash ci/scripts/generate-evidence.sh
+
+      - name: Evidence Gate
+        if: steps.detect.outputs.type == 'npm'
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  Evidence Gate 校验"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          bash ci/scripts/evidence-gate.sh
 
       # Phase 1: DevGate 检查（DoD 映射 + P0/P1 RCI 更新 + RCI 覆盖率）
       # 注意：当前只对 npm 项目启用，非 npm 项目跳过此检查
