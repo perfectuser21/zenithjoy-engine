@@ -1,16 +1,16 @@
-# Audit Report: CI 硬化
+# Audit Report: CI 安全漏洞修复
 
-Branch: cp-0130-ci-hardening
+Branch: cp-0130-ci-security-fix
 Date: 2026-01-30
-Scope: ci/scripts/, scripts/devgate/, .github/workflows/ci.yml
-Target Level: L2
+Scope: .github/workflows/auto-merge.yml, .github/workflows/ci.yml
+Target Level: L1
 
 ## Summary
 
 | Layer | Count | Status |
 |-------|-------|--------|
-| L1 | 4 | PASS |
-| L2 | 3 | PASS |
+| L1 | 3 | PASS |
+| L2 | 0 | - |
 | L3 | 0 | - |
 | L4 | 0 | - |
 
@@ -20,60 +20,44 @@ Decision: PASS
 
 | 文件 | 变更类型 | 风险等级 |
 |------|---------|---------|
-| ci/scripts/generate-evidence.sh | 完全重写 | P0 |
-| ci/scripts/evidence-gate.sh | 完全重写 | P0 |
-| ci/scripts/write-check-result.sh | 新增 | P0 |
-| ci/scripts/add-manual-verification.sh | 新增 | P0 |
-| .github/workflows/ci.yml | 重构 | P0 |
-| scripts/devgate/check-dod-mapping.cjs | 修复 | P0 |
-| scripts/devgate/l2a-check.sh | 增强 | P1 |
-| scripts/devgate/l2b-check.sh | 增强 | P1 |
-| scripts/devgate/scan-rci-coverage.cjs | 修复 | P1 |
+| .github/workflows/auto-merge.yml | 安全修复 | P0 |
+| .github/workflows/ci.yml | 安全修复 | P0 |
 
 ## L1 检查（阻塞性）
 
 | 项目 | 状态 | 说明 |
 |------|------|------|
+| YAML 语法 | PASS | GitHub Actions 格式正确 |
 | Shell 语法 | PASS | 所有 .sh 文件通过 bash -n |
-| TypeScript 编译 | PASS | tsc --noEmit 通过 |
-| JSON 格式 | PASS | jq 验证通过 |
 | 测试通过 | PASS | 249 tests passed |
 
-## L2 检查（功能性）
+## 安全修复详情
 
-| 项目 | 状态 | 说明 |
-|------|------|------|
-| P0-1 Evidence 真实结果 | PASS | 从 checks JSON 汇总，不再硬编码 |
-| P0-2 manual: 后门封堵 | PASS | 需要 manual_verifications 记录 |
-| P1-1 L2A/L2B 内容验证 | PASS | 结构+密度检查 |
-| P1-2 RCI 精确匹配 | PASS | 移除 includes 误判 |
+### P0-1: auto-merge check_suite 漏洞
 
-## P0 安全修复详情
-
-### P0-1: Evidence 真实结果
-
-**问题**: `generate-evidence.sh` 硬编码 `qa_gate_passed: true`
+**问题**: check_suite 事件可被外部 CI 系统触发，绕过 approval 直接合并
 
 **修复**:
-- CI 每步输出 check JSON 到 `ci/out/checks/`
-- `generate-evidence.sh` 汇总计算 qa_gate_passed
-- `evidence-gate.sh` 验证事实（存在、通过、hash）
+- ✅ 移除了 `on.check_suite` 触发器
+- ✅ 更新了 concurrency group（移除 check_suite 引用）
+- ✅ 简化了 job if 条件（只保留 pull_request_review）
+- ✅ 简化了 Get PR number 步骤
 
-### P0-2: manual: 后门封堵
+### P0-2: ci-passed 跳过逻辑漏洞
 
-**问题**: `manual:` 直接返回 `{valid: true}`
+**问题**: regression-pr/release-check 被 skipped 时仍允许 CI 通过
 
 **修复**:
-- 必须在 evidence 中有 `manual_verifications` 数组
-- 每条记录包含 actor/timestamp/evidence
+- ✅ PR 到 develop: `github.base_ref != 'develop' || needs.regression-pr.result == 'success'`
+- ✅ PR 到 main: `github.base_ref != 'main' || needs.release-check.result == 'success'`
 
-## 测试覆盖
+### P1-1: ai-review continue-on-error
 
-| 测试文件 | 测试数 | 状态 |
-|---------|--------|------|
-| tests/ci/evidence.test.ts | 12 | ✅ |
-| tests/gate/scan-rci-coverage.test.ts | 16 | ✅ |
-| tests/devgate/l2a-check.test.ts | 11 | ✅ |
+**问题**: continue-on-error 隐藏 AI review 失败
+
+**修复**:
+- ✅ 移除了 `continue-on-error: true`
+- ✅ 脚本内部已有 secret 缺失时的优雅跳过逻辑
 
 ## Blockers
 
@@ -81,4 +65,4 @@ None
 
 ## Conclusion
 
-所有 P0 安全漏洞已修复，P1 增强已完成。测试全部通过。
+所有 CI 安全漏洞已修复。测试全部通过。

@@ -710,7 +710,9 @@ jobs:
 
   ci-passed:
     needs: [version-check, test, contract-drift-check, impact-check, l2b-check, regression-pr, release-check]
-    # 使用 always() 确保即使某些 job 被跳过也能运行
+    # SECURITY FIX: 根据目标分支要求对应检查必须成功（不允许 skipped）
+    # - PR 到 develop: regression-pr 必须成功
+    # - PR 到 main: release-check 必须成功
     if: |
       always() &&
       github.event_name == 'pull_request' &&
@@ -719,8 +721,8 @@ jobs:
       (needs.version-check.result == 'success' || needs.version-check.result == 'skipped') &&
       (needs.impact-check.result == 'success' || needs.impact-check.result == 'skipped') &&
       (needs.l2b-check.result == 'success' || needs.l2b-check.result == 'skipped') &&
-      (needs.regression-pr.result == 'success' || needs.regression-pr.result == 'skipped') &&
-      (needs.release-check.result == 'success' || needs.release-check.result == 'skipped')
+      (github.base_ref != 'develop' || needs.regression-pr.result == 'success') &&
+      (github.base_ref != 'main' || needs.release-check.result == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -828,7 +830,8 @@ jobs:
     permissions:
       contents: read
       pull-requests: write  # 需要写权限来发 comment
-    continue-on-error: true  # 不阻断 PR
+    # SECURITY FIX: 移除 continue-on-error，让 AI review 失败正确报告
+    # 如果 VPS_REVIEW_URL 未配置，脚本会优雅跳过而非失败
     steps:
       - uses: actions/checkout@v4
         with:
