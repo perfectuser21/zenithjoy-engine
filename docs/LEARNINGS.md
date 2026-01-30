@@ -1,9 +1,10 @@
 ---
 id: engine-learnings
-version: 1.3.0
+version: 1.4.0
 created: 2026-01-16
 updated: 2026-01-30
 changelog:
+  - 1.4.0: 添加 CI 硬化 - Evidence 真实结果 + manual 后门封堵经验
   - 1.3.0: 添加 Gate Skill 家族开发经验
   - 1.2.0: 添加 Task Checkpoint 强制执行经验
   - 1.1.0: 添加 Task/Subagent 对比测试结论
@@ -1189,4 +1190,154 @@ sha256(branch | timestamp | quality_hash | loop_count | secret)
 
 #### 影响程度
 - High - 解决了 PRD/DoD/QA/Audit 可能都是垃圾的核心问题
+
+### [2026-01-30] CI 硬化 - Evidence 真实结果 + 后门封堵
+
+#### 问题背景
+
+深度审计发现 CI 检查存在严重漏洞：
+- **P0-1**: `generate-evidence.sh` 硬编码 `qa_gate_passed: true`，不管实际检查是否通过
+- **P0-2**: `check-dod-mapping.cjs` 的 `manual:*` 直接返回 `valid: true`，相当于后门
+- **P1-1**: L2A/L2B 只查字符串存在，不验证结构和密度
+- **P1-2**: RCI 覆盖率匹配太松（`name.includes()`），允许假覆盖
+
+#### 修复内容
+
+**P0-1 Evidence 真实结果系统**:
+
+1. **write-check-result.sh** - CI 每步写入真实结果
+   ```bash
+   bash ci/scripts/write-check-result.sh typecheck true 0 "npm run typecheck"
+   ```
+   输出到 `ci/out/checks/typecheck.json`
+
+2. **generate-evidence.sh v2.0** - 汇总真实结果
+   - 读取 `ci/out/checks/*.json`
+   - 计算 `qa_gate_passed = all(ok==true)`
+   - 包含文件 hash 防篡改
+   - 不再硬编码任何值
+
+3. **evidence-gate.sh v2.0** - 验证事实而非格式
+   - 验证 version 必须是 2.0.0
+   - 验证 SHA 匹配 HEAD
+   - 验证所有 required checks 存在且通过
+   - 验证文件 hash 防篡改
+   - 验证 `qa_gate_passed` 与实际 checks 一致
+
+**P0-2 manual: 后门封堵**:
+
+旧代码：
+```javascript
+if (testRef.startsWith("manual:")) {
+  return { valid: true };  // 后门！
+}
+```
+
+新代码：
+```javascript
+if (testRef.startsWith("manual:")) {
+  const evidenceId = testRef.substring("manual:".length);
+  return validateManualEvidence(evidenceFile, evidenceId);
+}
+```
+
+`validateManualEvidence()` 要求：
+- evidence 文件中有 `manual_verifications` 数组
+- 数组中有匹配 ID 的记录
+- 记录必须包含 `actor`, `timestamp`, `evidence` 字段
+
+**P1-1 L2A/L2B 结构检查**:
+
+L2A (l2a-check.sh):
+- PRD 必须 >=3 个 section (##)
+- 每个 section 必须 >=2 行内容
+- DoD 必须有验收项 (checkbox)
+- 验收项必须有 Test: 映射
+
+L2B (l2b-check.sh):
+- 必须有可复现命令（npm run, bash, node 等）
+- 或机器引用（SHA, run ID, hash 等）
+- 不接受纯文字描述
+
+**P1-2 RCI 覆盖率收紧**:
+
+旧逻辑（有误判）:
+```javascript
+if (contract.name.includes(entry.name)) {
+  coveredBy.push(contract.id);
+}
+```
+
+新逻辑（精确匹配）:
+```javascript
+// 只允许三种匹配方式
+// 1. 精确匹配：entry.path === contractPath
+// 2. 目录匹配：contractPath.endsWith("/") && entry.path.startsWith(contractPath)
+// 3. glob 匹配：正则转换后匹配
+```
+
+移除了 `name.includes()` 误判逻辑。
+
+#### 踩的坑
+
+1. **Hook 阻止创建脚本**
+   - 问题：创建 `ci/scripts/*.sh` 时被 branch-protect.sh 阻止
+   - 原因：PRD/DoD 文件在 .gitignore 中，git 检测不到
+   - 解决：`git add -f .prd-*.md .dod-*.md` 强制添加
+   - 影响程度：Low
+
+2. **jq 空数组处理**
+   - 问题：`jq '.failed_checks[]'` 在数组为空时报错
+   - 解决：用 `printf '%s\n' "${FAILED_CHECKS[@]:-}" | jq -R . | jq -s .`
+   - 影响程度：Low
+
+3. **Shell set -e 与算术表达式**
+   - 问题：`[[ $X -eq 0 ]]` 在 `set -e` 下如果为假会退出脚本
+   - 解决：用 `|| true` 或改用 `if` 语句
+   - 影响程度：Low
+
+#### 关键经验
+
+1. **CI 检查必须验证事实，不能信任产物**
+   - `qa_gate_passed: true` 必须来自实际检查结果
+   - 不能硬编码、不能假设、不能信任输入
+
+2. **后门必须封堵**
+   - `manual:` 原本设计是给手动验证用的
+   - 但 `return { valid: true }` 等于绕过检查
+   - 现在要求必须有真实的 evidence 记录
+
+3. **匹配逻辑要精确**
+   - `name.includes()` 太宽松，会误判
+   - 路径匹配要用精确匹配、目录前缀或 glob
+   - 不能用模糊字符串匹配
+
+4. **Hash 验证防篡改**
+   - evidence 文件包含每个 check 的文件 hash
+   - evidence-gate 会重新计算 hash 并比对
+   - 篡改 check 结果会被检测到
+
+5. **多层防御**
+   - 本地 Hook → 提前拦截
+   - CI generate → 只写真实结果
+   - CI gate → 验证事实
+   - 任何一层都不能单独信任
+
+#### CI 流程图
+
+```
+TypeCheck → write-check-result.sh → ci/out/checks/typecheck.json
+Test      → write-check-result.sh → ci/out/checks/test.json
+Build     → write-check-result.sh → ci/out/checks/build.json
+ShellCheck→ write-check-result.sh → ci/out/checks/shell-check.json
+                                         ↓
+                          generate-evidence.sh v2.0
+                                         ↓
+                    .quality-evidence.{SHA}.json (qa_gate_passed 基于真实结果)
+                                         ↓
+                          evidence-gate.sh v2.0 (验证事实)
+```
+
+#### 影响程度
+- High - 关闭了 CI 中的假门和后门，确保检查是真实的
 
