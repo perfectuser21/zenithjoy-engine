@@ -15,9 +15,11 @@
 # - product_features:  引擎核心能力（工作流、测试、报告、自动化）
 # ============================================================================
 
-version: "2.41.0"
+version: "2.43.0"
 updated: "2026-01-31"
 changelog:
+  - 2.43.0: v11.14.2 - P0-3 Stop Hook 会话隔离（检查 .dev-mode 中的 branch 是否与当前分支匹配，防止多会话"串线"）
+  - 2.42.0: v11.14.1 - 统一 Subagent Gate 命名和规则挂载（gate:prd/dod/qa/audit/test/learning 规则嵌入 prompt）
   - 2.41.0: v11.14.0 - P3 cleanup.sh v1.8 PRD/DoD 归档到 .history/ 目录
   - 2.40.0: v11.13.1 - H1 支持 monorepo 子目录 PRD/DoD 文件检测
   - 2.39.0: v11.12.4 - 本地版本检查（警告模式）+ P2/P3 一致性分析
@@ -112,8 +114,8 @@ platform_features:
     name: Stop Hook Loop Controller
     status: Committed
     priority: P0
-    version: "11.11.0"
-    updated: "2026-01-30"
+    version: "11.14.2"
+    updated: "2026-01-31"
     description: |
       Stop Hook 作为 /dev 工作流的循环控制器，替代 Ralph Loop 插件：
       - 检测 .dev-mode 文件决定是否为 /dev 会话
@@ -121,6 +123,7 @@ platform_features:
       - 未完成时 exit 2 阻止会话结束，Claude 继续执行
       - 完成时（cleanup_done: true）删除 .dev-mode 并 exit 0
       - 无头模式 (CECELIA_HEADLESS=true) 直接 exit 0，由外部循环控制
+      v11.14.2: P0-3 修复 - 会话隔离，检查 .dev-mode 中的 branch 是否与当前分支匹配，防止多会话"串线"
       v11.11.0: P0-2 修复 - 添加 flock 并发锁防止多个会话同时操作 .dev-mode 文件
       v11.10.0: PR 合并后自动执行 cleanup（删除 .dev-mode、切换分支、删除本地分支），不再悬空
       v11.4.1: 修复跳过 Cleanup bug（cleanup_done 检测 + PR 合并时 exit 2）
@@ -838,14 +841,21 @@ product_features:
     name: Gate Skill Family
     status: Committed
     priority: P1
-    version: "11.10.0"
-    updated: "2026-01-30"
+    version: "11.14.1"
+    updated: "2026-01-31"
     description: |
       独立质量审核 Skill 家族，每个 gate 是"守门 Subagent"：
       - gate:prd - PRD 完整性、需求可验收性审核
       - gate:dod - PRD↔DoD 覆盖率、Test 映射有效性审核
+      - gate:qa - RCI 判断、测试方法决策审核
       - gate:test - 测试↔DoD 覆盖率、边界用例审核
       - gate:audit - 审计证据真实性、风险点识别审核
+      - gate:learning - 开发经验记录审核
+
+      v11.14.1 规则挂载优化：
+      - 统一 Gate 命名规范（gate:prd/dod/qa/audit/test/learning）
+      - 完整规则直接嵌入 Subagent prompt（解决 general-purpose 类型无法访问 skills 问题）
+      - 明确循环逻辑：Subagent FAIL → 主 Agent 修复 → 再次启动 Subagent → 直到 PASS
 
       v11.10.0 Gate v3 安全机制：
       - 新增 expires_at/expires_at_epoch 字段，默认 30 分钟过期（GATE_TTL_SECONDS 可配置）

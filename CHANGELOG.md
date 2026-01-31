@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.14.2] - 2026-01-31
+
+### Fixed
+
+- **Stop Hook 会话隔离 (P0-3)**
+  - 问题：多个 Claude 会话在同一项目工作时"串线"，一个会话被迫接手另一个会话的任务
+  - 原因：Stop Hook 检测到 `.dev-mode` 存在就阻止结束，不管是哪个会话创建的
+  - 修复：检查 `.dev-mode` 中的 `branch:` 是否与当前分支匹配，不匹配则忽略
+
+## [11.14.1] - 2026-01-31
+
+### Changed
+
+- **Subagent Gate 统一命名**
+  - 统一所有 Gate 命名：gate:prd, gate:dod, gate:qa, gate:audit, gate:test, gate:learning
+  - 在 steps 文件中嵌入完整审核规则（从 gates/*.md 复制）
+  - 明确循环逻辑：FAIL → 修改 → 再审核 → 直到 PASS
+
+### Fixed
+
+- **Subagent 规则挂载问题**
+  - 之前：Subagent prompt 只写"参考 skills/xxx"，但 Subagent 拿不到文件
+  - 现在：完整规则直接嵌入 prompt，Subagent 可正确执行审核
+
 ## [11.14.0] - 2026-01-31
 
 ### Added
