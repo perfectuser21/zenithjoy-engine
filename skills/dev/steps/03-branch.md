@@ -40,9 +40,9 @@ fi
 
 ---
 
-## Worktree 强制检查（CRITICAL）
+## Worktree 冲突兜底（FALLBACK）
 
-**在主仓库创建分支前，必须检查是否有活跃的 /dev 任务**：
+**正常情况下 Step 0 已处理 worktree 冲突。此处作为兜底**：
 
 ```bash
 # 只在主仓库（非 worktree）时检查
@@ -54,29 +54,32 @@ if [[ "$IS_WORKTREE" == "false" ]]; then
         ACTIVE_BRANCH=$(grep "^branch:" "$DEV_MODE_FILE" 2>/dev/null | cut -d' ' -f2 || echo "unknown")
 
         echo ""
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "  ⛔ 主仓库有活跃 /dev 任务"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        echo "  活跃分支: $ACTIVE_BRANCH"
-        echo ""
-        echo "  必须使用 worktree 并行开发："
-        echo ""
-        echo "    bash skills/dev/scripts/worktree-manage.sh create <feature-name>"
-        echo ""
-        echo "  或者先完成当前任务再开始新任务。"
-        echo ""
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "⚠️  Step 0 未处理 worktree 冲突，兜底自动创建..."
+        echo "   活跃分支: $ACTIVE_BRANCH"
 
-        # 阻止继续，必须用 worktree
-        exit 1
+        # 自动创建 worktree（与 Step 0 相同逻辑）
+        TASK_NAME="<从用户输入提取的简短英文任务名>"
+        WORKTREE_PATH=$(bash skills/dev/scripts/worktree-manage.sh create "$TASK_NAME" 2>/dev/null | tail -1)
+
+        if [[ -n "$WORKTREE_PATH" && -d "$WORKTREE_PATH" ]]; then
+            echo "✅ Worktree 创建成功: $WORKTREE_PATH"
+            cd "$WORKTREE_PATH"
+
+            # 安装依赖
+            if [[ -f "package.json" ]]; then
+                npm install --prefer-offline 2>/dev/null || npm install
+            fi
+        else
+            echo "❌ Worktree 创建失败，无法继续"
+            exit 1
+        fi
     fi
 fi
 ```
 
 **逻辑**：
 - 在 worktree 中 → 跳过检查（已隔离）
-- 在主仓库且有 `.dev-mode` → **阻止创建分支**，必须用 worktree
+- 在主仓库且有 `.dev-mode` → **自动创建 worktree + cd**（兜底）
 - 在主仓库且无 `.dev-mode` → 继续创建分支
 
 ---

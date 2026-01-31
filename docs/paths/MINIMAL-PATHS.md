@@ -1,12 +1,12 @@
 ---
 id: minimal-paths
-version: 2.43.0
+version: 2.44.0
 created: 2026-01-31
 updated: 2026-01-31
 source: features/feature-registry.yml
 generation: auto-generated (scripts/generate-path-views.sh)
 changelog:
-  - 2.43.0: 从 feature-registry.yml 自动生成
+  - 2.44.0: 从 feature-registry.yml 自动生成
 ---
 
 # Minimal Paths - 最小验收路径
@@ -161,8 +161,9 @@ changelog:
 
 ### P5: Worktree Parallel Development
 
-1. ✅ **worktree 脚本存在但不默认使用**
-2. ✅ **用户可手动调用 worktree-manage.sh**
+1. ✅ **主仓库无冲突 → 跳过，正常流程**
+2. ✅ **主仓库有活跃 .dev-mode → 自动创建 worktree + cd**
+3. ✅ **僵尸 .dev-mode（>2h 或分支不存在）→ 自动清理**
 
 **RCI 覆盖**: W6-001
 
@@ -211,5 +212,5 @@ changelog:
 ---
 
 **来源**: features/feature-registry.yml
-**版本**: 2.43.0
+**版本**: 2.44.0
 **生成时间**: 2026-01-31

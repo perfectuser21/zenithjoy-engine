@@ -849,7 +849,7 @@ workflow:
   # --------------------------------------------------------------------------
   - id: W6-001
     feature: W6
-    name: "检测活跃的功能分支"
+    name: "Worktree 自动检测与创建（Step 0 前置 + 僵尸清理 + flock 锁）"
     scope: workflow
     priority: P1
     trigger: [Release]
