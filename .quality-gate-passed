@@ -1,0 +1,8 @@
+# Quality Gate Passed
+# Generated: 2026-01-31T16:17:48+08:00
+# Branch: cp-H7-tty-session-isolation
+# Commit: 3c238c7
+
+typecheck: PASS
+test: PASS
+build: PASS
