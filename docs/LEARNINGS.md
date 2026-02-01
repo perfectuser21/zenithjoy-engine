@@ -1,9 +1,10 @@
 ---
 id: engine-learnings
-version: 1.8.0
+version: 1.9.0
 created: 2026-01-16
 updated: 2026-02-01
 changelog:
+  - 1.9.0: 添加 Stop Hook 架构限制分析（SessionEnd vs AI 中途停顿）
   - 1.8.0: 添加 cleanup.sh 验证机制开发经验（版本号同步、Impact Check、PRD/DoD 清理、临时文件残留）
   - 1.7.0: 添加 AI 流程停顿根因分析和 Stop Hook .dev-mode 泄漏问题
   - 1.6.0: 添加 TTY 会话隔离开发经验
@@ -177,6 +178,141 @@ fi
    - 强化"流程驱动器"意识：完成任务后立即自问"下一步是什么？下一步文件在哪？"
 
 **影响程度**: High（核心流程问题，影响所有 /dev 执行）
+
+---
+
+## 2026-02-01: Stop Hook 架构限制 - 无法拦截 AI 中途停顿
+
+### 问题背景
+
+在调查上述"AI 违反工作流跳过步骤"问题时，用户提出核心疑问：
+
+> "为什么 stop hook 拦截不住它？"
+
+用户的假设：
+- Stop Hook 应该能检测到 AI 停顿（mid-conversation pause）
+- 当 AI 违反自动执行规则停下来时，Stop Hook 应该触发并强制继续
+- 实际表现：AI 停顿了，但 Stop Hook 没有拦截
+
+### 官方文档验证
+
+查阅 Claude Code 官方文档 (https://code.claude.com/docs/en/hooks):
+
+```
+| Event  | When it fires                    |
+|--------|----------------------------------|
+| Stop   | When Claude finishes responding  |
+```
+
+关键发现：
+1. **Stop hook 本质**：它是 `SessionEnd` 事件类型的 hook
+2. **触发时机**：仅在"Claude 完成响应并尝试终止会话"时触发
+3. **Exit code 2 的作用**：阻止会话终止，让对话继续
+4. **不会触发的场景**：AI 中途停顿等待用户输入时（mid-conversation pause）
+
+### 架构限制分析
+
+**Stop Hook 能做什么**：
+```
+会话尝试结束 → Stop Hook 触发 → 检查 .dev-mode
+    ├─ PR 未合并 → exit 2 → 阻止会话结束，继续执行
+    └─ PR 已合并 → exit 0 → 允许会话结束
+```
+
+**Stop Hook 做不到什么**：
+```
+AI 中途停顿（违反自动执行规则）
+    ↓
+会话并未尝试结束，仍在等待用户输入
+    ↓
+Stop Hook 不会触发（因为不是 SessionEnd 事件）
+    ↓
+无法强制 AI 继续执行
+```
+
+### 概念澄清
+
+**用户视角 vs 系统事件**：
+
+| 用户看到的 | 用户的理解 | 实际系统事件 | Stop Hook 触发？ |
+|-----------|-----------|-------------|----------------|
+| AI 停下来了 | "已经停顿/结束了" | 会话暂停（waiting for input） | ❌ 不触发 |
+| 会话真正结束 | "对话关闭了" | SessionEnd 事件 | ✅ 触发 |
+
+用户的直觉合理："从使用体验看，AI 停下来就是'结束'了"。
+但系统定义：只有会话真正终止才是 SessionEnd 事件。
+
+### Claude Code Hook 系统的限制
+
+**缺失的 Hook 类型**：
+- ❌ `OnPause` hook - 检测 AI 中途停顿
+- ❌ `OnInactivity` hook - 检测超过 N 秒无活动
+- ❌ `OnWorkflowViolation` hook - 检测违反流程规则
+
+**现有的 Hook 类型**：
+- ✅ `PreToolUse` - 工具调用前
+- ✅ `SessionEnd` (Stop) - 会话结束时
+
+### 实际影响
+
+**Stop Hook 的有效场景**（会话结束检测）：
+```bash
+# 场景 1：AI 完成所有工作，尝试结束
+/dev 执行完 Step 1-11 → 会话尝试结束 → Stop Hook 检测 PR 未合并 → exit 2 → 循环继续
+
+# 场景 2：用户手动关闭
+用户 Ctrl+C → 会话终止 → Stop Hook 检测 .dev-mode → 提示"任务未完成"
+```
+
+**Stop Hook 无能为力的场景**（中途停顿）：
+```bash
+# 场景 3：AI 违反规则停顿（本次问题）
+完成 Step 5 → 应该自动执行 Step 6 → AI 停顿等待用户 → Stop Hook 不触发 → 无法强制继续
+
+# 场景 4：AI 遇到错误停顿
+Step 中途报错 → AI 等待用户处理 → Stop Hook 不触发
+```
+
+### 解决方案
+
+**短期**：
+1. 强化自动执行规则的提醒（在每个 Step 文件末尾）
+2. 依赖 AI 的自我约束和规则遵守
+3. 用户手动检查：如果 AI 停顿，提醒"为什么停了，继续执行"
+
+**中期**：
+1. Task Checkpoint 更主动（每步结束主动检查下一步）
+2. 流程状态机显式追踪（"当前 6/11，下一步 07-quality.md"）
+
+**长期**（需要 Claude Code 支持）：
+1. 提议 Claude Code 新增 `OnPause` hook
+2. 或者在 `PreToolUse` 中添加"流程检查点"逻辑
+
+### 核心教训
+
+1. **Stop Hook ≠ 流程执行保障**
+   - Stop Hook 只能检测会话结束，不能检测流程违规
+   - 不能依赖 Stop Hook 强制 AI 遵守自动执行规则
+
+2. **架构限制需要明确理解**
+   - 用户的直觉合理，但系统定义不同
+   - SessionEnd ≠ AI 停顿
+
+3. **流程保障需要多层机制**
+   - Hook 层：只能做边界检查（会话结束时）
+   - 规则层：依赖 AI 自我约束
+   - 监控层：用户/系统检测违规
+
+4. **设计教训**：
+   - 不要设计"依赖 AI 永不犯错"的系统
+   - 需要有降级方案：AI 违规时用户能及时发现和纠正
+
+### 影响程度
+
+**Medium** - 澄清了 Stop Hook 的能力边界，避免对其产生错误期待。实际影响有限，因为：
+1. Stop Hook 在会话结束检测场景工作正常
+2. AI 中途停顿主要靠规则约束 + 用户监督
+3. 未来可通过其他机制（Task Checkpoint、流程状态机）改进
 
 ---
 
