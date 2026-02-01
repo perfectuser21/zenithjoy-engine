@@ -1,8 +1,8 @@
 # Audit Report
 
-Branch: cp-test-stop-hook-flow
+Branch: cp-pressure-test-2
 Date: 2026-02-01
-Scope: tests/stop-hook-flow-test.txt
+Scope: tests/workflow-guard-2.txt
 Target Level: L2
 
 Summary:
