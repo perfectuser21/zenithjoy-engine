@@ -346,6 +346,7 @@ echo ""
 echo "[8]  删除运行时文件..."
 
 # v1.5: 支持分支级别 PRD/DoD/状态文件
+# v1.10: 添加 gate 文件（prd, dod, qa, audit, test）
 RUNTIME_FILES=(
     ".quality-report.json"
     ".prd.md"
@@ -359,6 +360,12 @@ RUNTIME_FILES=(
     ".layer2-evidence.md"
     ".l3-analysis.md"
     ".quality-evidence.json"
+    ".gate-prd-passed"
+    ".gate-dod-passed"
+    ".gate-qa-passed"
+    ".gate-audit-passed"
+    ".gate-test-passed"
+    ".dev-mode"
 )
 
 DELETED_COUNT=0
