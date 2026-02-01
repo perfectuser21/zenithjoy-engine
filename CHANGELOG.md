@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.19.0] - 2026-02-01
+
+### Changed
+
+- **Gate Skill 调用方式优化 (G3)** - 将所有 dev 工作流中的 gate subagent 调用从 Task(general-purpose) 改为 Skill()
+  - 修改 `skills/dev/steps/01-prd.md` - gate:prd 使用 Skill 调用
+  - 修改 `skills/dev/steps/04-dod.md` - gate:dod 和 gate:qa 使用 Skill 调用
+  - 修改 `skills/dev/steps/05-code.md` - gate:audit 使用 Skill 调用
+  - 修改 `skills/dev/steps/06-test.md` - gate:test 使用 Skill 调用
+  - 修改 `skills/dev/steps/10-learning.md` - gate:learning 使用 Skill 调用
+  - 删除所有冗长的内联 prompt，简化为简洁的 Skill 调用
+  - 配合全局 gate skill 的 checklist 机制，提高代码可维护性
+
 ## [11.18.0] - 2026-01-31
 
 ### Added
