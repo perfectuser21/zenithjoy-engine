@@ -101,6 +101,14 @@ Full Regression（全量测试）
 
 ---
 
+## Bug Fixes
+
+| ID | Feature | 状态 | 最小验收 | 说明 |
+|----|---------|------|----------|------|
+| B2 | Critical Bug Fix | **Committed** | CI 运行 + 手动验证 | 修复 16 个 CRITICAL 级别 bug（Stop Hook、Skills、CI/CD、部署脚本等） |
+
+---
+
 ## CI/Release
 
 | ID | Feature | 状态 | 最小验收 | 说明 |
