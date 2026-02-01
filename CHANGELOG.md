@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.24.1] - 2026-02-01
+
+### Fixed
+
+- **Stop Hook 循环机制修复** - 修复 3 个 Critical 问题确保 /dev 流程自动执行
+  - 删除 `stop_hook_active` 1 次重试限制，改为 20 次计数器（`retry_count` 字段）
+  - 删除 PR 合并后的提前退出逻辑（Line 217-253），统一退出条件为 `cleanup_done: true` 或 11 步全部完成
+  - 修复分支不匹配时的 .dev-mode 泄漏，检测到不匹配时删除文件而非仅跳过
+  - 实现 11 步 Checklist 追踪机制（`step_1_prd` ~ `step_11_cleanup` 状态字段）
+  - 扩展 Cleanup 脚本清理列表，添加所有 gate 文件（`.gate-prd-passed` 等）
+  - 更新所有 steps/*.md 文件，添加步骤完成标记和"立即执行下一步"提示
+  - 新增 4 个自动化测试：`tests/hooks/stop-hook-retry.test.ts`, `tests/hooks/stop-hook-exit.test.ts`, `tests/dev/checklist.test.ts`, `tests/scripts/cleanup.test.ts`
+
 ## [11.21.0] - 2026-02-01
 
 ### Changed
