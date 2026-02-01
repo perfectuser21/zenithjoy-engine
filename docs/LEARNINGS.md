@@ -1396,3 +1396,44 @@ ShellCheck→ write-check-result.sh → ci/out/checks/shell-check.json
 #### 影响程度
 - High - 多个关键 Bug 导致 Gate 机制失效或 Hook 行为异常
 
+---
+
+## [2026-02-01] 跨仓库开发流程
+
+### 任务简述
+集成 Cecelia Voice 和 Orchestrator 队列管理 API（涉及 cecelia-workspace/apps/core 和 cecelia-semantic-brain 两个仓库）
+
+### Bug 1: 跨仓库 PRD/DoD 强制要求
+- **问题**: 在两个仓库中进行开发时，branch-protect hook 要求每个仓库都有独立的 PRD/DoD 文件
+- **原因**: Hook 检查是基于当前仓库的 git 状态，无法识别"这是跨仓库任务的一部分"
+- **解决方案**: 为每个仓库创建独立的 PRD/DoD 文件，或在第二个仓库中使用符号链接指向主 PRD
+- **影响程度**: Medium - 增加了跨仓库开发的文档开销
+
+### Bug 2: Force push 被 hook 阻止
+- **问题**: 使用 `git push -f` 或 `--force-with-lease` 被 stop hook 阻止
+- **原因**: Hook 安全机制防止强制推送（可能导致代码丢失）
+- **解决方案**: 创建新的 commit 而非修改已有 commit（使用新提交代替 --amend）
+- **影响程度**: Low - 这是预期的安全保护
+
+### 优化点 1: 跨仓库架构理解
+- **问题**: PRD 最初要求在 apps/core 创建所有功能，但 /api/orchestrator/* 路由实际被代理到 semantic-brain
+- **发现**: 通过检查 server.ts 中的 `httpProxy` 配置，发现 /api/orchestrator/* 被转发到 Python 服务
+- **解决方案**: 拆分实现 - 队列管理 API (GET/PATCH/DELETE) 在 Core 本地实现，voice tools (POST) 在 semantic-brain 实现
+- **学习**: 在开始编码前，先通过 grep/read 理解现有架构和路由配置
+- **影响程度**: Medium - 避免了在错误位置实现功能
+
+### 优化点 2: Express 路由顺序解决冲突
+- **问题**: 担心本地路由 `/api/orchestrator/queue` 与代理路由 `/api/orchestrator/*` 冲突
+- **解决方案**: Express 按注册顺序匹配路由，将具体路由（orchestratorQueue）注册在代理（setupProxies）之前即可
+- **学习**: Express 路由是 first-match 策略，顺序很重要
+- **影响程度**: Low - 这是 Express 的标准行为
+
+### 优化点 3: TypeScript 类型安全改进
+- **问题**: 初始实现使用 `any` 类型，缺少类型检查
+- **解决方案**: 添加 QueuedTask 和 RunningTask 接口定义
+- **学习**: 即使是快速实现，也应该先定义类型接口，避免后续重构
+- **影响程度**: Low - 提高代码质量
+
+### 影响程度
+- Medium - 跨仓库开发有特定的流程要求和架构理解需求
+
