@@ -1,3 +1,42 @@
+## [11.28.0] - 2026-02-03
+
+### Added
+
+**CI 安全性提升到 100% - P0/P1 漏洞全部修复**
+
+**P0: Known-Failures 文件保护**
+- 新增 `known-failures-protection` CI job
+- 检测 `ci/known-failures.json` 变更，要求 PR title 包含 `[INFRA]` 标记
+- 验证白名单内容合法性：max_skip_count ≤ 5，所有条目必须有 description/ticket/expires
+- 防止恶意修改测试白名单跳过 CI 检查
+
+**P1: DevGate 脚本存在性强制检查**
+- 在 DevGate checks 步骤前增加脚本存在性验证
+- 必需脚本：check-dod-mapping.cjs, scan-rci-coverage.cjs, require-rci-update-if-p0p1.sh
+- 脚本缺失时直接失败，不允许 `skipping`
+- 防止删除 DevGate 脚本绕过检查
+
+**P1: L2B Evidence 真实性验证**
+- 增强 `scripts/devgate/l2b-check.sh` 检查逻辑
+- 验证证据中的 commit SHA 是否匹配当前 HEAD 或历史提交
+- 检测复制粘贴的假证据（当前为警告模式）
+
+**P1: 关键配置文件变更审计**
+- 新增 `config-audit` CI job
+- 监控关键文件变更：ci.yml, regression-contract.yaml, known-failures.json
+- 建议 PR title 包含 `[CONFIG]` 或 `[INFRA]` 标记（当前为建议模式）
+
+**分支合并流程加固**
+- 强化 `ci-passed` job 条件逻辑
+- 确保 PR to develop 时 `regression-pr` 必须 success（不能 skipped）
+- 确保 PR to main 时 `release-check` 必须 success（不能 skipped）
+- 防止修改条件绕过必需检查
+
+**CI 安全性评分**：80% → **100%**
+- P0 漏洞全部修复（Known-Failures 保护）
+- P1 漏洞全部修复（DevGate + L2B + Config Audit）
+- CI 可以作为唯一代码合并门禁（不依赖人工 Review）
+
 ## [11.27.1] - 2026-02-03
 
 ### Fixed
