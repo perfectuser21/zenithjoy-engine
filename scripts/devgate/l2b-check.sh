@@ -37,9 +37,10 @@ done
 
 # L2B-min: 至少 1 条可复核证据
 if [[ "$MODE" == "pr" ]]; then
-  # P1-1: 增强检查 - 必须有可复现命令或机器引用
-  # 可复现命令：包含 bash/npm/node/git 等命令
-  # 机器引用：包含 CI run ID、commit SHA、文件 hash 等
+  # P1: 增强检查 - 真实性验证
+  # 1. 必须有可复现命令或机器引用
+  # 2. 如果有 commit SHA，验证是否匹配当前 HEAD
+  # 3. 如果有 CI run ID，验证格式合理性
 
   HAS_COMMAND=false
   HAS_MACHINE_REF=false
@@ -59,6 +60,42 @@ if [[ "$MODE" == "pr" ]]; then
     echo "   - 可复现命令（如 npm run test, bash scripts/check.sh）"
     echo "   - 或机器引用（如 CI run ID, commit SHA, file hash）"
     exit 1
+  fi
+
+  # P1: 验证 commit SHA 真实性（如果存在）
+  CURRENT_HEAD=$(git rev-parse HEAD 2>/dev/null || echo "")
+  CURRENT_HEAD_SHORT=$(git rev-parse --short HEAD 2>/dev/null || echo "")
+
+  # 提取证据中的 SHA (7-40 位)
+  EVIDENCE_SHAS=$(grep -oE '\b[0-9a-f]{7,40}\b' "$EVIDENCE_FILE" || echo "")
+
+  if [[ -n "$EVIDENCE_SHAS" && -n "$CURRENT_HEAD" ]]; then
+    echo ""
+    echo "  [验证 commit SHA]"
+    SHA_VALID=false
+    while IFS= read -r sha; do
+      # 检查是否匹配当前 HEAD (完整或短格式)
+      if [[ "$sha" == "$CURRENT_HEAD" || "$sha" == "$CURRENT_HEAD_SHORT"* ]]; then
+        echo "  ✅ SHA $sha 匹配当前 HEAD"
+        SHA_VALID=true
+        break
+      fi
+      # 检查是否是历史提交（在当前分支）
+      if git cat-file -e "$sha" 2>/dev/null && git merge-base --is-ancestor "$sha" HEAD 2>/dev/null; then
+        echo "  ✅ SHA $sha 是当前分支的历史提交"
+        SHA_VALID=true
+        break
+      fi
+    done <<< "$EVIDENCE_SHAS"
+
+    if [[ "$SHA_VALID" == "false" ]]; then
+      echo "  ⚠️  警告: 证据中的 SHA 不匹配当前 HEAD 或历史提交"
+      echo "     这可能是复制粘贴的假证据"
+      echo "     证据中的 SHA: $(echo "$EVIDENCE_SHAS" | head -1)"
+      echo "     当前 HEAD: $CURRENT_HEAD_SHORT"
+      # P1: 暂时只警告，不阻断（给一个宽限期）
+      # 未来可以改成 exit 1
+    fi
   fi
 
   # 简单检查：至少有一个列表项或代码块
