@@ -104,17 +104,9 @@ jobs:
           fi
 
       # Node.js
-      - name: Setup Node.js
+      - name: Setup Project
         if: steps.detect.outputs.type == 'npm'
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
-
-      - name: Install dependencies (npm)
-        if: steps.detect.outputs.type == 'npm'
-        run: npm ci
+        uses: ./.github/actions/setup-project
 
       # L1-1: TypeCheck
       - name: TypeCheck
@@ -674,15 +666,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup Project
+        uses: ./.github/actions/setup-project
 
       - name: L3 Regression Tests (PR subset)
         run: |
@@ -787,15 +772,8 @@ jobs:
           echo "   这是一个合法的 release 分支"
           echo ""
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup Project
+        uses: ./.github/actions/setup-project
 
       # Release 只需要 L1+L3，不需要 L2A/L2B/L4（功能验收在功能分支已完成）
 

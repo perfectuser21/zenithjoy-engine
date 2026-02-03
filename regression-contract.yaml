@@ -8,7 +8,7 @@
 # Trigger 规则：
 #   - PR Gate:      跑 trigger 包含 PR 的条目
 #   - Release Gate: 跑 trigger 包含 Release 的条目
-#   - Nightly:      跑全部条目（忽略 trigger 过滤）
+#   - Nightly:      (已废弃) Nightly workflow 已被移除，此 trigger 暂不可用
 #
 # Method 规则：
 #   - auto:   必须有 test 字段指向自动化测试
@@ -814,23 +814,8 @@ workflow:
       type: log
       contains: "CI 失败"
 
-  - id: W3-003
-    feature: W3
-    name: "Nightly workflow 防止 push 触发"
-    scope: workflow
-    priority: P1
-    trigger: [PR, Release]
-    method: auto
-    tags: [ci, workflow, guard, trigger]
-    owner: infra
-    steps:
-      given: "nightly.yml workflow 配置为只在 schedule/workflow_dispatch 时运行"
-      when: "发生 push 事件"
-      then: "guard job 检查 event_name，skip nightly regression"
-    evidence:
-      type: workflow_output
-      contains: "should-run=false"
-    test: "tests/workflows/nightly-guard.test.ts"
+  # W3-003: Nightly workflow 防止 push 触发 (已废弃 - v13.0.0)
+  #   note: "Nightly workflow 已被移除（v13.0.0），此契约已废弃"
 
   # --------------------------------------------------------------------------
   # W5: 模式自动检测
