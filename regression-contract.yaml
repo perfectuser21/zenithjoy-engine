@@ -8,7 +8,7 @@
 # Trigger 规则：
 #   - PR Gate:      跑 trigger 包含 PR 的条目
 #   - Release Gate: 跑 trigger 包含 Release 的条目
-#   - Nightly:      跑全部条目（忽略 trigger 过滤）
+#   - Nightly:      (已废弃) Nightly workflow 已被移除，此 trigger 暂不可用
 #
 # Method 规则：
 #   - auto:   必须有 test 字段指向自动化测试

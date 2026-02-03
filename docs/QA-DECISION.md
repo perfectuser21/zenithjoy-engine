@@ -6,21 +6,37 @@ RepoType: Engine
 
 ## Tests
 
-- dod_item: "workflow 文件添加了 if 条件到 check-trigger job"
+- dod_item: "nightly.yml 文件已删除"
   method: manual
-  location: manual:检查 .github/workflows/back-merge-main-to-develop.yml 第 13 行
+  location: manual:确认 .github/workflows/nightly.yml 文件不存在
 
-- dod_item: "在非 main 分支 push 时，workflow 完全不运行"
+- dod_item: "ci.yml 的快速检查改为并行执行"
   method: manual
-  location: manual:push 到 develop 分支后检查 GitHub Actions 页面
+  location: manual:检查 ci.yml 中使用 matrix strategy 并行执行 5 个快速检查
 
-- dod_item: "在 main 分支 push 时，workflow 正常运行"
+- dod_item: "创建了 setup-project composite action"
   method: manual
-  location: manual:将来合并到 main 后验证
+  location: manual:确认 .github/actions/setup-project/action.yml 存在
 
-- dod_item: "workflow 其他逻辑未被修改"
+- dod_item: "ci.yml 中使用了 setup-project action"
   method: manual
-  location: manual:代码审查确认只修改了 if 条件
+  location: manual:确认 ci.yml 使用 uses: ./.github/actions/setup-project
+
+- dod_item: "regression-contract.yaml 移除 Nightly trigger"
+  method: manual
+  location: manual:检查 regression-contract.yaml 不再有 trigger: [Nightly]
+
+- dod_item: "CI 运行时间减少约 5 分钟（从 PRD 要求）"
+  method: manual
+  location: manual:对比 baseline run #21627475457 (74s) 与优化后 CI 时间，预期减少 50-60 秒
+
+- dod_item: "并行执行的 5 个快速检查独立运行成功"
+  method: manual
+  location: manual:确认 matrix 中 5 个检查各自独立完成
+
+- dod_item: "setup-project action 在所有使用它的 job 中正常工作"
+  method: manual
+  location: manual:检查所有使用 setup-project 的 jobs 成功完成
 
 - dod_item: "npm run qa 通过"
   method: auto
@@ -28,7 +44,11 @@ RepoType: Engine
 
 - dod_item: "CI 通过，无新增失败"
   method: manual
-  location: manual:等待 CI 运行完成
+  location: manual:等待 GitHub Actions CI 完成
+
+- dod_item: "验证 CI 结构完整性"
+  method: manual
+  location: manual:确认优化后 CI 行为一致，无功能退化
 
 ## RCI
 
@@ -37,4 +57,4 @@ update: []
 
 ## Reason
 
-这是一个 CI 配置优化（修复 GitHub Actions 误触发），不涉及核心功能变更或回归风险。修改范围极小（单文件单行），影响仅限于减少 CI 噪音。无需新增回归契约，现有 CI 测试（C2-001）足够覆盖。
+这是 CI 配置优化（删除失败的 Nightly workflow、提升并行度、减少代码冗余），不涉及核心功能变更或回归风险。修改范围限于 workflow 配置文件，影响是性能提升和可维护性改善。无需新增回归契约，现有 CI 测试（C2-001）足够覆盖。
