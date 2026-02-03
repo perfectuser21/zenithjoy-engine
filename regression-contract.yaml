@@ -18,7 +18,7 @@
 
 # NOTE: version 需要与 package.json 保持同步
 # 更新 package.json 时同步更新此处
-version: "12.1.0"
+version: "12.2.0"
 updated: "2026-02-03"
 
 # ============================================================================
@@ -1627,6 +1627,69 @@ ci:
       job: "ai-review"
       not_contains: "continue-on-error: true"
     test: "tests/ci/ai-review.test.ts"
+
+  # --------------------------------------------------------------------------
+  # C11: Evidence System Security (v12.2.0 P2 fixes)
+  # --------------------------------------------------------------------------
+  - id: C11-001
+    feature: C11
+    name: "Evidence 时间戳验证"
+    scope: ci
+    priority: P2
+    trigger: [Release]
+    method: auto
+    tags: [ci, evidence, security, timestamp, v12.2.0]
+    owner: infra
+    steps:
+      given: "Release PR 包含 .layer2-evidence.md"
+      when: "l2b-check.sh 执行时间戳验证"
+      then: "Evidence 文件修改时间必须在 commit 时间之后（允许5分钟误差）"
+    note: "v12.2.0 P2: 防止使用旧 commit 的 Evidence"
+    evidence:
+      type: code
+      file: "scripts/devgate/l2b-check.sh"
+      contains: "Evidence 时间戳验证"
+    test: "tests/devgate/l2b-check.test.ts"
+
+  - id: C11-002
+    feature: C11
+    name: "Evidence 文件存在性验证"
+    scope: ci
+    priority: P2
+    trigger: [Release]
+    method: auto
+    tags: [ci, evidence, security, files, v12.2.0]
+    owner: infra
+    steps:
+      given: "Evidence 引用 docs/evidence/ 文件"
+      when: "l2b-check.sh 解析文件路径"
+      then: "所有引用的文件必须存在"
+    note: "v12.2.0 P2: 防止空引用和虚假截图"
+    evidence:
+      type: code
+      file: "scripts/devgate/l2b-check.sh"
+      contains: "Evidence 文件存在性验证"
+    test: "tests/devgate/l2b-check.test.ts"
+
+  - id: C11-003
+    feature: C11
+    name: "Evidence metadata 完整性验证"
+    scope: ci
+    priority: P2
+    trigger: [Release]
+    method: auto
+    tags: [ci, evidence, security, metadata, v12.2.0]
+    owner: infra
+    steps:
+      given: "Evidence 包含 YAML frontmatter"
+      when: "l2b-check.sh 解析 metadata"
+      then: "必须包含 commit 和 timestamp 字段"
+    note: "v12.2.0 P2: 增强 Evidence 可追溯性"
+    evidence:
+      type: code
+      file: "scripts/devgate/l2b-check.sh"
+      contains: "Evidence Metadata 验证"
+    test: "tests/devgate/l2b-check.test.ts"
 
 # ============================================================================
 # Export 回归契约
