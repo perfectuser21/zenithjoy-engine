@@ -1015,6 +1015,34 @@ workflow:
       type: log
       description: "日志显示 TaskCreate/TaskUpdate 调用，TaskList 显示实时进度"
 
+  - id: W7-004
+    feature: W7
+    name: "移除 /dev 中所有 Subagent 调用以提高连续执行成功率"
+    scope: workflow
+    priority: P0
+    trigger: [PR, Release]
+    method: manual
+    tags: [dev, subagent, stop-hook, reliability, architecture]
+    owner: workflow
+    steps:
+      given: "/dev 工作流频繁中途停止（成功率约 30%）"
+      when: "移除所有 Subagent 调用（gate:prd, gate:dod, /qa, /audit, gate:test, gate:quality, gate:learning）"
+      then: "/dev 从 Step 1-11 连续执行，无停顿，成功率接近 100%"
+    note: |
+      Stop Hook 只能拦截 SessionEnd（退出尝试），无法拦截 AI 中途停顿。
+      每个 Subagent 返回后 AI 产生"完成感"，自然停止说话。
+      质量保障依赖三层架构：PreToolUse Hook + 快速开发 + 严格 CI。
+      Subagent 代码保留（HTML 注释包裹），可用于事后独立审核。
+    evidence:
+      type: code
+      description: "skills/dev/steps/*.md 中 Subagent 调用被 <!-- DISABLED --> 包裹"
+    test: |
+      手动测试：
+      1. 创建测试 PRD，运行 /dev
+      2. 观察是否从 Step 1-11 连续执行
+      3. 验证没有 Subagent 调用导致的停顿
+      4. 验证 CI 能捕获所有质量问题
+
 # ============================================================================
 # CI/Release 回归契约
 # ============================================================================
