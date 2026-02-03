@@ -15,9 +15,10 @@
 # - product_features:  引擎核心能力（工作流、测试、报告、自动化）
 # ============================================================================
 
-version: "2.53.0"
-updated: "2026-02-01"
+version: "2.54.0"
+updated: "2026-02-03"
 changelog:
+  - 2.54.0: v11.26.2 - 移除 /dev 所有 Subagent 调用（提高连续执行成功率从 30% 至接近 100%，Stop Hook 架构限制分析，三层质量保障架构）
   - 2.53.0: v11.26.1 - 修复 7 个 CRITICAL bug（Stop Hook PR合并退出 + branch-protect 新仓库fallback + retry_count竞态 + Step 3竞态 + PR Gate硬阻塞 + 命令注入防护）
   - 2.52.0: v11.26.0 - gate:quality - 本地 PR 前质量检查 Gate（TypeCheck + Build + Test + Shell 语法，Step 7 提前发现 95% 问题）
   - 2.51.0: v11.24.1 - H1 Stop Hook 循环机制修复（20次重试计数器 + 删除PR合并提前退出 + 11步Checklist追踪 + 分支不匹配泄漏修复）
