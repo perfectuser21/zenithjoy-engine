@@ -37,31 +37,87 @@ done
 
 # L2B-min: 至少 1 条可复核证据
 if [[ "$MODE" == "pr" ]]; then
-  # P1: 增强检查 - 真实性验证
+  # P1-1: 增强检查 - 可复现性验证（拒绝纯文字描述）
   # 1. 必须有可复现命令或机器引用
   # 2. 如果有 commit SHA，验证是否匹配当前 HEAD
   # 3. 如果有 CI run ID，验证格式合理性
+  # 4. 检查截图文件必须存在且非空（新增）
 
   HAS_COMMAND=false
   HAS_MACHINE_REF=false
 
+  echo ""
+  echo "  [P1-1: 可复现性验证]"
+
   # 检查可复现命令（在代码块内或列表项中）
   # H2 FIX: 使用单词边界避免匹配 "rebash"
-  if grep -qE '(\bnpm\s+run\b|\bbash\b|\bnode\b|\bgit\b|\bpytest\b|\bcargo\b|\bgo\s+test\b)' "$EVIDENCE_FILE"; then
+  # P1-1 增强: 扩展命令列表，包含 curl, docker, make 等
+  if grep -qE '(\bnpm\s+run\b|\bbash\b|\bnode\b|\bgit\b|\bpytest\b|\bcargo\b|\bgo\s+test\b|\bcurl\b|\bdocker\b|\bmake\b)' "$EVIDENCE_FILE"; then
     HAS_COMMAND=true
+    echo "  ✅ 检测到可复现命令"
   fi
 
   # 检查机器引用（SHA、run ID、hash 等）
   # H3 FIX: 使用单词边界和更严格的模式
   if grep -qE '(\b[0-9a-f]{7,40}\b|run[_-]?id:\s*[0-9]+|#[0-9]+|\bsha256:[0-9a-f]+)' "$EVIDENCE_FILE"; then
     HAS_MACHINE_REF=true
+    echo "  ✅ 检测到机器引用"
   fi
 
+  # P1-1 增强: 严格要求至少一种可复现证据
   if [[ "$HAS_COMMAND" == "false" && "$HAS_MACHINE_REF" == "false" ]]; then
-    echo "❌ L2B 需要可复现证据："
-    echo "   - 可复现命令（如 npm run test, bash scripts/check.sh）"
-    echo "   - 或机器引用（如 CI run ID, commit SHA, file hash）"
+    echo "  ❌ Evidence 必须包含可复现证据，不接受纯文字描述"
+    echo ""
+    echo "  要求（至少满足一项）："
+    echo "    1. 可复现命令："
+    echo "       - npm run test"
+    echo "       - bash scripts/check.sh"
+    echo "       - curl -X POST http://..."
+    echo ""
+    echo "    2. 机器引用："
+    echo "       - CI run ID: 12345"
+    echo "       - Commit SHA: abc123f"
+    echo "       - File hash: sha256:..."
+    echo ""
+    echo "  禁止："
+    echo "    ❌ \"测试通过\""
+    echo "    ❌ \"功能正常\""
+    echo "    ❌ \"手动验证无问题\""
     exit 1
+  fi
+
+  # P1-1 增强: 验证截图文件存在且非空
+  SCREENSHOT_REFS=$(grep -oP 'docs/evidence/[^)\s]+\.(png|jpg|jpeg|gif)' "$EVIDENCE_FILE" || echo "")
+  if [[ -n "$SCREENSHOT_REFS" ]]; then
+    echo "  [验证截图文件]"
+    MISSING_SCREENSHOTS=()
+    EMPTY_SCREENSHOTS=()
+
+    while IFS= read -r file; do
+      if [[ ! -f "$file" ]]; then
+        MISSING_SCREENSHOTS+=("$file")
+      elif [[ ! -s "$file" ]]; then
+        EMPTY_SCREENSHOTS+=("$file")
+      fi
+    done <<< "$SCREENSHOT_REFS"
+
+    if [[ ${#MISSING_SCREENSHOTS[@]} -gt 0 ]]; then
+      echo "  ❌ 引用的截图文件不存在:"
+      for file in "${MISSING_SCREENSHOTS[@]}"; do
+        echo "     - $file"
+      done
+      exit 1
+    fi
+
+    if [[ ${#EMPTY_SCREENSHOTS[@]} -gt 0 ]]; then
+      echo "  ❌ 引用的截图文件为空:"
+      for file in "${EMPTY_SCREENSHOTS[@]}"; do
+        echo "     - $file"
+      done
+      exit 1
+    fi
+
+    echo "  ✅ 所有截图文件存在且非空 ($(echo "$SCREENSHOT_REFS" | wc -l) files)"
   fi
 
   # P1: 验证 commit SHA 真实性（如果存在）

@@ -1,3 +1,32 @@
+## [12.3.0] - 2026-02-03
+
+### Fixed (P1)
+
+- **L2A/L2B 结构验证强化**: 增强 PRD/DoD/Evidence 结构检查，防止空内容或低质量产物通过
+  - PRD 必须≥3 sections，每个 section ≥2 行内容
+  - DoD 必须≥3 验收项，每项必须有 Test 映射
+  - Evidence 必须包含可复现命令或机器引用，拒绝纯文字描述
+- **RCI 覆盖率精确匹配**: 移除 name.includes() 误判逻辑，只使用路径精确匹配、目录匹配、glob 匹配
+
+### Security
+
+- 防止低质量产物绕过检查
+- 消除 RCI 覆盖率误报
+- 将 CI 质量检查从 95% 提升到 98%
+
+### Added
+
+- 新脚本: scripts/devgate/l2a-check.sh（P1-1 L2A 结构验证）
+- 增强: scripts/devgate/l2b-check.sh（P1-1 可复现性验证）
+- 修复: scripts/devgate/scan-rci-coverage.cjs（P1-2 精确匹配）
+
+### Regression Contract
+
+- 新增 C12-001: L2A PRD 结构验证（≥3 sections, ≥2 lines each）
+- 新增 C12-002: L2A DoD 结构验证（≥3 items, Test 映射）
+- 新增 C12-003: L2B Evidence 可复现性验证（命令/机器引用）
+- 新增 C13-001: RCI 覆盖率精确匹配（路径/目录/glob）
+
 ## [12.2.0] - 2026-02-03
 
 ### Fixed (P2)

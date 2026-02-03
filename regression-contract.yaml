@@ -18,7 +18,7 @@
 
 # NOTE: version 需要与 package.json 保持同步
 # 更新 package.json 时同步更新此处
-version: "12.2.0"
+version: "12.3.0"
 updated: "2026-02-03"
 
 # ============================================================================
@@ -1690,6 +1690,92 @@ ci:
       file: "scripts/devgate/l2b-check.sh"
       contains: "Evidence Metadata 验证"
     test: "tests/devgate/l2b-check.test.ts"
+
+  # --------------------------------------------------------------------------
+  # C12: L2A Structure Validation (v12.3.0 P1-1)
+  # --------------------------------------------------------------------------
+  - id: C12-001
+    feature: C12
+    name: "L2A PRD 结构验证"
+    scope: ci
+    priority: P1
+    trigger: [PR, Release]
+    method: auto
+    tags: [ci, l2a, prd, structure, v12.3.0]
+    owner: infra
+    steps:
+      given: "PRD 文件存在"
+      when: "l2a-check.sh 验证 PRD 结构"
+      then: "必须≥3 sections，每个 section ≥2 行内容"
+    note: "v12.3.0 P1-1: 防止空内容或低质量 PRD 通过检查"
+    evidence:
+      type: code
+      file: "scripts/devgate/l2a-check.sh"
+      contains: "PRD 结构检查"
+    test: "tests/devgate/l2a-check.test.ts"
+
+  - id: C12-002
+    feature: C12
+    name: "L2A DoD 结构验证"
+    scope: ci
+    priority: P1
+    trigger: [PR, Release]
+    method: auto
+    tags: [ci, l2a, dod, structure, v12.3.0]
+    owner: infra
+    steps:
+      given: "DoD 文件存在"
+      when: "l2a-check.sh 验证 DoD 结构"
+      then: "必须≥3 验收项，每项必须有 Test 映射"
+    note: "v12.3.0 P1-1: 确保 DoD 可验收性"
+    evidence:
+      type: code
+      file: "scripts/devgate/l2a-check.sh"
+      contains: "DoD 结构检查"
+    test: "tests/devgate/l2a-check.test.ts"
+
+  - id: C12-003
+    feature: C12
+    name: "L2B Evidence 可复现性验证"
+    scope: ci
+    priority: P1
+    trigger: [PR, Release]
+    method: auto
+    tags: [ci, l2b, evidence, reproducibility, v12.3.0]
+    owner: infra
+    steps:
+      given: "Evidence 文件存在"
+      when: "l2b-check.sh 验证可复现性"
+      then: "必须包含可复现命令或机器引用，拒绝纯文字"
+    note: "v12.3.0 P1-1: 防止纯文字描述绕过 Evidence 检查"
+    evidence:
+      type: code
+      file: "scripts/devgate/l2b-check.sh"
+      contains: "P1-1: 可复现性验证"
+    test: "tests/devgate/l2b-check.test.ts"
+
+  # --------------------------------------------------------------------------
+  # C13: RCI Coverage Precise Matching (v12.3.0 P1-2)
+  # --------------------------------------------------------------------------
+  - id: C13-001
+    feature: C13
+    name: "RCI 覆盖率精确匹配"
+    scope: ci
+    priority: P1
+    trigger: [PR, Release]
+    method: auto
+    tags: [ci, rci, coverage, matching, v12.3.0]
+    owner: infra
+    steps:
+      given: "RCI 覆盖率扫描"
+      when: "scan-rci-coverage.cjs 检查覆盖"
+      then: "只使用路径精确匹配/目录匹配/glob，不使用 name.includes"
+    note: "v12.3.0 P1-2: 消除 name.includes() 误判，提高覆盖率准确性"
+    evidence:
+      type: code
+      file: "scripts/devgate/scan-rci-coverage.cjs"
+      contains: "P1-2: 移除了 name.includes 误判逻辑"
+    test: "tests/ci/scan-rci-coverage.test.ts"
 
 # ============================================================================
 # Export 回归契约
