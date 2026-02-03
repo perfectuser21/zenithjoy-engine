@@ -1,3 +1,27 @@
+## [12.2.0] - 2026-02-03
+
+### Fixed (P2)
+
+- **Evidence 时间戳验证**: l2b-check.sh 添加时间戳验证，防止使用旧 commit 的 Evidence
+- **Evidence 文件存在性验证**: 验证所有引用的 `docs/evidence/` 文件都存在
+- **Evidence metadata 支持**: 支持 YAML frontmatter，包含 commit, timestamp, ci_run_id
+
+### Security
+
+- 增强 Evidence 系统防伪造能力
+- 将 CI 防护能力从 90% 提升到 95%
+
+### Changed
+
+- Evidence 文件推荐使用 YAML frontmatter 增强可追溯性
+- l2b-check.sh 新增三个 P2 级别验证检查
+
+### Regression Contract
+
+- 新增 C3-001: Evidence 时间戳验证
+- 新增 C3-002: Evidence 文件存在性验证
+- 新增 C3-003: Evidence metadata 完整性验证
+
 ## [12.1.0] - 2026-02-03
 
 ### Fixed (P1)

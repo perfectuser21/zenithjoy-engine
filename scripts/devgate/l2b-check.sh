@@ -117,6 +117,91 @@ if [[ "$MODE" == "pr" ]]; then
   echo "✅ L2B-min 检查通过 (command=$HAS_COMMAND, machine_ref=$HAS_MACHINE_REF)"
 fi
 
+# P2: Evidence 时间戳验证
+echo ""
+echo "  [P2: Evidence 时间戳验证]"
+if [[ -f "$EVIDENCE_FILE" ]]; then
+  EVIDENCE_MTIME=$(stat -c %Y "$EVIDENCE_FILE" 2>/dev/null || stat -f %m "$EVIDENCE_FILE" 2>/dev/null || echo "0")
+  COMMIT_TIME=$(git show -s --format=%ct HEAD 2>/dev/null || echo "0")
+
+  if [[ "$EVIDENCE_MTIME" -gt 0 && "$COMMIT_TIME" -gt 0 ]]; then
+    # Evidence 必须在 commit 之后生成（允许5分钟=300秒误差）
+    if [[ $EVIDENCE_MTIME -lt $((COMMIT_TIME - 300)) ]]; then
+      echo "  ❌ Evidence 时间戳过旧，可能是伪造"
+      echo "     Evidence mtime: $(date -d @$EVIDENCE_MTIME 2>/dev/null || date -r $EVIDENCE_MTIME 2>/dev/null)"
+      echo "     Commit time:    $(date -d @$COMMIT_TIME 2>/dev/null || date -r $COMMIT_TIME 2>/dev/null)"
+      echo "     这可能是复用旧 commit 的证据"
+      exit 1
+    fi
+    echo "  ✅ Evidence 时间戳有效"
+  else
+    echo "  ⚠️  无法获取时间戳，跳过验证"
+  fi
+fi
+
+# P2: Evidence 文件存在性验证
+echo ""
+echo "  [P2: Evidence 文件存在性验证]"
+EVIDENCE_FILES=$(grep -oP 'docs/evidence/[^)\s]+' "$EVIDENCE_FILE" 2>/dev/null || echo "")
+if [[ -n "$EVIDENCE_FILES" ]]; then
+  MISSING_FILES=()
+  while IFS= read -r file; do
+    if [[ -n "$file" && ! -f "$file" ]]; then
+      MISSING_FILES+=("$file")
+    fi
+  done <<< "$EVIDENCE_FILES"
+
+  if [[ ${#MISSING_FILES[@]} -gt 0 ]]; then
+    echo "  ❌ Evidence 引用的文件不存在:"
+    for file in "${MISSING_FILES[@]}"; do
+      echo "     - $file"
+    done
+    exit 1
+  fi
+  echo "  ✅ 所有引用的 evidence 文件都存在 ($(echo "$EVIDENCE_FILES" | wc -l) files)"
+else
+  echo "  ℹ️  无 docs/evidence/ 文件引用"
+fi
+
+# P2: Evidence Metadata 验证
+echo ""
+echo "  [P2: Evidence Metadata 验证]"
+if head -n 10 "$EVIDENCE_FILE" | grep -q '^---$'; then
+  echo "  ℹ️  检测到 YAML frontmatter"
+
+  # 提取 frontmatter（第一个 --- 到第二个 ---）
+  FRONTMATTER=$(awk '/^---$/{if(++n==2)exit;next}n==1' "$EVIDENCE_FILE")
+
+  # 检查必填字段
+  REQUIRED_FIELDS=("commit" "timestamp")
+  MISSING_FIELDS=()
+
+  for field in "${REQUIRED_FIELDS[@]}"; do
+    if ! echo "$FRONTMATTER" | grep -qE "^${field}:"; then
+      MISSING_FIELDS+=("$field")
+    fi
+  done
+
+  if [[ ${#MISSING_FIELDS[@]} -gt 0 ]]; then
+    echo "  ❌ Evidence metadata 缺少必填字段:"
+    for field in "${MISSING_FIELDS[@]}"; do
+      echo "     - $field"
+    done
+    echo ""
+    echo "  提示: 在 Evidence 文件开头添加 YAML frontmatter:"
+    echo "  ---"
+    echo "  commit: \$(git rev-parse HEAD)"
+    echo "  timestamp: \$(date -u +%Y-%m-%dT%H:%M:%S+00:00)"
+    echo "  ci_run_id: \${{ github.run_id }}  # 可选，CI 中自动注入"
+    echo "  ---"
+    exit 1
+  fi
+
+  echo "  ✅ Evidence metadata 完整"
+else
+  echo "  ⚠️  无 YAML frontmatter（推荐添加以增强可追溯性）"
+fi
+
 # L2B-full: 完整证据 + DoD 全勾
 if [[ "$MODE" == "release" ]]; then
   # 检查 DoD 引用
