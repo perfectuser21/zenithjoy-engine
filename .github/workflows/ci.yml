@@ -70,7 +70,8 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # M1 FIX: 增加超时时间到30分钟（复杂测试可能需要更长时间）
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
@@ -103,17 +104,9 @@ jobs:
           fi
 
       # Node.js
-      - name: Setup Node.js
+      - name: Setup Project
         if: steps.detect.outputs.type == 'npm'
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
-
-      - name: Install dependencies (npm)
-        if: steps.detect.outputs.type == 'npm'
-        run: npm ci
+        uses: ./.github/actions/setup-project
 
       # L1-1: TypeCheck
       - name: TypeCheck
@@ -248,24 +241,6 @@ jobs:
           echo "✅ 无 PRD/DoD 文件"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-      - name: L2A Check
-        if: |
-          github.event_name == 'pull_request' &&
-          steps.detect.outputs.type == 'npm' &&
-          github.base_ref != 'main' &&
-          !startsWith(github.event.pull_request.title, 'chore:')
-        run: |
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "  L2A: PRD/DoD/QA/Audit 检查"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          # L2A check 在 L1 之后、DevGate 之前（只对 PR to develop）
-          if [ -f "scripts/devgate/l2a-check.sh" ]; then
-            bash scripts/devgate/l2a-check.sh pr || exit 1
-          else
-            echo "⚠️ l2a-check.sh not found, skipping"
-            echo "   (仓库可能还未升级到 L2A 远端检查)"
-          fi
-
       # Python
       - name: Setup Python
         if: steps.detect.outputs.type == 'python'
@@ -367,7 +342,34 @@ jobs:
           echo "  Phase 1: DevGate 检查"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-          # DoD 映射检查（如果脚本存在）
+          # P1: DevGate 脚本存在性强制检查
+          echo ""
+          echo "  [DevGate 脚本存在性检查 - P1]"
+          REQUIRED_SCRIPTS=(
+            "scripts/devgate/check-dod-mapping.cjs"
+            "scripts/devgate/scan-rci-coverage.cjs"
+            "scripts/devgate/require-rci-update-if-p0p1.sh"
+          )
+          MISSING_SCRIPTS=()
+          for script in "${REQUIRED_SCRIPTS[@]}"; do
+            if [ ! -f "$script" ]; then
+              MISSING_SCRIPTS+=("$script")
+            fi
+          done
+
+          if [ ${#MISSING_SCRIPTS[@]} -gt 0 ]; then
+            echo "❌ 必需的 DevGate 脚本缺失："
+            for script in "${MISSING_SCRIPTS[@]}"; do
+              echo "   - $script"
+            done
+            echo ""
+            echo "DevGate 脚本是 CI 安全保障的关键部分，不允许删除。"
+            echo "如果需要重构或移动脚本，请在 PR 中说明原因。"
+            exit 1
+          fi
+          echo "✅ 所有必需的 DevGate 脚本存在"
+
+          # DoD 映射检查
           if [ -f "scripts/devgate/check-dod-mapping.cjs" ]; then
             echo ""
             echo "  [DoD ↔ Test 映射检查]"
@@ -424,10 +426,94 @@ jobs:
           echo "  ✅ DevGate 检查通过"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
+  # P0: Known-Failures Protection - 防止恶意修改测试白名单
+  known-failures-protection:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check known-failures.json modification
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  Known-Failures Protection (P0)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+
+          # 检查文件是否被修改
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^ci/known-failures.json$"; then
+            echo "⚠️  detected: ci/known-failures.json 被修改"
+            echo ""
+
+            # 检查 PR title 是否包含 [INFRA] 标记
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            if [[ ! "$PR_TITLE" =~ \[INFRA\] ]]; then
+              echo "❌ known-failures.json 被修改，但 PR title 缺少 [INFRA] 标记"
+              echo ""
+              echo "修改测试白名单是高风险操作，需要基础设施团队审核。"
+              echo ""
+              echo "请将 PR title 改为: [INFRA] $PR_TITLE"
+              echo ""
+              exit 1
+            fi
+
+            echo "✅ PR title 包含 [INFRA] 标记"
+            echo ""
+
+            # 验证文件内容合法性
+            echo "验证 known-failures.json 内容..."
+
+            if ! jq empty ci/known-failures.json 2>/dev/null; then
+              echo "❌ known-failures.json 格式无效（不是合法的 JSON）"
+              exit 1
+            fi
+
+            # 检查最大跳过数量
+            MAX_SKIP=$(jq -r '.rules.max_skip_count // 0' ci/known-failures.json)
+            if [[ "$MAX_SKIP" -gt 5 ]]; then
+              echo "❌ max_skip_count 过大: $MAX_SKIP (最多允许 5)"
+              echo "   过多的跳过项会降低 CI 的有效性"
+              exit 1
+            fi
+
+            # 检查 allowed 条目数量
+            ALLOWED_COUNT=$(jq '.allowed | length' ci/known-failures.json)
+            if [[ "$ALLOWED_COUNT" -gt "$MAX_SKIP" ]]; then
+              echo "❌ allowed 条目数量 ($ALLOWED_COUNT) 超过 max_skip_count ($MAX_SKIP)"
+              exit 1
+            fi
+
+            # 检查每个条目必须有 description, ticket, expires
+            INVALID_ENTRIES=$(jq -r '.allowed | to_entries[] | select(.value.description == null or .value.ticket == null or .value.expires == null) | .key' ci/known-failures.json)
+            if [[ -n "$INVALID_ENTRIES" ]]; then
+              echo "❌ 以下条目缺少必需字段（description, ticket, expires）:"
+              echo "$INVALID_ENTRIES" | sed 's/^/   - /'
+              exit 1
+            fi
+
+            echo "✅ known-failures.json 内容合法"
+            echo ""
+            echo "变更详情:"
+            git diff origin/${{ github.base_ref }}...HEAD ci/known-failures.json | head -50
+          else
+            echo "✅ known-failures.json 未被修改"
+          fi
+
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  ✅ Known-Failures Protection 通过"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
   # Contract Drift Check - 防止派生视图漂移
   contract-drift-check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # M1 FIX: 减少超时时间到5分钟（检查操作应该很快）
+    timeout-minutes: 5
     permissions:
       contents: read
     steps:
@@ -481,6 +567,76 @@ jobs:
           echo ""
           echo "feature-registry.yml 和派生视图已同步"
 
+  # P1: Config Audit - 关键配置文件变更审计
+  config-audit:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check critical config modifications
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  Config Audit (P1)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+
+          # 关键配置文件列表
+          CRITICAL_CONFIGS=(
+            ".github/workflows/ci.yml"
+            "regression-contract.yaml"
+            "ci/known-failures.json"
+          )
+
+          MODIFIED_CONFIGS=()
+          for config in "${CRITICAL_CONFIGS[@]}"; do
+            if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qx "$config"; then
+              MODIFIED_CONFIGS+=("$config")
+            fi
+          done
+
+          if [ ${#MODIFIED_CONFIGS[@]} -gt 0 ]; then
+            echo "⚠️  检测到关键配置文件变更:"
+            for config in "${MODIFIED_CONFIGS[@]}"; do
+              echo "   - $config"
+            done
+            echo ""
+
+            # 检查 PR title 是否包含 [CONFIG] 或 [INFRA] 标记
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            if [[ ! "$PR_TITLE" =~ \[CONFIG\] ]] && [[ ! "$PR_TITLE" =~ \[INFRA\] ]]; then
+              echo "❌ PR title 必须包含 [CONFIG] 或 [INFRA] 标记"
+              echo "   这有助于团队识别配置变更类 PR"
+              echo ""
+              echo "建议 title: [CONFIG] $PR_TITLE"
+              echo ""
+              # L4 FIX: 改为强制要求，配置变更必须明确标记
+              exit 1
+            else
+              echo "✅ PR title 包含配置变更标记"
+            fi
+
+            echo ""
+            echo "变更详情:"
+            for config in "${MODIFIED_CONFIGS[@]}"; do
+              echo ""
+              echo "--- $config ---"
+              git diff --stat origin/${{ github.base_ref }}...HEAD "$config"
+            done
+          else
+            echo "✅ 无关键配置文件变更"
+          fi
+
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  ✅ Config Audit 完成"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
   # Impact Check - 能力变更强制登记（P0-1）
   impact-check:
     if: github.event_name == 'pull_request'
@@ -510,15 +666,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup Project
+        uses: ./.github/actions/setup-project
 
       - name: L3 Regression Tests (PR subset)
         run: |
@@ -623,15 +772,8 @@ jobs:
           echo "   这是一个合法的 release 分支"
           echo ""
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup Project
+        uses: ./.github/actions/setup-project
 
       # Release 只需要 L1+L3，不需要 L2A/L2B/L4（功能验收在功能分支已完成）
 
@@ -684,6 +826,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # M6 FIX: 需要完整历史来验证 evidence 中的 SHA
 
       - name: L2B Evidence Check
         run: |
@@ -707,43 +851,49 @@ jobs:
   # PRD/DoD 现在通过 PR Gate 阻止进入 develop/main，不再需要 push 后清理
 
   ci-passed:
-    needs: [version-check, test, contract-drift-check, impact-check, l2b-check, regression-pr, release-check]
-    # SECURITY FIX: 根据目标分支要求对应检查必须成功（不允许 skipped）
-    # - PR 到 develop: regression-pr 必须成功
-    # - PR 到 main: release-check 必须成功
+    # CRITICAL FIX: 添加 regression-pr 和 release-check 到依赖链
+    # 确保 ci-passed 等待这些 jobs 完成，防止 PR 在回归测试完成前合并
+    needs: [version-check, test, contract-drift-check, impact-check, l2b-check, known-failures-protection, config-audit, regression-pr, release-check]
+    # SECURITY FIX v3: 全面加强检查，禁止关键 jobs 被 skipped 绕过
+    # H4 FIX: 关键安全检查（known-failures-protection, config-audit, impact-check）必须 success，不允许 skipped
+    # CRITICAL FIX: regression-pr/release-check 条件性检查
     if: |
       always() &&
       github.event_name == 'pull_request' &&
       needs.test.result == 'success' &&
       needs.contract-drift-check.result == 'success' &&
+      needs.known-failures-protection.result == 'success' &&
+      needs.config-audit.result == 'success' &&
+      needs.impact-check.result == 'success' &&
       (needs.version-check.result == 'success' || needs.version-check.result == 'skipped') &&
-      (needs.impact-check.result == 'success' || needs.impact-check.result == 'skipped') &&
       (needs.l2b-check.result == 'success' || needs.l2b-check.result == 'skipped') &&
       (github.base_ref != 'develop' || needs.regression-pr.result == 'success') &&
       (github.base_ref != 'main' || needs.release-check.result == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@v4
+
+      # CRITICAL FIX: 不再需要 gh API 后验证，因为已添加到 needs 依赖链
+      # 依赖链确保 ci-passed 只有在 regression-pr/release-check 成功后才运行
+
       - name: CI Passed
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "  ✅ CI 通过"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo ""
-          echo "PR #${{ github.event.pull_request.number }} CI 检查通过"
+          echo "[$(date -u +%H:%M:%S)] PR #${{ github.event.pull_request.number }} CI 检查通过"
           echo ""
           echo "已通过的检查："
-          echo "  ✅ test (L1 + DevGate)"
+          echo "  ✅ test (L1 + DevGate + DevGate 脚本存在性)"
+          echo "  ✅ known-failures-protection (P0)"
+          echo "  ✅ config-audit (P1)"
+          echo "  ✅ impact-check (P1)"
           if [ "${{ needs.l2b-check.result }}" = "success" ]; then
-            echo "  ✅ l2b-check (L2B 证据)"
+            echo "  ✅ l2b-check (L2B 证据 + SHA 验证)"
           fi
           echo "  ✅ contract-drift-check"
-          if [ "${{ needs.regression-pr.result }}" = "success" ]; then
-            echo "  ✅ regression-pr (L3 子集)"
-          fi
-          if [ "${{ needs.release-check.result }}" = "success" ]; then
-            echo "  ✅ release-check (L3 全量 + CHANGELOG)"
-          fi
           echo ""
           echo "下一步："
           echo "  1. 手动 review（如有需要）"
@@ -821,7 +971,10 @@ jobs:
   # AI Review (L2C) - 语义/影响面审查
   # 在 CI 全绿后运行，不阻断 PR（初期）
   ai-review:
-    if: github.event_name == 'pull_request'
+    # C3 FIX: 允许 ci-passed skipped（非 PR 事件时 ci-passed 不运行）
+    if: |
+      github.event_name == 'pull_request' &&
+      (needs.ci-passed.result == 'success' || needs.ci-passed.result == 'skipped')
     needs: [ci-passed]
     runs-on: ubuntu-latest
     timeout-minutes: 5

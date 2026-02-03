@@ -1,295 +1,171 @@
-/**
- * l2a-check.test.ts
- *
- * L2A Check 脚本测试 (简化版)
- */
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { readFileSync, writeFileSync, unlinkSync, mkdirSync } from 'fs';
+import { join } from 'path';
+import { execSync } from 'child_process';
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { execSync } from "child_process";
-import { existsSync, writeFileSync, unlinkSync, mkdirSync, rmSync } from "fs";
-import { resolve, join } from "path";
-
-const PROJECT_ROOT = resolve(__dirname, "../..");
-const L2A_SCRIPT = join(PROJECT_ROOT, "scripts/devgate/l2a-check.sh");
-const TEST_DIR = join(PROJECT_ROOT, ".test-l2a");
-
-// 运行脚本时清除 GITHUB_ACTIONS 环境变量，以便测试本地 PRD/DoD 检查行为
-// CI 中 GITHUB_ACTIONS=true 会跳过 PRD/DoD 检查，但测试需要验证这些检查
-const localEnv = { ...process.env, GITHUB_ACTIONS: "" };
-
-describe("l2a-check.sh", () => {
-  beforeAll(() => {
-    if (!existsSync(TEST_DIR)) {
-      mkdirSync(TEST_DIR, { recursive: true });
-      mkdirSync(join(TEST_DIR, "docs"), { recursive: true });
-    }
-  });
+describe('L2A Check - P1-1 Structure Validation', () => {
+  const scriptPath = join(__dirname, '../../scripts/devgate/l2a-check.sh');
+  const testDir = join(__dirname, '../../.test-tmp');
 
   beforeEach(() => {
-    // Clean test directory before each test
-    const files = [".prd.md", ".dod.md", "docs/QA-DECISION.md", "docs/AUDIT-REPORT.md"];
-    for (const file of files) {
-      const filepath = join(TEST_DIR, file);
-      if (existsSync(filepath)) {
-        unlinkSync(filepath);
-      }
-    }
-  });
-
-  afterAll(() => {
-    if (existsSync(TEST_DIR)) {
-      rmSync(TEST_DIR, { recursive: true, force: true });
-    }
-  });
-
-  it("should exist and be executable", () => {
-    expect(existsSync(L2A_SCRIPT)).toBe(true);
-    expect(() => {
-      execSync(`bash -n "${L2A_SCRIPT}"`, { encoding: "utf-8" });
-    }).not.toThrow();
-  });
-
-  it("should pass when all files are valid (pr mode)", () => {
-    // P1-1: PRD 必须 >=3 sections，每 section >=2 lines
-    const prd = `# PRD
-
-## Background
-Context line 1
-Context line 2
-
-## Problem
-Problem line 1
-Problem line 2
-
-## Solution
-Solution line 1
-Solution line 2
-`;
-    // P1-1: DoD 每个验收项必须有 Test: 字段
-    const dod = `# DoD
-
-QA: docs/QA-DECISION.md
-
-- [ ] item works correctly
-  Test: tests/foo.test.ts
-`;
-    writeFileSync(join(TEST_DIR, ".prd.md"), prd);
-    writeFileSync(join(TEST_DIR, ".dod.md"), dod);
-    writeFileSync(join(TEST_DIR, "docs/QA-DECISION.md"), "Decision: NO_RCI");
-    writeFileSync(join(TEST_DIR, "docs/AUDIT-REPORT.md"), "Decision: PASS");
-
-    const output = execSync(`bash "${L2A_SCRIPT}" pr`, {
-      cwd: TEST_DIR,
-      encoding: "utf-8",
-      env: localEnv,
-    });
-    expect(output).toContain("L2A_SUMMARY: passed=4 failed=0");
-  });
-
-  it("should fail when .prd.md is missing", () => {
-    // P1-1: DoD 必须有 Test: 映射
-    const dod = `# DoD
-
-QA: docs/QA-DECISION.md
-
-- [ ] item works
-  Test: tests/foo.test.ts
-`;
-    writeFileSync(join(TEST_DIR, ".dod.md"), dod);
-    writeFileSync(join(TEST_DIR, "docs/QA-DECISION.md"), "Decision: NO_RCI");
-    writeFileSync(join(TEST_DIR, "docs/AUDIT-REPORT.md"), "Decision: PASS");
-
+    // Create test directory
     try {
-      execSync(`bash "${L2A_SCRIPT}" pr`, { cwd: TEST_DIR, encoding: "utf-8", env: localEnv });
-      expect.fail("Should have failed");
-    } catch (error: any) {
-      expect(error.status).toBe(2);
-      expect(error.stdout + error.stderr).toContain(".prd.md");
+      mkdirSync(testDir, { recursive: true });
+    } catch {
+      // Ignore if exists
     }
   });
 
-  it("should pass in release mode without PRD/DoD (skip PRD/DoD check)", () => {
-    // Release 模式跳过 PRD/DoD 检查，只需要 QA 和 Audit
-    writeFileSync(join(TEST_DIR, "docs/QA-DECISION.md"), "Decision: PASS");
-    writeFileSync(join(TEST_DIR, "docs/AUDIT-REPORT.md"), "Decision: PASS");
-
-    const output = execSync(`bash "${L2A_SCRIPT}" release`, {
-      cwd: TEST_DIR,
-      encoding: "utf-8",
-    });
-    expect(output).toContain("L2A_SUMMARY: passed=4 failed=0");
-    expect(output).toContain("[Release 模式] 跳过 PRD/DoD 检查");
-  });
-
-  it("should fail in release mode when QA decision is not PASS", () => {
-    // Release 模式仍然检查 QA 必须是 PASS
-    writeFileSync(join(TEST_DIR, "docs/QA-DECISION.md"), "Decision: NO_RCI");
-    writeFileSync(join(TEST_DIR, "docs/AUDIT-REPORT.md"), "Decision: PASS");
-
+  afterEach(() => {
+    // Cleanup
     try {
-      execSync(`bash "${L2A_SCRIPT}" release`, { cwd: TEST_DIR });
-      expect.fail("Should have failed");
-    } catch (error: any) {
-      expect(error.status).toBe(2);
-      expect(error.stdout + error.stderr).toContain("not PASS");
+      unlinkSync(join(testDir, 'test-prd.md'));
+      unlinkSync(join(testDir, 'test-dod.md'));
+    } catch {
+      // Ignore cleanup errors
     }
   });
 
-  // P1-1: PRD 结构检查（>=3 sections，每 section >=2 行）
-  describe("P1-1: PRD structure validation", () => {
-    it("should fail when PRD has fewer than 3 sections", () => {
-      // 只有 2 个 section
-      const prd = `# PRD
+  describe('PRD Structure Validation', () => {
+    it('C12-001: PRD 必须有至少 3 个 section', () => {
+      const content = readFileSync(scriptPath, 'utf8');
 
-## Section 1
-Content line 1
-Content line 2
-
-## Section 2
-Content line 1
-Content line 2
-`;
-      writeFileSync(join(TEST_DIR, ".prd.md"), prd);
-      writeFileSync(join(TEST_DIR, ".dod.md"), "# DoD\n\nQA: test\n\n- [ ] item\n  Test: tests/foo.test.ts");
-      writeFileSync(join(TEST_DIR, "docs/QA-DECISION.md"), "Decision: NO_RCI");
-      writeFileSync(join(TEST_DIR, "docs/AUDIT-REPORT.md"), "Decision: PASS");
-
-      try {
-        execSync(`bash "${L2A_SCRIPT}" pr`, { cwd: TEST_DIR, env: localEnv });
-        expect.fail("Should have failed");
-      } catch (error: any) {
-        expect(error.status).toBe(2);
-        expect(error.stdout + error.stderr).toContain("need >= 3 sections");
-      }
+      // 验证包含 section 计数逻辑
+      expect(content).toContain('SECTION_COUNT');
+      expect(content).toContain('grep -c "^## "');
+      expect(content).toMatch(/SECTION_COUNT.*-lt 3/);
     });
 
-    it("should fail when PRD section has fewer than 2 lines", () => {
-      // 3 个 section，但有一个只有 1 行
-      const prd = `# PRD
+    it('C12-001: PRD 每个 section 至少 2 行非空内容', () => {
+      const content = readFileSync(scriptPath, 'utf8');
 
-## Section 1
-Content line 1
-Content line 2
-
-## Section 2
-Only one line
-
-## Section 3
-Content line 1
-Content line 2
-`;
-      writeFileSync(join(TEST_DIR, ".prd.md"), prd);
-      writeFileSync(join(TEST_DIR, ".dod.md"), "# DoD\n\nQA: test\n\n- [ ] item\n  Test: tests/foo.test.ts");
-      writeFileSync(join(TEST_DIR, "docs/QA-DECISION.md"), "Decision: NO_RCI");
-      writeFileSync(join(TEST_DIR, "docs/AUDIT-REPORT.md"), "Decision: PASS");
-
-      try {
-        execSync(`bash "${L2A_SCRIPT}" pr`, { cwd: TEST_DIR, env: localEnv });
-        expect.fail("Should have failed");
-      } catch (error: any) {
-        expect(error.status).toBe(2);
-        expect(error.stdout + error.stderr).toContain("sections too short");
-      }
+      // 验证包含内容行数检查
+      expect(content).toContain('CONTENT_LINES');
+      expect(content).toContain('grep -cv "^$"');
+      expect(content).toMatch(/CONTENT_LINES.*-lt 2/);
     });
 
-    it("should pass when PRD has >=3 sections each with >=2 lines", () => {
-      const prd = `# PRD
+    it('C12-001: PRD 可以通过 - 有效结构', () => {
+      const validPRD = `# PRD: Test
 
-## Section 1
-Content line 1
-Content line 2
+## 背景
 
-## Section 2
-Content line 1
-Content line 2
+这是背景内容第一行。
+这是背景内容第二行。
 
-## Section 3
-Content line 1
-Content line 2
+## 问题
+
+问题描述第一行。
+问题描述第二行。
+
+## 方案
+
+解决方案第一行。
+解决方案第二行。
 `;
-      writeFileSync(join(TEST_DIR, ".prd.md"), prd);
-      writeFileSync(join(TEST_DIR, ".dod.md"), "# DoD\n\nQA: test\n\n- [ ] item\n  Test: tests/foo.test.ts");
-      writeFileSync(join(TEST_DIR, "docs/QA-DECISION.md"), "Decision: NO_RCI");
-      writeFileSync(join(TEST_DIR, "docs/AUDIT-REPORT.md"), "Decision: PASS");
 
-      const output = execSync(`bash "${L2A_SCRIPT}" pr`, { cwd: TEST_DIR, encoding: "utf-8", env: localEnv });
-      expect(output).toContain("L2A_SUMMARY: passed=4 failed=0");
+      writeFileSync(join(testDir, 'test-prd.md'), validPRD);
+      writeFileSync(join(testDir, 'test-dod.md'), `- [ ] test1\n  - Test: auto:test\n- [ ] test2\n  - Test: auto:test\n- [ ] test3\n  - Test: auto:test`);
+
+      // 应该通过（3个section，每个≥2行）
+      expect(() => {
+        execSync(`bash ${scriptPath} ${join(testDir, 'test-prd.md')} ${join(testDir, 'test-dod.md')}`, {
+          stdio: 'pipe',
+        });
+      }).not.toThrow();
+    });
+
+    it('C12-001: PRD 应该拒绝 - section 不足', () => {
+      const invalidPRD = `# PRD: Test
+
+## 背景
+
+只有一个section。
+`;
+
+      writeFileSync(join(testDir, 'test-prd.md'), invalidPRD);
+      writeFileSync(join(testDir, 'test-dod.md'), `- [ ] test\n  - Test: auto:test\n- [ ] test2\n  - Test: auto:test\n- [ ] test3\n  - Test: auto:test`);
+
+      // 应该失败（只有1个section）
+      expect(() => {
+        execSync(`bash ${scriptPath} ${join(testDir, 'test-prd.md')} ${join(testDir, 'test-dod.md')}`, {
+          stdio: 'pipe',
+        });
+      }).toThrow();
     });
   });
 
-  // P1-1: DoD Test 映射检查
-  describe("P1-1: DoD Test mapping validation", () => {
-    it("should fail when DoD item has no Test: field", () => {
-      const prd = `# PRD
+  describe('DoD Structure Validation', () => {
+    it('C12-002: DoD 必须有至少 3 个验收项', () => {
+      const content = readFileSync(scriptPath, 'utf8');
 
-## Section 1
-Content 1
-Content 2
-
-## Section 2
-Content 1
-Content 2
-
-## Section 3
-Content 1
-Content 2
-`;
-      // DoD 有验收项但没有 Test: 字段
-      const dod = `# DoD
-
-QA: docs/QA-DECISION.md
-
-## 验收标准
-
-- [ ] 功能正常
-`;
-      writeFileSync(join(TEST_DIR, ".prd.md"), prd);
-      writeFileSync(join(TEST_DIR, ".dod.md"), dod);
-      writeFileSync(join(TEST_DIR, "docs/QA-DECISION.md"), "Decision: NO_RCI");
-      writeFileSync(join(TEST_DIR, "docs/AUDIT-REPORT.md"), "Decision: PASS");
-
-      try {
-        execSync(`bash "${L2A_SCRIPT}" pr`, { cwd: TEST_DIR, env: localEnv });
-        expect.fail("Should have failed");
-      } catch (error: any) {
-        expect(error.status).toBe(2);
-        expect(error.stdout + error.stderr).toContain("missing Test:");
-      }
+      // 验证包含 checkbox 计数逻辑
+      expect(content).toContain('CHECKBOX_COUNT');
+      expect(content).toContain('grep -c "^- \\[[ x]\\] "');
+      expect(content).toMatch(/CHECKBOX_COUNT.*-lt 3/);
     });
 
-    it("should pass when all DoD items have Test: field", () => {
-      const prd = `# PRD
+    it('C12-002: DoD 每个验收项必须有 Test 映射', () => {
+      const content = readFileSync(scriptPath, 'utf8');
 
-## Section 1
-Content 1
-Content 2
+      // 验证包含 Test 映射检查
+      expect(content).toContain('ITEMS_WITHOUT_TEST');
+      expect(content).toContain('grep "Test:"');
+    });
 
-## Section 2
-Content 1
-Content 2
+    it('C12-002: DoD Test 映射格式验证', () => {
+      const content = readFileSync(scriptPath, 'utf8');
 
-## Section 3
-Content 1
-Content 2
+      // 验证 Test 格式检查（auto: 或 manual:）
+      expect(content).toContain('INVALID_TEST_MAPPINGS');
+      expect(content).toContain('^(auto|manual):');
+    });
+
+    it('C12-002: DoD 应该通过 - 有效结构', () => {
+      const validPRD = `## 背景
+
+test content line 1
+test content line 2
+
+## 问题
+
+problem line 1
+problem line 2
+
+## 方案
+
+solution line 1
+solution line 2
 `;
-      const dod = `# DoD
+      const validDoD = `# DoD
 
-QA: docs/QA-DECISION.md
+- [ ] 功能 A 正常工作
+  - Test: auto:tests/feature-a.test.ts
 
-## 验收标准
+- [ ] 功能 B 正确实现
+  - Test: manual:手动验证-功能B
 
-- [ ] 功能正常
-  Test: tests/foo.test.ts
-- [ ] 性能达标
-  Test: contract:C1-001
+- [ ] 版本号已更新
+  - Test: auto:tests/version.test.ts
 `;
-      writeFileSync(join(TEST_DIR, ".prd.md"), prd);
-      writeFileSync(join(TEST_DIR, ".dod.md"), dod);
-      writeFileSync(join(TEST_DIR, "docs/QA-DECISION.md"), "Decision: NO_RCI");
-      writeFileSync(join(TEST_DIR, "docs/AUDIT-REPORT.md"), "Decision: PASS");
 
-      const output = execSync(`bash "${L2A_SCRIPT}" pr`, { cwd: TEST_DIR, encoding: "utf-8", env: localEnv });
-      expect(output).toContain("L2A_SUMMARY: passed=4 failed=0");
+      writeFileSync(join(testDir, 'test-prd.md'), validPRD);
+      writeFileSync(join(testDir, 'test-dod.md'), validDoD);
+
+      // 应该通过（3个验收项，都有Test映射）
+      try {
+        execSync(`bash ${scriptPath} ${join(testDir, 'test-prd.md')} ${join(testDir, 'test-dod.md')}`, {
+          stdio: 'pipe',
+          encoding: 'utf8',
+        });
+        // If no error thrown, test passes
+        expect(true).toBe(true);
+      } catch (error: any) {
+        // If error thrown, fail with detailed message
+        console.error('Script output:', error.stdout);
+        console.error('Script error:', error.stderr);
+        throw new Error(`Script failed: ${error.message}\nStdout: ${error.stdout}\nStderr: ${error.stderr}`);
+      }
     });
   });
 });

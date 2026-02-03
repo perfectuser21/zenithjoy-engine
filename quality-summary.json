@@ -1,18 +1,13 @@
 {
-  "branch": "cp-quality-gate-fix",
-  "head_sha": "1d4460314019611cbdfae0929baff53467b1fa05",
-  "timestamp": "2026-02-01T21:30:58+08:00",
+  "branch": "cp-ci-stress-test-fixes",
   "checks": {
-    "test": {"status": "pass", "duration": "manual"}
+    "typecheck": {"status": "pass"},
+    "test": {"status": "pass", "total": 395, "passed": 395, "skipped": 2},
+    "build": {"status": "pass"},
+    "shell": {"status": "pass"}
   },
   "gates": {
-    "prd": {"status": "pass", "file": ".gate-prd-passed"},
-    "dod": {"status": "pass", "file": ".gate-dod-passed"},
-    "audit": {"status": "pass", "file": "docs/AUDIT-REPORT.md"},
-    "test": {"status": "pass", "file": ".gate-test-passed"}
+    "quality": {"status": "pass"}
   },
-  "env": {
-    "node": "v20.20.0",
-    "platform": "Linux"
-  }
+  "timestamp": "2026-02-03T12:22:22Z"
 }
