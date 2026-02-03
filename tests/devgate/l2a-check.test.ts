@@ -139,11 +139,19 @@ describe('L2A Check - P1-1 Structure Validation', () => {
       writeFileSync(join(testDir, 'test-dod.md'), validDoD);
 
       // 应该通过（3个验收项，都有Test映射）
-      expect(() => {
+      try {
         execSync(`bash ${scriptPath} ${join(testDir, 'test-prd.md')} ${join(testDir, 'test-dod.md')}`, {
           stdio: 'pipe',
+          encoding: 'utf8',
         });
-      }).not.toThrow();
+        // If no error thrown, test passes
+        expect(true).toBe(true);
+      } catch (error: any) {
+        // If error thrown, fail with detailed message
+        console.error('Script output:', error.stdout);
+        console.error('Script error:', error.stderr);
+        throw new Error(`Script failed: ${error.message}\nStdout: ${error.stdout}\nStderr: ${error.stderr}`);
+      }
     });
   });
 });
