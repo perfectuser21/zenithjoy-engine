@@ -1,3 +1,13 @@
+## [12.4.8] - 2026-02-04
+
+### Changed
+
+- **低优先级审计清理**:
+  - `hooks/session-end.sh` 归档到 `hooks/.archive/`（未使用）
+  - `docs/STOP-HOOK-SPEC.md` 归档到 `docs/.archive/`（已废弃）
+  - `src/index.ts` 更新注释（移除 pr-gate-v2.sh 引用）
+  - `FEATURES.md` 版本更新到 1.16.0
+
 ## [12.4.7] - 2026-02-04
 
 ### Fixed
