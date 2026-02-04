@@ -1,3 +1,9 @@
+## [12.4.5] - 2026-02-04
+
+### Changed
+
+- **移除本地 pr-gate hook**: `pr-gate-v2.sh` 存在循环依赖问题（gate 文件 SHA 检查导致无限循环）。本地只保留 `branch-protect.sh`（检查 branch/PRD/DoD），质量检查完全交给 CI。
+
 ## [12.4.4] - 2026-02-04
 
 ### Fixed
