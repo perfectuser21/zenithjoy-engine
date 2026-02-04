@@ -295,43 +295,61 @@ if [[ "$CURRENT_BRANCH" =~ ^cp-[a-zA-Z0-9][-a-zA-Z0-9_]*$ ]] || \
         fi
     fi
 
-    # v17: 检查新旧两种格式的 PRD 文件
-    PRD_IN_BRANCH=$(clean_number "$(git log "$BASE_BRANCH"..HEAD --name-only 2>/dev/null | grep -cE "(^|/)$PRD_BASENAME$" || echo 0)")
-    PRD_STAGED=$(clean_number "$(git diff --cached --name-only 2>/dev/null | grep -cE "(^|/)$PRD_BASENAME$" || echo 0)")
-    PRD_MODIFIED=$(clean_number "$(git diff --name-only 2>/dev/null | grep -cE "(^|/)$PRD_BASENAME$" || echo 0)")
-    PRD_UNTRACKED=$(clean_number "$(git status --porcelain 2>/dev/null | grep -cE "^\?\? (.*\/)?$PRD_BASENAME$" || echo 0)")
-
-    if [[ "$PRD_IN_BRANCH" -eq 0 && "$PRD_STAGED" -eq 0 && "$PRD_MODIFIED" -eq 0 && "$PRD_UNTRACKED" -eq 0 ]]; then
-        echo "" >&2
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-        echo "  [ERROR] PRD 文件未更新 ($PRD_BASENAME)" >&2
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-        echo "" >&2
-        echo "当前分支: $CURRENT_BRANCH" >&2
-        echo "当前 PRD 是旧任务的，请为本次任务更新 PRD" >&2
-        echo "" >&2
-        echo "[SKILL_REQUIRED: dev]" >&2
-        exit 2
+    # v19: 检查 PRD/DoD 是否 gitignored（gitignored 文件无法通过 git 跟踪，跳过更新检查）
+    PRD_GITIGNORED=0
+    if git check-ignore -q "$PRD_FILE" 2>/dev/null; then
+        PRD_GITIGNORED=1
     fi
 
-    # v17: 检查新旧两种格式的 DoD 文件
-    DOD_IN_BRANCH=$(clean_number "$(git log "$BASE_BRANCH"..HEAD --name-only 2>/dev/null | grep -cE "(^|/)$DOD_BASENAME$" || echo 0)")
-    DOD_STAGED=$(clean_number "$(git diff --cached --name-only 2>/dev/null | grep -cE "(^|/)$DOD_BASENAME$" || echo 0)")
-    DOD_MODIFIED=$(clean_number "$(git diff --name-only 2>/dev/null | grep -cE "(^|/)$DOD_BASENAME$" || echo 0)")
-    DOD_UNTRACKED=$(clean_number "$(git status --porcelain 2>/dev/null | grep -cE "^\?\? (.*\/)?$DOD_BASENAME$" || echo 0)")
+    # v17: 检查新旧两种格式的 PRD 文件（仅对非 gitignored 文件有效）
+    if [[ "$PRD_GITIGNORED" -eq 0 ]]; then
+        PRD_IN_BRANCH=$(clean_number "$(git log "$BASE_BRANCH"..HEAD --name-only 2>/dev/null | grep -cE "(^|/)$PRD_BASENAME$" || echo 0)")
+        PRD_STAGED=$(clean_number "$(git diff --cached --name-only 2>/dev/null | grep -cE "(^|/)$PRD_BASENAME$" || echo 0)")
+        PRD_MODIFIED=$(clean_number "$(git diff --name-only 2>/dev/null | grep -cE "(^|/)$PRD_BASENAME$" || echo 0)")
+        PRD_UNTRACKED=$(clean_number "$(git status --porcelain 2>/dev/null | grep -cE "^\?\? (.*\/)?$PRD_BASENAME$" || echo 0)")
 
-    if [[ "$DOD_IN_BRANCH" -eq 0 && "$DOD_STAGED" -eq 0 && "$DOD_MODIFIED" -eq 0 && "$DOD_UNTRACKED" -eq 0 ]]; then
-        echo "" >&2
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-        echo "  [ERROR] DoD 文件未更新 ($DOD_BASENAME)" >&2
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-        echo "" >&2
-        echo "当前分支: $CURRENT_BRANCH" >&2
-        echo "当前 DoD 是旧任务的，请为本次任务更新 DoD" >&2
-        echo "" >&2
-        echo "[SKILL_REQUIRED: dev]" >&2
-        exit 2
+        if [[ "$PRD_IN_BRANCH" -eq 0 && "$PRD_STAGED" -eq 0 && "$PRD_MODIFIED" -eq 0 && "$PRD_UNTRACKED" -eq 0 ]]; then
+            echo "" >&2
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+            echo "  [ERROR] PRD 文件未更新 ($PRD_BASENAME)" >&2
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+            echo "" >&2
+            echo "当前分支: $CURRENT_BRANCH" >&2
+            echo "当前 PRD 是旧任务的，请为本次任务更新 PRD" >&2
+            echo "" >&2
+            echo "[SKILL_REQUIRED: dev]" >&2
+            exit 2
+        fi
     fi
+    # gitignored PRD 文件只需存在且内容有效（前面已检查），跳过更新检查
+
+    # v19: 检查 DoD 是否 gitignored
+    DOD_GITIGNORED=0
+    if git check-ignore -q "$DOD_FILE" 2>/dev/null; then
+        DOD_GITIGNORED=1
+    fi
+
+    # v17: 检查新旧两种格式的 DoD 文件（仅对非 gitignored 文件有效）
+    if [[ "$DOD_GITIGNORED" -eq 0 ]]; then
+        DOD_IN_BRANCH=$(clean_number "$(git log "$BASE_BRANCH"..HEAD --name-only 2>/dev/null | grep -cE "(^|/)$DOD_BASENAME$" || echo 0)")
+        DOD_STAGED=$(clean_number "$(git diff --cached --name-only 2>/dev/null | grep -cE "(^|/)$DOD_BASENAME$" || echo 0)")
+        DOD_MODIFIED=$(clean_number "$(git diff --name-only 2>/dev/null | grep -cE "(^|/)$DOD_BASENAME$" || echo 0)")
+        DOD_UNTRACKED=$(clean_number "$(git status --porcelain 2>/dev/null | grep -cE "^\?\? (.*\/)?$DOD_BASENAME$" || echo 0)")
+
+        if [[ "$DOD_IN_BRANCH" -eq 0 && "$DOD_STAGED" -eq 0 && "$DOD_MODIFIED" -eq 0 && "$DOD_UNTRACKED" -eq 0 ]]; then
+            echo "" >&2
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+            echo "  [ERROR] DoD 文件未更新 ($DOD_BASENAME)" >&2
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+            echo "" >&2
+            echo "当前分支: $CURRENT_BRANCH" >&2
+            echo "当前 DoD 是旧任务的，请为本次任务更新 DoD" >&2
+            echo "" >&2
+            echo "[SKILL_REQUIRED: dev]" >&2
+            exit 2
+        fi
+    fi
+    # gitignored DoD 文件只需存在且内容有效（前面已检查），跳过更新检查
 
     # v18: 检查 Task Checkpoint 是否已创建
     DEV_MODE_FILE="$PROJECT_ROOT/.dev-mode"
