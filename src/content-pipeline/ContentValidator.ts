@@ -20,17 +20,21 @@ export class ContentValidator {
    * Initialize default validation rules
    */
   private initializeDefaultRules(): void {
-    // Minimum length rule
+    // Minimum length rule (adjusted for Chinese content)
     this.addRule({
       name: 'minimum-length',
       validate: (content: Content): ValidationResult => {
         const minWords = 50;
         const wordCount = content.metadata.wordCount || 0;
 
-        if (wordCount < minWords) {
+        // For Chinese content, characters count as words
+        const isChineseContent = content.metadata.language === 'zh-CN';
+        const adjustedMin = isChineseContent ? 30 : minWords;
+
+        if (wordCount < adjustedMin) {
           return {
             valid: false,
-            errors: [`Content must have at least ${minWords} words, found ${wordCount}`]
+            errors: [`Content must have at least ${adjustedMin} words, found ${wordCount}`]
           };
         }
 

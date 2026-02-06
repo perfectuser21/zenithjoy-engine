@@ -51,7 +51,10 @@ export class ContentGenerator {
     // Generate content based on configuration
     const title = this.generateTitle(config);
     const body = this.generateBody(config);
-    const wordCount = body.split(/\s+/).length;
+    // Count words properly for Chinese content
+    const chineseChars = (body.match(/[\u4e00-\u9fa5]/g) || []).length;
+    const englishWords = (body.match(/[a-zA-Z]+/g) || []).length;
+    const wordCount = chineseChars > englishWords * 2 ? chineseChars : chineseChars + englishWords;
 
     const metadata: ContentMetadata = {
       category: config.category || 'general',
