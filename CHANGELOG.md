@@ -12,6 +12,7 @@
 
 - **regression-contract.yaml**: 新增 3 个 RCI 测试节点（W6-001-1/2/3）覆盖僵尸检测逻辑
 
+
 ## [12.7.1] - 2026-02-07
 
 ### Fixed
@@ -54,6 +55,22 @@
 Gate 机制会让 AI 停下来征求意见，破坏 Stop Hook 的自动循环。
 质量检查完全交给 CI，本地只保留 branch-protect.sh 检查文件存在性。
 唯一的流程控制 = Stop Hook。
+
+## [12.6.0] - 2026-02-06
+
+### Added
+
+- **hooks/bash-guard.sh**: Bash Guard - 凭据泄露 + HK 部署防护
+  - 拦截命令行中的真实 API Token（Notion/GitHub/OpenAI/JWT/DO/Feishu）
+  - 拦截未提交时 rsync/scp 到 HK 服务器
+  - 性能：99% 命令 ~2ms 放行，仅 HK 部署命中时跑 git 检查
+- **lib/hook-utils.sh**: 共享 TOKEN_PATTERNS + text_contains_token()
+  - credential-guard 和 bash-guard 共用，防止 regex 漂移
+- **tests/hooks/bash-guard.test.ts**: 25 项测试覆盖
+
+### Changed
+
+- **hooks/credential-guard.sh**: 重构使用共享 token regex
 
 ## [12.5.8] - 2026-02-04
 
