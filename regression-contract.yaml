@@ -178,9 +178,8 @@ hooks:
       when: "Stop Hook 检查秋米拆解完成条件"
       then: "检查 5 个条件：Feature/Task/PRD/DoD/KR 状态，未满足时 exit 2"
     evidence:
-      type: code
-      file: "hooks/stop-okr.sh"
-      contains: "feature_id"
+      type: script
+      run: "bash hooks/stop-okr.sh"
     test: "tests/hooks/test-stop-okr.sh"
 
   - id: H7-004
