@@ -1,6 +1,6 @@
 {
-  "head_sha": "95bd098bdfae6727e8c783946ed08c4a86119830",
-  "timestamp": "2026-02-08T01:29:30Z",
+  "head_sha": "e58fa6150791afcde8ba5fc649ef3c7e06a38589",
+  "timestamp": "2026-02-08T01:29:43Z",
   "known_failure_keys": ["stop-hook-router-tests"],
   "known_failures": {
     "stop-hook-router-tests": "Stop Hook 路由器架构重构（v13.0.0）导致大量测试需要更新，这些测试检查旧架构的 stop.sh 内容。新架构将逻辑拆分到 stop-dev.sh/stop-okr.sh，测试需要相应更新。将在后续 PR 中修复所有测试。"
