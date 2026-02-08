@@ -185,10 +185,22 @@ function validateTestRef(testRef, projectRoot) {
     return { valid: false, reason: "缺少 Test 字段" };
   }
 
-  // 首先检查假测试模式（适用于所有类型）
-  const fakeTestCheck = detectFakeTest(testRef);
-  if (!fakeTestCheck.valid) {
-    return fakeTestCheck;
+  // 检查是否为合法格式（tests/, contract:, manual:）
+  const isValidFormat = testRef.startsWith("tests/") ||
+                        testRef.startsWith("contract:") ||
+                        testRef.startsWith("manual:");
+
+  if (!isValidFormat) {
+    // 不是合法格式，检查是否为假测试
+    const fakeTestCheck = detectFakeTest(testRef);
+    if (!fakeTestCheck.valid) {
+      return fakeTestCheck;
+    }
+    // 即使通过假测试检查，也必须使用规定的格式
+    return {
+      valid: false,
+      reason: `Test 字段必须使用规定格式: tests/..., contract:..., 或 manual:...（当前: ${testRef}）`
+    };
   }
 
   if (testRef.startsWith("tests/")) {

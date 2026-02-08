@@ -326,14 +326,18 @@ describe("lib/ci-status.sh", () => {
 
 describe("stop.sh session isolation", () => {
   it("should contain session_id check code", () => {
-    const content = readFileSync(STOP_HOOK, "utf-8");
+    // v13.0.0: session 隔离逻辑已移到 stop-dev.sh
+    const stopDevPath = join(PROJECT_ROOT, "hooks", "stop-dev.sh");
+    const content = readFileSync(stopDevPath, "utf-8");
     expect(content).toContain("SESSION_ID_IN_FILE");
     expect(content).toContain("CLAUDE_SESSION_ID");
     expect(content).toContain("P0-4");
   });
 
   it("should contain lock-utils sourcing", () => {
-    const content = readFileSync(STOP_HOOK, "utf-8");
+    // v13.0.0: lock-utils 和 ci-status 已移到 stop-dev.sh
+    const stopDevPath = join(PROJECT_ROOT, "hooks", "stop-dev.sh");
+    const content = readFileSync(stopDevPath, "utf-8");
     expect(content).toContain("lock-utils.sh");
     expect(content).toContain("ci-status.sh");
   });
