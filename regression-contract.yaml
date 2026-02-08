@@ -18,7 +18,7 @@
 
 # NOTE: version 需要与 package.json 保持同步
 # 更新 package.json 时同步更新此处
-version: "12.10.0"
+version: "12.11.0"
 updated: "2026-02-08"
 
 # ============================================================================
@@ -2571,3 +2571,64 @@ quality_enforcement:
   # --------------------------------------------------------------------------
   # 决策：Gate 机制干扰 Stop Hook 自动循环，质量检查完全交给 CI
   # G1-001 ~ G1-007 全部删除
+
+# ============================================================================
+# Skills 回归契约
+# ============================================================================
+skills:
+  # --------------------------------------------------------------------------
+  # S1: OKR Skill - OKR 拆解工具
+  # --------------------------------------------------------------------------
+  - id: S1-001
+    feature: S1
+    name: "OKR Skill 基本功能"
+    scope: skill
+    priority: P2
+    trigger: [PR]
+    method: auto
+    tags: [okr, validation, quality]
+    owner: infra
+    steps:
+      given: "用户调用 /okr skill"
+      when: "提供 Key Result 描述"
+      then: "生成 Features 和 Tasks，质量分数 >= 90"
+    evidence:
+      type: file
+      path: "tests/okr/run-all-tests.sh"
+    test: "tests/okr/run-all-tests.sh"
+
+  - id: S1-002
+    feature: S1
+    name: "OKR Validation Loop"
+    scope: skill
+    priority: P2
+    trigger: [PR]
+    method: auto
+    tags: [okr, validation, anti-cheat]
+    owner: infra
+    steps:
+      given: "OKR 拆解生成 output.json"
+      when: "运行 validate-okr.py"
+      then: "形式验证 40 分 + SHA256 hash 生成"
+    evidence:
+      type: file
+      path: "tests/okr/test-validate-okr.sh"
+    test: "tests/okr/test-validate-okr.sh"
+
+  - id: S1-003
+    feature: S1
+    name: "OKR Anti-Cheat 机制"
+    scope: skill
+    priority: P2
+    trigger: [PR]
+    method: auto
+    tags: [okr, anti-cheat, stop-hook]
+    owner: infra
+    steps:
+      given: "OKR 验证报告生成"
+      when: "运行 stop-okr.sh"
+      then: "10 层防作弊检查，31 种攻击场景 100% 拦截"
+    evidence:
+      type: file
+      path: "tests/okr/test-cheating-prevention.sh"
+    test: "tests/okr/test-cheating-prevention.sh"

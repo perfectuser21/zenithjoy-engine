@@ -15,9 +15,10 @@
 # - product_features:  引擎核心能力（工作流、测试、报告、自动化）
 # ============================================================================
 
-version: "2.75.0"
+version: "2.76.0"
 updated: "2026-02-08"
 changelog:
+  - 2.76.0: v12.11.0 - OKR Skill v7.0.0（Validation Loop + Anti-Cheat + 31种攻击场景100%拦截）
   - 2.75.0: v12.10.0 - Stop Hook exit 代码修复 + Worktree 多会话检测 + 会话注册机制
   - 2.74.0: v12.9.0 - stop-okr.sh 完整实现（5 个完成条件检查 + 测试脚本 + 文档格式修正）
   - 2.73.0: v12.8.0 - Stop Hook 路由器架构 + Branch Protection 数据库检查 + DevGate 假测试检测
@@ -932,3 +933,62 @@ product_features:
   # --------------------------------------------------------------------------
   # 决策：Gate 机制干扰 Stop Hook 自动循环，质量检查完全交给 CI
   # 删除于 2026-02-06，参见 PR #xxx
+
+  # --------------------------------------------------------------------------
+  # S1: OKR Skill - OKR 拆解工具
+  # --------------------------------------------------------------------------
+  - id: S1
+    name: OKR Skill
+    status: Committed
+    priority: P2
+    version: "7.0.0"
+    updated: "2026-02-08"
+    description: |
+      OKR 拆解工具 - 从 Key Result 拆解到 Feature 和 Task
+      v7.0.0: 加入 Validation Loop 和防作弊机制
+
+      核心机制:
+      - Validation Loop: 自动循环改进，直到质量 >= 90 分
+      - Anti-Cheat: 10 层防作弊检查（hash 验证、git diff、分数计算等）
+      - Testing: 31 种攻击场景，100% 拦截率
+
+    entrypoints:
+      - type: skill
+        file: skills/okr/SKILL.md
+        trigger: "/okr"
+      - type: script
+        file: skills/okr/scripts/validate-okr.py
+        description: "形式验证（40 分）+ SHA256 hash 计算"
+      - type: hook
+        event: Stop
+        file: hooks/stop-okr.sh
+        description: "10 层防作弊检查"
+
+    golden_path: |
+      /okr 调用 → 分析 KR → 生成 Features/Tasks → validate-okr.py（形式 40 分）→
+      AI 自评内容质量（60 分）→ Validation Loop（< 90 分时自动改进）→
+      stop-okr.sh（10 层防作弊检查）→ 通过（total >= 90）
+
+    minimal_paths:
+      - "基本拆解: /okr → 生成 Features → 验证通过"
+      - "质量循环: 初始 80 分 → 改进 → 验证 → 92 分通过"
+      - "防作弊: 改分不改内容 → hash 不匹配 → exit 2"
+
+    tests:
+      - type: auto
+        file: tests/okr/test-validate-okr.sh
+        coverage: S1-002
+      - type: auto
+        file: tests/okr/test-stop-okr.sh
+        coverage: S1-003
+      - type: auto
+        file: tests/okr/test-cheating-prevention.sh
+        coverage: S1-003
+      - type: auto
+        file: tests/okr/run-all-tests.sh
+        description: "完整测试套件"
+
+    rcis:
+      - S1-001  # OKR Skill 基本功能
+      - S1-002  # Validation Loop
+      - S1-003  # Anti-Cheat 机制
