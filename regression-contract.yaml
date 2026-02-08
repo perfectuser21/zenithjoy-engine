@@ -18,7 +18,7 @@
 
 # NOTE: version 需要与 package.json 保持同步
 # 更新 package.json 时同步更新此处
-version: "12.9.0"
+version: "12.10.0"
 updated: "2026-02-08"
 
 # ============================================================================
@@ -295,6 +295,63 @@ hooks:
       file: "hooks/subagent-stop.sh"
       contains: "decision.*block"
     test: "tests/hooks/subagent-stop.test.ts"
+
+  - id: H7-010
+    feature: H7
+    name: "Stop Hook exit 代码修复 - block 决策必须 exit 2"
+    scope: hook
+    priority: P0
+    trigger: [PR, Release]
+    method: auto
+    tags: [stop, exit-code, bug-fix, loop]
+    owner: infra
+    steps:
+      given: "Stop Hook 检测到未完成条件（PR 未创建/CI 进行中/PR 未合并等）"
+      when: "输出 JSON API decision: block"
+      then: "必须返回 exit 2 阻止会话结束，而不是 exit 0"
+    evidence:
+      type: code
+      file: "hooks/stop-dev.sh"
+      contains: "exit 2"
+    test: "tests/hooks/stop-hook-exit-codes.test.ts"
+
+  - id: H7-011
+    feature: H7
+    name: "Worktree 多会话检测 - 自动隔离并发任务"
+    scope: skill
+    priority: P0
+    trigger: [PR, Release]
+    method: auto
+    tags: [worktree, multi-session, isolation]
+    owner: infra
+    steps:
+      given: "检测到其他 Claude 会话在同一 repo 工作"
+      when: "Step 0 (Worktree Auto) 检测 /tmp/claude-engine-sessions/"
+      then: "自动创建 worktree 隔离当前会话，避免 git 冲突和文件覆盖"
+    evidence:
+      type: code
+      file: "skills/dev/steps/00-worktree-auto.md"
+      contains: "claude-engine-sessions"
+    test: "tests/skills/worktree-multi-session.test.ts"
+
+  - id: H7-012
+    feature: H7
+    name: "会话注册机制 - 跨会话并发检测基础设施"
+    scope: skill
+    priority: P0
+    trigger: [PR, Release]
+    method: auto
+    tags: [session, registration, lifecycle]
+    owner: infra
+    steps:
+      given: "/dev 启动并创建 .dev-mode"
+      when: "Step 3 (Branch) 创建会话注册文件"
+      then: "在 /tmp/claude-engine-sessions/ 创建 JSON 文件，包含 session_id/pid/cwd/branch，Step 11 清理，过期会话自动删除"
+    evidence:
+      type: code
+      file: "skills/dev/steps/03-branch.md"
+      contains: "session-$SESSION_ID.json"
+    test: "tests/skills/session-registration.test.ts"
 
   # --------------------------------------------------------------------------
   # H2: pr-gate-v2

@@ -247,7 +247,7 @@ if [[ -z "$PR_NUMBER" ]]; then
     echo "" >&2
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
     jq -n --arg reason "PR 未创建，继续执行 Step 8 创建 PR" '{"decision": "block", "reason": $reason}'
-    exit 0
+    exit 2
 fi
 
 echo "  ✅ 条件 1: PR 已创建 (#$PR_NUMBER)" >&2
@@ -291,7 +291,7 @@ case "$CI_STATUS" in
             echo "" >&2
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
             jq -n --arg reason "CI 失败（$CI_CONCLUSION），查看日志修复问题后重新 push" --arg run_id "${CI_RUN_ID:-unknown}" '{"decision": "block", "reason": $reason, "ci_run_id": $run_id}'
-            exit 0
+            exit 2
         fi
         ;;
     "in_progress"|"queued"|"waiting"|"pending")
@@ -301,7 +301,7 @@ case "$CI_STATUS" in
         echo "" >&2
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
         jq -n --arg reason "CI 进行中（$CI_STATUS），等待 CI 完成" '{"decision": "block", "reason": $reason}'
-        exit 0
+        exit 2
         ;;
     *)
         echo "  ⚠️  条件 2: CI 状态未知 ($CI_STATUS)" >&2
@@ -311,7 +311,7 @@ case "$CI_STATUS" in
         echo "" >&2
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
         jq -n --arg reason "CI 状态未知（$CI_STATUS），检查 CI 状态" '{"decision": "block", "reason": $reason}'
-        exit 0
+        exit 2
         ;;
 esac
 
@@ -336,7 +336,7 @@ if [[ "$PR_STATE" == "merged" ]]; then
         echo "  下一步: 执行 Step 11 Cleanup" >&2
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
         jq -n '{"decision": "block", "reason": "PR 已合并，执行 Step 11 Cleanup"}'
-        exit 0
+        exit 2
     fi
 else
     # PR 未合并
@@ -347,5 +347,5 @@ else
     echo "" >&2
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
     jq -n --arg reason "PR #$PR_NUMBER CI 已通过但未合并，执行合并操作" --arg pr "$PR_NUMBER" '{"decision": "block", "reason": $reason, "pr_number": $pr}'
-    exit 0
+    exit 2
 fi

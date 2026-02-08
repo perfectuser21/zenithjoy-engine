@@ -1,3 +1,39 @@
+## [12.10.0] - 2026-02-08
+
+### Fixed
+
+- **hooks/stop-dev.sh**: 修复 exit 代码错误（P0 Critical Bug）
+  - **问题**: v11.25.0 引入 JSON API 时，所有 "block" 决策错误地返回 `exit 0` 而不是 `exit 2`
+  - **影响**: Stop Hook 无法阻止会话结束，导致 /dev 工作流在 CI 提交后立即停止，无法完成 PR 合并
+  - **修复**: 6 处 `exit 0` 改为 `exit 2`：
+    - Line 250: PR 未创建 → exit 2
+    - Line 294: CI 失败 → exit 2
+    - Line 304: CI 进行中 → exit 2
+    - Line 314: CI 状态未知 → exit 2
+    - Line 339: Step 11 未完成 → exit 2
+    - Line 350: PR 未合并 → exit 2
+  - **测试**: tests/hooks/stop-hook-exit-codes.test.ts 验证所有场景
+
+- **skills/dev/steps/00-worktree-auto.md**: 添加多会话检测（P0 Critical Bug）
+  - **问题**: Step 0 只检测本地 .dev-mode，不检测其他 Claude 会话，导致多会话在同一 repo 工作时相互干扰
+  - **影响**: 两个会话同时运行 /dev，git branch 切换冲突，.dev-mode 文件被覆盖，任务串话
+  - **修复**: 检测 `/tmp/claude-engine-sessions/` 中的其他会话，自动创建 worktree 隔离
+  - **测试**: tests/skills/worktree-multi-session.test.ts
+
+### Added
+
+- **会话注册机制**: 跨会话并发检测基础设施
+  - **Step 3 (Branch)**: 在 `/tmp/claude-engine-sessions/` 创建会话注册文件（session-$SESSION_ID.json）
+  - **Step 11 (Cleanup)**: 清理会话注册文件，过期会话（>1 小时）自动清理
+  - **数据格式**: session_id, pid, tty, cwd, branch, started, last_heartbeat
+  - **用途**: 供 Step 0 检测其他会话，自动创建 worktree 隔离
+  - **测试**: tests/skills/session-registration.test.ts
+
+- **regression-contract.yaml**: 新增 3 个回归测试条目
+  - H7-010: Stop Hook exit 代码修复
+  - H7-011: Worktree 多会话检测
+  - H7-012: 会话注册机制
+
 ## [12.9.0] - 2026-02-08
 
 ### Added
