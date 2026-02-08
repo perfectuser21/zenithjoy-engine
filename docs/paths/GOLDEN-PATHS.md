@@ -1,12 +1,12 @@
 ---
 id: golden-paths
-version: 2.75.0
+version: 2.76.0
 created: 2026-02-08
 updated: 2026-02-08
 source: features/feature-registry.yml
 generation: auto-generated (scripts/generate-path-views.sh)
 changelog:
-  - 2.75.0: 从 feature-registry.yml 自动生成
+  - 2.76.0: 从 feature-registry.yml 自动生成
 ---
 
 # Golden Paths - 端到端成功路径
@@ -294,6 +294,23 @@ Bash 命令 → token 扫描 (~1ms) → rsync/scp + HK 检测 (~1ms) →
 
 ---
 
+## GP-019: OKR Skill (S1)
+
+**Feature**: S1 - OKR Skill
+**Priority**: P2
+
+### Golden Path
+
+```
+/okr 调用 → 分析 KR → 生成 Features/Tasks → validate-okr.py（形式 40 分）→
+AI 自评内容质量（60 分）→ Validation Loop（< 90 分时自动改进）→
+stop-okr.sh（10 层防作弊检查）→ 通过（total >= 90）
+```
+
+**RCI 覆盖**: S1-001,S1-002,S1-003
+
+---
+
 ## 更新规则
 
 **本文件自动生成，不要手动编辑**。
@@ -306,5 +323,5 @@ Bash 命令 → token 扫描 (~1ms) → rsync/scp + HK 检测 (~1ms) →
 ---
 
 **来源**: features/feature-registry.yml
-**版本**: 2.75.0
+**版本**: 2.76.0
 **生成时间**: 2026-02-08

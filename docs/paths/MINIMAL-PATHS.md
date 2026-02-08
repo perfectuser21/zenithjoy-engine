@@ -1,12 +1,12 @@
 ---
 id: minimal-paths
-version: 2.75.0
+version: 2.76.0
 created: 2026-02-08
 updated: 2026-02-08
 source: features/feature-registry.yml
 generation: auto-generated (scripts/generate-path-views.sh)
 changelog:
-  - 2.75.0: 从 feature-registry.yml 自动生成
+  - 2.76.0: 从 feature-registry.yml 自动生成
 ---
 
 # Minimal Paths - 最小验收路径
@@ -203,6 +203,16 @@ changelog:
 
 ---
 
+### S1: OKR Skill
+
+1. ✅ **基本拆解: /okr → 生成 Features → 验证通过**
+2. ✅ **质量循环: 初始 80 分 → 改进 → 验证 → 92 分通过**
+3. ✅ **防作弊: 改分不改内容 → hash 不匹配 → exit 2**
+
+**RCI 覆盖**: S1-001,S1-002,S1-003
+
+---
+
 ## 更新规则
 
 **本文件自动生成，不要手动编辑**。
@@ -215,5 +225,5 @@ changelog:
 ---
 
 **来源**: features/feature-registry.yml
-**版本**: 2.75.0
+**版本**: 2.76.0
 **生成时间**: 2026-02-08
