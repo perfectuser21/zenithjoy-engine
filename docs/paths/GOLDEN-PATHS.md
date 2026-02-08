@@ -1,12 +1,12 @@
 ---
 id: golden-paths
-version: 2.73.0
+version: 2.74.0
 created: 2026-02-08
 updated: 2026-02-08
 source: features/feature-registry.yml
 generation: auto-generated (scripts/generate-path-views.sh)
 changelog:
-  - 2.73.0: 从 feature-registry.yml 自动生成
+  - 2.74.0: 从 feature-registry.yml 自动生成
 ---
 
 # Golden Paths - 端到端成功路径
@@ -43,7 +43,7 @@ changelog:
 会话结束 → 检测 .dev-mode → 检查完成条件 → exit 2 (继续) | exit 0 (结束)
 ```
 
-**RCI 覆盖**: H7-001,H7-002,H7-003,H7-006,H7-007,H7-008
+**RCI 覆盖**: H7-001,H7-002,H7-003,H7-004,H7-006,H7-007,H7-008
 
 ---
 
@@ -306,5 +306,5 @@ Bash 命令 → token 扫描 (~1ms) → rsync/scp + HK 检测 (~1ms) →
 ---
 
 **来源**: features/feature-registry.yml
-**版本**: 2.73.0
+**版本**: 2.74.0
 **生成时间**: 2026-02-08

@@ -1,12 +1,12 @@
 ---
 id: minimal-paths
-version: 2.73.0
+version: 2.74.0
 created: 2026-02-08
 updated: 2026-02-08
 source: features/feature-registry.yml
 generation: auto-generated (scripts/generate-path-views.sh)
 changelog:
-  - 2.73.0: 从 feature-registry.yml 自动生成
+  - 2.74.0: 从 feature-registry.yml 自动生成
 ---
 
 # Minimal Paths - 最小验收路径
@@ -34,7 +34,7 @@ changelog:
 2. ✅ **有 .dev-mode + PR 未创建 → exit 2 (继续)**
 3. ✅ **有 .dev-mode + PR 已合并 → 删除 .dev-mode + exit 0 (完成)**
 
-**RCI 覆盖**: H7-001,H7-002,H7-003,H7-006,H7-007,H7-008
+**RCI 覆盖**: H7-001,H7-002,H7-003,H7-004,H7-006,H7-007,H7-008
 
 ---
 
@@ -215,5 +215,5 @@ changelog:
 ---
 
 **来源**: features/feature-registry.yml
-**版本**: 2.73.0
+**版本**: 2.74.0
 **生成时间**: 2026-02-08

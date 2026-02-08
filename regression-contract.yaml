@@ -18,8 +18,8 @@
 
 # NOTE: version 需要与 package.json 保持同步
 # 更新 package.json 时同步更新此处
-version: "12.8.0"
-updated: "2026-02-07"
+version: "12.9.0"
+updated: "2026-02-08"
 
 # ============================================================================
 # Hooks 回归契约
@@ -165,6 +165,24 @@ hooks:
     test: "tests/hooks/stop-hook-retry.test.ts"
 
   - id: H7-003
+    feature: H7
+    name: "Stop Hook - stop-okr.sh 完成条件检查"
+    scope: hook
+    priority: P0
+    trigger: [PR, Release]
+    method: auto
+    tags: [stop, okr, completion, feature-tracking]
+    owner: infra
+    steps:
+      given: ".okr-mode 文件存在且为 okr 模式"
+      when: "Stop Hook 检查秋米拆解完成条件"
+      then: "检查 5 个条件：Feature/Task/PRD/DoD/KR 状态，未满足时 exit 2"
+    evidence:
+      type: script
+      run: "bash hooks/stop-okr.sh"
+    test: "tests/hooks/test-stop-okr.sh"
+
+  - id: H7-004
     feature: H7
     name: "Stop Hook JSON API 强制循环"
     scope: hook

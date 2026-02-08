@@ -1,3 +1,31 @@
+## [12.9.0] - 2026-02-08
+
+### Added
+
+- **hooks/stop-okr.sh**: 完整实现 5 个完成条件检查
+  - **条件 1**: Feature 已创建（feature_id ≠ "(待填)"）
+  - **条件 2**: Task 已创建（task_ids ≠ "(待填)"）
+  - **条件 3**: PRD 已写入（prd_ids ≠ "(待填)"）
+  - **条件 4**: DoD 草稿已写入（dod_ids ≠ "(待填)"）
+  - **条件 5**: KR 状态已更新（kr_updated = "true"）
+  - **退出逻辑**: 未满足条件时 exit 2 阻止会话结束，全部满足时删除 .okr-mode 并 exit 0
+  - **测试覆盖**: 新增 tests/hooks/test-stop-okr.sh 验证所有 8 种场景
+
+- **tests/hooks/test-stop-okr.sh**: stop-okr.sh 完整测试脚本
+  - 测试 8 种场景：无文件、错误模式、5 个条件未满足、全部满足
+  - 验证退出码（exit 0 / exit 2）和文件清理逻辑
+  - 自动化测试，无需手动验证
+
+### Changed
+
+- **docs/STOP-HOOK-ARCHITECTURE.md**: 修正 .okr-mode 格式定义
+  - **旧格式**: session_id, started, features_count, tasks_count
+  - **新格式**: kr_id, feature_id, task_ids, prd_ids, dod_ids, kr_updated
+  - **对齐 PRD**: 与 /okr SKILL.md 保持一致
+  - **逐步追踪**: 每完成一步更新对应字段，Stop Hook 检查所有字段
+
+- **hooks/stop-okr.sh**: 设置执行权限（chmod +x）
+
 ## [12.8.0] - 2026-02-08
 
 ### Added
