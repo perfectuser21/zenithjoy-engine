@@ -2581,7 +2581,7 @@ skills:
   # --------------------------------------------------------------------------
   - id: S1-001
     feature: S1
-    name: "OKR Skill 基本功能"
+    name: "/okr 流程可启动"
     scope: skill
     priority: P2
     trigger: [PR]
