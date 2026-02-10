@@ -2461,3 +2461,39 @@ runs:
 4. ES module 项目中需要 CommonJS 时，使用 `.cjs` 扩展名
 5. PR title 规范要在修改配置文件前就设置好，避免重复触发 CI
 
+
+### [2026-02-10] Skills Registry 更新（platform-data 迁移）
+
+**背景**：platform-data 从 cecelia/workspace 物理迁移到 zenithjoy/workflows，需要更新 skills-registry.json 配置。
+
+**Bug**：
+1. **CI 失败：regression-contract.yaml 版本不同步**
+   - 问题：修改了 package.json 版本号，但忘记同步 regression-contract.yaml
+   - 解决：Edit regression-contract.yaml，更新 version 字段到 12.19.1
+   - 影响程度：Medium（阻塞 CI，但容易修复）
+
+2. **CI 失败：PR title 必须包含 [CONFIG] 标记**
+   - 问题：修改了 regression-contract.yaml（关键配置文件），但 PR title 没有 [CONFIG] 标记
+   - 解决：`gh pr edit <number> --title "[CONFIG] fix: ..."`
+   - 陷阱：修改 PR title 后，`gh run rerun` 仍使用旧 title（从 github.event.pull_request.title 读取）
+   - 正确做法：创建空 commit 触发新 CI 运行（`git commit --allow-empty`）
+   - 影响程度：Medium（需要额外操作，但不会丢失工作）
+
+**优化点**：
+1. **版本同步检查应该更早**
+   - 当前：CI 运行时才检查 regression-contract.yaml 版本
+   - 建议：Hook 阶段就检查所有版本文件（package.json, VERSION, regression-contract.yaml）
+   - 好处：在本地就发现问题，不浪费 CI 时间
+
+2. **PR title 规范可以自动化**
+   - 当前：手动判断是否需要 [CONFIG] 标记
+   - 建议：Hook 检测到修改关键配置文件时，自动在 commit message 中添加提示
+   - 好处：减少 CI 失败次数
+
+**影响程度**：Medium
+
+**教训**：
+- 修改配置文件时，始终检查所有版本同步点
+- PR title 规范要在创建 PR 时就设置正确，避免后续 rerun 失败
+- `github.event.pull_request.title` 是快照，rerun 不会更新，需要新 commit
+
