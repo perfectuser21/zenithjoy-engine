@@ -1,10 +1,6 @@
 {
-  "branch": "cp-02101127-skill-registry",
-  "head_sha": "$(git rev-parse --short HEAD)",
-  "timestamp": "2026-02-10T11:35:00Z",
-  "note": "Quality 只汇总，不判定。CI 是最终裁判。",
-  "checks": {
-    "test": "passed",
-    "json_valid": "passed"
-  }
+  "branch": "cp-26021016-skill-loader-dual-registry",
+  "head_sha": "ebd4037",
+  "timestamp": "2026-02-10T08:51:08Z",
+  "note": "Quality 只汇总，不判定。CI 是最终裁判。"
 }
