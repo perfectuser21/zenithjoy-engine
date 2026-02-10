@@ -15,7 +15,139 @@ description: OKR 拆解工具。从 KR 拆解到 Feature 和 Task。完全自动
 
 ---
 
-### Stage 2: Generate Features
+## Output Format (Choose One)
+
+**两种格式可选**：
+
+### 格式 A: 三层拆解（推荐，新项目）
+
+```
+Initiative（战略层）→ PR Plans（工程规划层）→ Tasks（执行层）
+```
+
+**适用场景**：
+- 大型 KR，需要多个 PR 才能完成
+- 需要明确 PR 之间的依赖关系
+- 需要工程层面的规划（DoD、文件列表、复杂度评估）
+
+**output.json 格式**：
+```json
+{
+  "objective": "...",
+  "kr_id": "...",
+  "initiative": {
+    "title": "实现任务智能调度系统",
+    "description": "...",
+    "repository": "cecelia-core"
+  },
+  "pr_plans": [
+    {
+      "title": "添加任务优先级算法",
+      "description": "...",
+      "dod": ["优先级算法实现完成", "单元测试覆盖率 > 80%"],
+      "files": ["brain/src/priority-algo.js", "brain/src/__tests__/priority-algo.test.js"],
+      "sequence": 1,
+      "depends_on": [],
+      "complexity": "medium",
+      "estimated_hours": 8,
+      "tasks": [
+        {"title": "写 priority-algo.js", "type": "dev", "description": "..."},
+        {"title": "写单元测试", "type": "dev", "description": "..."}
+      ]
+    },
+    {
+      "title": "实现资源监控模块",
+      "description": "...",
+      "dod": ["实时监控 CPU/内存", "数据存储到 brain_config"],
+      "files": ["brain/src/resource-monitor.js"],
+      "sequence": 2,
+      "depends_on": [],
+      "complexity": "low",
+      "estimated_hours": 4,
+      "tasks": [...]
+    },
+    {
+      "title": "集成前端调度界面",
+      "description": "...",
+      "dod": ["展示任务队列", "显示优先级分数"],
+      "files": ["workspace/src/components/TaskScheduler.tsx"],
+      "sequence": 3,
+      "depends_on": [1],
+      "complexity": "high",
+      "estimated_hours": 12,
+      "tasks": [...]
+    }
+  ]
+}
+```
+
+### 格式 B: 二层拆解（向后兼容，简单任务）
+
+```
+Features（功能层）→ Tasks（执行层）
+```
+
+**适用场景**：
+- 简单 KR，单个 PR 即可完成
+- 不需要复杂的依赖管理
+
+**output.json 格式**：
+```json
+{
+  "objective": "...",
+  "key_results": [
+    {
+      "title": "...",
+      "features": [
+        {
+          "title": "...",
+          "description": "...",
+          "repository": "cecelia-core"
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+### Stage 2: Generate Decomposition
+
+**根据 KR 复杂度选择格式**：
+
+#### Stage 2A: 三层拆解（推荐）
+
+1. **分析 KR**：判断是否需要多个 PR
+2. **创建 Initiative**（战略层）：
+   - `title`: KR 的总体目标（以动词开头）
+   - `description`: 详细说明（至少 50 字）
+   - `repository`: 主要代码仓库
+
+3. **拆解为 PR Plans**（工程规划层）：
+   - 每个 PR Plan 对应一个待发的 PR
+   - 2-5 个 PR Plans（不要太多）
+   - 为每个 PR Plan 定义：
+     - `title`: PR 标题（以动词开头，描述具体改动）
+     - `description`: PR 描述（做什么、为什么）
+     - `dod`: 验收标准数组（至少 2 条）
+     - `files`: 涉及的文件路径数组（至少 1 个）
+     - `sequence`: 执行顺序（1, 2, 3...）
+     - `depends_on`: 依赖的其他 PR Plan 的 sequence（数组，可为空）
+     - `complexity`: 复杂度（low/medium/high）
+     - `estimated_hours`: 预估工时（数字）
+     - `tasks`: 任务数组（见下一步）
+
+4. **为每个 PR Plan 创建 Tasks**（执行层）：
+   - 每个 PR Plan 下 2-5 个 Tasks
+   - 每个 Task 定义：
+     - `title`: 任务标题（具体可执行）
+     - `type`: 任务类型（dev/review/qa/audit）
+     - `description`: 任务描述
+
+5. **保存到 output.json**
+
+#### Stage 2B: 二层拆解（简单任务）
 
 1. Decompose KR into 2-5 Features
 2. For each Feature, define:

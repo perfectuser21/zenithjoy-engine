@@ -1,6 +1,6 @@
 {
-  "branch": "cp-26021016-skill-loader-dual-registry",
-  "head_sha": "ebd4037",
-  "timestamp": "2026-02-10T08:51:08Z",
+  "branch": "cp-02101951-okr-pr-plans-integration",
+  "head_sha": "720fce5",
+  "timestamp": "2026-02-10T11:56:03Z",
   "note": "Quality 只汇总，不判定。CI 是最终裁判。"
 }
