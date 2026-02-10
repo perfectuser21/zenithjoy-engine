@@ -18,7 +18,34 @@ const fs = require('fs');
 class SkillLoader {
   constructor(registryPath) {
     this.engineDir = path.dirname(registryPath);
-    this.registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
+
+    // 读取 Core Registry
+    this.coreRegistry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
+
+    // 读取 Personal Registry（可选）
+    const localRegistryPath = path.join(process.env.HOME, '.claude/skills-registry.local.json');
+    if (fs.existsSync(localRegistryPath)) {
+      try {
+        this.localRegistry = JSON.parse(fs.readFileSync(localRegistryPath, 'utf8'));
+        console.log('📋 Personal Registry found: ~/.claude/skills-registry.local.json\n');
+      } catch (error) {
+        console.warn('⚠️  Personal Registry format error, ignoring...');
+        console.warn(`   Error: ${error.message}\n`);
+        this.localRegistry = { skills: {} };
+      }
+    } else {
+      this.localRegistry = { skills: {} };
+    }
+
+    // 合并 Skills（Personal 优先级更高）
+    this.registry = {
+      ...this.coreRegistry,
+      skills: {
+        ...(this.coreRegistry.skills || {}),
+        ...(this.localRegistry.skills || {})
+      }
+    };
+
     this.skillsDir = path.join(process.env.HOME, '.claude/skills');
 
     // 确保 ~/.claude/skills/ 目录存在
@@ -33,11 +60,24 @@ class SkillLoader {
     const skills = this.registry.skills || {};
     let loaded = 0;
     let skipped = 0;
+    let coreCount = 0;
+    let personalCount = 0;
 
     Object.entries(skills).forEach(([id, config]) => {
       if (config.enabled !== false) {  // 默认 enabled
         try {
-          this.loadSkill(id, config);
+          // 判断来源
+          const isPersonal = (this.localRegistry.skills || {})[id] !== undefined;
+          const source = isPersonal ? 'personal' : 'core';
+
+          this.loadSkill(id, config, source);
+
+          if (isPersonal) {
+            personalCount++;
+          } else {
+            coreCount++;
+          }
+
           loaded++;
         } catch (error) {
           console.error(`❌ Failed to load skill: ${id}`);
@@ -49,10 +89,10 @@ class SkillLoader {
       }
     });
 
-    console.log(`\n✅ Summary: ${loaded} loaded, ${skipped} skipped`);
+    console.log(`\n✅ Summary: ${loaded} loaded (${coreCount} core, ${personalCount} personal), ${skipped} skipped`);
   }
 
-  loadSkill(id, config) {
+  loadSkill(id, config, source = 'core') {
     const skillPath = this.resolveSkillPath(config);
 
     // 检查源路径是否存在
@@ -70,7 +110,7 @@ class SkillLoader {
         // 如果是软链接，检查是否指向正确位置
         const currentTarget = fs.readlinkSync(targetPath);
         if (currentTarget === skillPath) {
-          console.log(`✓ ${id} (already linked)`);
+          console.log(`✓ ${id} (${source}, already linked)`);
           return;
         }
 
@@ -86,8 +126,7 @@ class SkillLoader {
 
     // 创建软链接
     fs.symlinkSync(skillPath, targetPath);
-    console.log(`✅ ${id}`);
-    console.log(`   Type: ${config.type}`);
+    console.log(`✅ ${id} (${source}, ${config.type})`);
     console.log(`   Path: ${skillPath}`);
     console.log(`   Link: ${targetPath}\n`);
   }
