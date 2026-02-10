@@ -1,6 +1,10 @@
 {
-  "branch": "cp-02082040-sentinel-fix",
-  "head_sha": "ee4bbc6",
-  "timestamp": "2026-02-08T12:45:15Z",
-  "note": "Quality 只汇总，不判定。CI 是最终裁判。"
+  "branch": "cp-02101127-skill-registry",
+  "head_sha": "$(git rev-parse --short HEAD)",
+  "timestamp": "2026-02-10T11:35:00Z",
+  "note": "Quality 只汇总，不判定。CI 是最终裁判。",
+  "checks": {
+    "test": "passed",
+    "json_valid": "passed"
+  }
 }

@@ -1,0 +1,38 @@
+{
+  "version": "1.0.0",
+  "updated": "2026-02-10",
+  "skills": {
+    "platform-scraper": {
+      "name": "Platform Scraper",
+      "description": "社交媒体平台数据采集管道",
+      "type": "workspace",
+      "path": "../workspace/apps/platform-scrapers/skill",
+      "entry": "command.sh",
+      "enabled": true
+    },
+    "dev": {
+      "name": "Dev Workflow",
+      "description": "统一开发工作流",
+      "type": "engine",
+      "path": "skills/dev",
+      "entry": "SKILL.md",
+      "enabled": true
+    },
+    "qa": {
+      "name": "QA",
+      "description": "跨仓库 QA 总控",
+      "type": "engine",
+      "path": "skills/qa",
+      "entry": "SKILL.md",
+      "enabled": true
+    },
+    "credentials": {
+      "name": "Credentials",
+      "description": "凭据管理",
+      "type": "engine",
+      "path": "skills/credentials",
+      "entry": "SKILL.md",
+      "enabled": true
+    }
+  }
+}
