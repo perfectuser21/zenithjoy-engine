@@ -2821,7 +2821,7 @@ skills:
 
   - id: S3-001
     feature: S3
-    name: "Exploratory Skill 流程可启动"
+    name: "/exploratory 流程可启动"
     scope: skill
     priority: P2
     trigger: [PR]
