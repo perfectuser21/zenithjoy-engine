@@ -1,188 +1,91 @@
 ---
 id: dev-step-00-worktree-auto
-version: 1.0.0
+version: 2.0.0
 created: 2026-01-31
-updated: 2026-01-31
+updated: 2026-02-12
 changelog:
+  - 2.0.0: 简化为强制创建 worktree（修复 Bug 1）
   - 1.0.0: 初始版本 - worktree 自动检测与创建
 ---
 
-# Step 0: Worktree 自动检测（前置步骤）
+# Step 0: Worktree 强制创建（前置步骤）
 
-> /dev 启动后第一件事：检测是否需要 worktree 隔离
+> /dev 启动后第一件事：确保在独立 worktree 中工作
 
 **在 Step 1 (PRD) 之前执行**。确保后续所有步骤都在正确的工作目录中。
 
 ---
 
-## 检测条件
+## 核心理念（v2.0 简化）
 
-需要创建 worktree 的情况（满足任一条件）：
+**每次 /dev 都在独立 worktree 中工作**：
+- ✅ 隔离开发环境，避免冲突
+- ✅ 支持多任务并行
+- ✅ 主仓库保持干净
 
-1. **在主仓库**（不是 worktree）**且**：
-   - **其他会话在同一 repo 工作**（多会话并发）
-   - **或** **存在 .dev-mode 文件且不是僵尸**（活跃任务冲突）
+**不再需要复杂检测**：
+- ❌ 删除：多会话检测
+- ❌ 删除：.dev-mode 僵尸检测
+- ✅ 简化：不在 worktree → 就创建 worktree
+
+---
+
+## 决策逻辑（简化后）
+
+```
+检测是否在 worktree 中？
+  ├─ 是 → 跳过，继续 Step 1
+  └─ 否 → 强制创建 worktree → cd → npm install → 继续 Step 1
+```
+
+---
+
+## 执行步骤
+
+### 1. 检测是否已在 worktree 中
 
 ```bash
 # 检测是否在 worktree 中
 GIT_DIR=$(git rev-parse --git-dir 2>/dev/null)
 IS_WORKTREE=false
+
 if [[ "$GIT_DIR" == *"worktrees"* ]]; then
     IS_WORKTREE=true
+    echo "✅ 已在 worktree 中，继续 Step 1"
+    # 跳过创建，直接继续 Step 1
+    exit 0
 fi
 
-PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-DEV_MODE_FILE="$PROJECT_ROOT/.dev-mode"
+echo "📍 当前在主仓库，需要创建 worktree"
 ```
 
----
-
-## 多会话检测（新增）
-
-**在检测 .dev-mode 之前，先检测其他会话**：
+### 2. 提取 task-name
 
 ```bash
-SESSION_DIR="/tmp/claude-engine-sessions"
-CURRENT_REPO=$(git rev-parse --show-toplevel 2>/dev/null)
-NEED_WORKTREE=false
+# 从用户输入或 PRD 文件名提取 task-name
+# 示例：
+#   /dev "修复登录 bug" → task-name = "fix-login-bug"
+#   /dev .prd-add-api.md → task-name = "add-api"
 
-# 检查是否有其他会话在同一 repo 工作
-if [[ -d "$SESSION_DIR" ]]; then
-    for session_file in "$SESSION_DIR"/session-*.json; do
-        [[ ! -f "$session_file" ]] && continue
-
-        session_repo=$(jq -r '.cwd' "$session_file" 2>/dev/null || echo "")
-        session_pid=$(jq -r '.pid' "$session_file" 2>/dev/null || echo "")
-
-        # 同一个 repo 且不是自己
-        if [[ "$session_repo" == "$CURRENT_REPO" ]] && [[ "$session_pid" != "$$" ]]; then
-            # 检查进程是否活跃
-            if ps -p "$session_pid" >/dev/null 2>&1; then
-                echo "🔀 检测到其他会话在同一 repo 工作（PID: $session_pid）"
-                echo "   → 自动创建 worktree 隔离..."
-                NEED_WORKTREE=true
-                break
-            fi
-        fi
-    done
-fi
-```
-
----
-
-## 决策逻辑（更新）
-
-```
-在 worktree 中？→ 跳过，继续 Step 1
-
-检测其他会话 →
-  → 有其他会话在同一 repo → 创建 worktree
-  → 无其他会话 → 继续检测 .dev-mode
-
-无 .dev-mode？ → 跳过，继续 Step 1
-有 .dev-mode？ → 僵尸检测
-  → 僵尸 → 清理 .dev-mode，继续 Step 1（不需要 worktree）
-  → 活跃 → 自动创建 worktree → cd → 安装依赖 → 继续 Step 1
-```
-
----
-
-## 僵尸 .dev-mode 检测
-
-**判定条件**（必须满足多个条件才判定为僵尸，防止误删）：
-
-### 多条件综合判断
-
-```bash
-# 读取 .dev-mode 信息
-ACTIVE_BRANCH=$(grep "^branch:" "$DEV_MODE_FILE" 2>/dev/null | cut -d' ' -f2 || echo "")
-STARTED=$(grep "^started:" "$DEV_MODE_FILE" 2>/dev/null | cut -d' ' -f2- || echo "")
-
-# 初始化判定结果
-IS_ZOMBIE=false
-NOW_EPOCH=$(date +%s)
-
-# 条件 1: 检查文件修改时间（主要判断依据）
-FILE_MTIME=$(stat -c %Y "$DEV_MODE_FILE" 2>/dev/null || echo "0")
-FILE_AGE_SECONDS=$(( NOW_EPOCH - FILE_MTIME ))
-
-if [[ "$FILE_AGE_SECONDS" -gt 7200 ]]; then
-    # 文件超过 2 小时，继续检查其他条件
-
-    # 条件 2: 尝试解析 started 字段（可能失败）
-    STARTED_EPOCH=$(date -d "$STARTED" +%s 2>/dev/null || echo "0")
-
-    # 如果 started 字段有效，使用它；否则使用文件修改时间
-    if [[ "$STARTED_EPOCH" -gt 0 ]]; then
-        AGE_SECONDS=$(( NOW_EPOCH - STARTED_EPOCH ))
-        echo "⏱️  .dev-mode started 字段: ${AGE_SECONDS}s 前"
-    else
-        AGE_SECONDS="$FILE_AGE_SECONDS"
-        echo "⚠️  .dev-mode started 字段无效，使用文件修改时间: ${FILE_AGE_SECONDS}s 前"
-    fi
-
-    # 条件 3: 检查分支状态
-    if [[ -n "$ACTIVE_BRANCH" ]]; then
-        if ! git rev-parse --verify "$ACTIVE_BRANCH" &>/dev/null; then
-            # 分支不存在 → 确定是僵尸
-            IS_ZOMBIE=true
-            echo "⚠️  判定为僵尸：文件 ${FILE_AGE_SECONDS}s，分支 $ACTIVE_BRANCH 不存在"
-        else
-            # 分支存在，检查最后提交时间
-            LAST_COMMIT_EPOCH=$(git log -1 --format=%ct "$ACTIVE_BRANCH" 2>/dev/null || echo "0")
-            BRANCH_AGE_SECONDS=$(( NOW_EPOCH - LAST_COMMIT_EPOCH ))
-
-            if [[ "$BRANCH_AGE_SECONDS" -gt 7200 ]]; then
-                # 分支超过 2 小时无提交 → 可能是僵尸
-                IS_ZOMBIE=true
-                echo "⚠️  判定为僵尸：文件 ${FILE_AGE_SECONDS}s，分支 ${BRANCH_AGE_SECONDS}s 无提交"
-            else
-                echo "✅ 分支 $ACTIVE_BRANCH 活跃（${BRANCH_AGE_SECONDS}s 前有提交），不是僵尸"
-            fi
-        fi
-    else
-        # 无法读取分支名，但文件很旧 → 判定为僵尸
-        IS_ZOMBIE=true
-        echo "⚠️  判定为僵尸：文件 ${FILE_AGE_SECONDS}s，无法读取分支信息"
-    fi
+# 如果有 PRD 文件参数
+if [[ -f "$PRD_FILE" ]]; then
+    TASK_NAME=$(basename "$PRD_FILE" .md | sed 's/^\.prd-//')
 else
-    echo "✅ .dev-mode 文件新鲜（${FILE_AGE_SECONDS}s），不是僵尸"
+    # 从用户输入生成（由 AI 生成简短英文名）
+    TASK_NAME="<AI-generated-task-name>"
 fi
+
+echo "📝 任务名: $TASK_NAME"
 ```
 
-### 关键改进
-
-1. **文件修改时间优先**：`stat -c %Y` 作为主要判断依据，不依赖 `started` 字段解析
-2. **Fallback 机制**：`started` 字段解析失败时，使用文件修改时间
-3. **分支活跃度**：检查分支最后提交时间，判断是否活跃
-4. **防止误删**：只在确定无疑（文件旧 + 分支不存在/无提交）时才删除
-
-### 僵尸处理
+### 3. 创建 worktree
 
 ```bash
-if [[ "$IS_ZOMBIE" == "true" ]]; then
-    echo "🧹 清理僵尸 .dev-mode（分支: $ACTIVE_BRANCH）"
-    rm -f "$DEV_MODE_FILE"
-    # 不需要创建 worktree，继续正常流程
-fi
-```
+echo "🔀 创建独立 worktree..."
 
----
-
-## 自动创建 Worktree
-
-**非僵尸 + 确实有活跃任务**时执行：
-
-```bash
-# 从用户需求或 PRD 文件名提取 task-name
-# /dev .prd-xxx.md → task-name = xxx
-# /dev "做登录功能" → task-name = 由 AI 生成的简短英文名
-TASK_NAME="<从用户输入提取的简短英文任务名>"
-
-echo "🔀 检测到活跃任务（分支: $ACTIVE_BRANCH），自动创建 worktree..."
-
-# 创建 worktree（脚本最后一行输出路径到 stdout）
-WORKTREE_PATH=$(bash skills/dev/scripts/worktree-manage.sh create "$TASK_NAME" 2>/dev/null | tail -1)
+# 调用 worktree-manage.sh 创建
+# 注意：worktree-manage.sh 会自动更新 develop（Bug 2 修复）
+WORKTREE_PATH=$(bash ~/.claude/skills/dev/scripts/worktree-manage.sh create "$TASK_NAME" 2>/dev/null | tail -1)
 
 if [[ -z "$WORKTREE_PATH" || ! -d "$WORKTREE_PATH" ]]; then
     echo "❌ Worktree 创建失败"
@@ -190,31 +93,81 @@ if [[ -z "$WORKTREE_PATH" || ! -d "$WORKTREE_PATH" ]]; then
 fi
 
 echo "✅ Worktree 创建成功: $WORKTREE_PATH"
+```
 
+### 4. 切换到 worktree
+
+```bash
 # cd 到 worktree
-cd "$WORKTREE_PATH"
+cd "$WORKTREE_PATH" || exit 1
 
-# 安装依赖
+echo "📂 已切换到: $(pwd)"
+```
+
+### 5. 安装依赖
+
+```bash
+# 如果有 package.json，安装依赖
 if [[ -f "package.json" ]]; then
     echo "📦 安装依赖..."
     npm install --prefer-offline 2>/dev/null || npm install
+    echo "✅ 依赖安装完成"
 fi
 ```
 
-### AI 执行要点
+### 6. 完成
 
-1. **提取 task-name**：从用户输入或 PRD 文件名生成简短英文名（如 `login-feature`、`fix-ci-error`）
-2. **执行 worktree-manage.sh**：捕获最后一行输出（worktree 路径）
-3. **cd 到 worktree 路径**：后续所有操作都在 worktree 中
-4. **安装依赖**：检测 package.json 存在时自动 npm install
-5. **继续 Step 1**：PRD 文件直接在 worktree 中创建，不需要 copy
+```bash
+echo "✅ Step 0 完成 - Worktree 环境准备就绪"
+echo ""
+echo "📍 当前环境："
+echo "   Worktree: $WORKTREE_PATH"
+echo "   分支: $(git rev-parse --abbrev-ref HEAD)"
+echo ""
+```
+
+---
+
+## AI 执行要点
+
+1. **提取 task-name**：
+   - 从用户输入生成简短英文名（如 `login-feature`、`fix-ci-error`）
+   - 或从 PRD 文件名提取（`.prd-xxx.md` → `xxx`）
+
+2. **执行 worktree-manage.sh**：
+   - 捕获最后一行输出（worktree 路径）
+   - 检查路径是否有效
+
+3. **cd 到 worktree 路径**：
+   - 后续所有操作都在 worktree 中
+   - 不要回到主仓库
+
+4. **安装依赖**：
+   - 检测 package.json 存在时自动 npm install
+   - 使用 `--prefer-offline` 加速
+
+5. **继续 Step 1**：
+   - PRD 文件直接在 worktree 中创建/使用
+   - 不需要从主仓库 copy
+
+---
+
+## 向后兼容
+
+**如果已经在 worktree 中**（用户手动创建）：
+- ✅ 跳过创建，直接继续 Step 1
+- ✅ 不会重复创建或报错
+
+---
+
+## 清理
+
+**Worktree 在以下时机自动清理**：
+- Step 11 (Cleanup) 删除 worktree
+- 或 PR 合并后手动运行 `bash scripts/cleanup.sh`
 
 ---
 
 ## 完成后
-
-```bash
-echo "✅ Step 0 完成 (Worktree 检测)"
-```
 
 继续 → Step 1 (PRD)

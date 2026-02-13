@@ -170,37 +170,194 @@ else
 fi
 echo ""
 
-# 5. Process Features and Tasks
-FEATURES=$(jq -c '.key_results[].features[]? // empty' "$OUTPUT_FILE")
-FEATURE_COUNT=0
-TASK_COUNT=0
-FAILED_COUNT=0
+# 5. Detect output format (new 3-layer vs old 2-layer)
+HAS_PR_PLANS=$(jq 'has("initiative") and has("pr_plans")' "$OUTPUT_FILE")
 
-if [ -z "$FEATURES" ]; then
-    log_warn "No features found in $OUTPUT_FILE"
-    exit 0
-fi
+if [ "$HAS_PR_PLANS" = "true" ]; then
+    log_info "Detected 3-layer decomposition format (Initiative → PR Plans → Tasks)"
+    echo ""
 
-while IFS= read -r feature; do
-    FEATURE_COUNT=$((FEATURE_COUNT + 1))
+    # ===== 3-Layer Format Processing =====
 
-    FEATURE_TITLE=$(echo "$feature" | jq -r '.title')
-    FEATURE_DESC=$(echo "$feature" | jq -r '.description')
-    REPO_NAME=$(echo "$feature" | jq -r '.repository')
+    # 5a. Extract Initiative info
+    INITIATIVE_TITLE=$(jq -r '.initiative.title' "$OUTPUT_FILE")
+    INITIATIVE_DESC=$(jq -r '.initiative.description' "$OUTPUT_FILE")
+    REPO_NAME=$(jq -r '.initiative.repository' "$OUTPUT_FILE")
 
-    log_info "Processing Feature $FEATURE_COUNT: $FEATURE_TITLE"
+    log_info "Initiative: $INITIATIVE_TITLE"
 
     # Map repository to project_id
     if ! PROJECT_ID=$(map_repo_to_project "$REPO_NAME"); then
-        log_error "Skipping feature (repo mapping failed)"
-        FAILED_COUNT=$((FAILED_COUNT + 1))
-        continue
+        log_error "Failed to map repository to project"
+        exit 2
     fi
-
     log_info "  Repository: $REPO_NAME → Project: $PROJECT_ID"
 
-    # Create Feature as SubProject
-    FEATURE_PROJECT_DATA=$(cat <<EOF
+    # 5b. Create Initiative (Feature with parent_id=NULL or project_id)
+    INITIATIVE_DATA=$(cat <<EOF
+{
+  "name": "$INITIATIVE_TITLE",
+  "parent_id": "$PROJECT_ID",
+  "description": "$INITIATIVE_DESC"
+}
+EOF
+)
+
+    if INITIATIVE_RESPONSE=$(retry_api_call POST "$TASKS_API/api/tasks/projects" "$INITIATIVE_DATA"); then
+        INITIATIVE_ID=$(echo "$INITIATIVE_RESPONSE" | jq -r '.id // empty')
+        if [ -n "$INITIATIVE_ID" ]; then
+            log_success "Initiative created: $INITIATIVE_ID"
+        else
+            log_error "Failed to extract Initiative ID from response"
+            exit 2
+        fi
+    else
+        log_error "Failed to create Initiative"
+        exit 2
+    fi
+    echo ""
+
+    # 5c. Process PR Plans and Tasks
+    PR_PLANS=$(jq -c '.pr_plans[]?' "$OUTPUT_FILE")
+    PR_PLAN_COUNT=0
+    TASK_COUNT=0
+    FAILED_COUNT=0
+
+    if [ -z "$PR_PLANS" ]; then
+        log_warn "No PR Plans found in $OUTPUT_FILE"
+        exit 0
+    fi
+
+    while IFS= read -r pr_plan; do
+        PR_PLAN_COUNT=$((PR_PLAN_COUNT + 1))
+
+        PR_TITLE=$(echo "$pr_plan" | jq -r '.title')
+        PR_DESC=$(echo "$pr_plan" | jq -r '.description // ""')
+        PR_DOD=$(echo "$pr_plan" | jq -c '.dod')
+        PR_FILES=$(echo "$pr_plan" | jq -c '.files')
+        PR_SEQUENCE=$(echo "$pr_plan" | jq -r '.sequence // 0')
+        PR_DEPENDS_ON=$(echo "$pr_plan" | jq -c '.depends_on // []')
+        PR_COMPLEXITY=$(echo "$pr_plan" | jq -r '.complexity // "medium"')
+        PR_ESTIMATED_HOURS=$(echo "$pr_plan" | jq -r '.estimated_hours // 0')
+
+        log_info "Processing PR Plan $PR_PLAN_COUNT: $PR_TITLE"
+
+        # Create PR Plan via Brain API
+        PR_PLAN_DATA=$(cat <<EOF
+{
+  "initiative_id": "$INITIATIVE_ID",
+  "project_id": "$PROJECT_ID",
+  "title": "$PR_TITLE",
+  "description": "$PR_DESC",
+  "dod": $PR_DOD,
+  "files": $PR_FILES,
+  "sequence": $PR_SEQUENCE,
+  "depends_on": $PR_DEPENDS_ON,
+  "complexity": "$PR_COMPLEXITY",
+  "estimated_hours": $PR_ESTIMATED_HOURS
+}
+EOF
+)
+
+        if PR_PLAN_RESPONSE=$(retry_api_call POST "$BRAIN_API/api/brain/pr-plans" "$PR_PLAN_DATA"); then
+            PR_PLAN_ID=$(echo "$PR_PLAN_RESPONSE" | jq -r '.pr_plan.id // empty')
+            if [ -n "$PR_PLAN_ID" ]; then
+                log_success "  PR Plan created: $PR_PLAN_ID"
+            else
+                log_error "  Failed to extract PR Plan ID from response"
+                FAILED_COUNT=$((FAILED_COUNT + 1))
+                continue
+            fi
+        else
+            log_error "  Failed to create PR Plan"
+            FAILED_COUNT=$((FAILED_COUNT + 1))
+            continue
+        fi
+
+        # Create Tasks under this PR Plan
+        TASKS=$(echo "$pr_plan" | jq -c '.tasks[]?')
+        if [ -z "$TASKS" ]; then
+            log_warn "  No tasks under this PR Plan"
+            continue
+        fi
+
+        while IFS= read -r task; do
+            TASK_TITLE=$(echo "$task" | jq -r '.title')
+            TASK_DESC=$(echo "$task" | jq -r '.description // ""')
+            TASK_TYPE=$(echo "$task" | jq -r '.type // "dev"')
+
+            TASK_DATA=$(cat <<EOF
+{
+  "title": "$TASK_TITLE",
+  "project_id": "$PROJECT_ID",
+  "pr_plan_id": "$PR_PLAN_ID",
+  "goal_id": "$GOAL_ID",
+  "task_type": "$TASK_TYPE",
+  "prd_content": "# $TASK_TITLE\n\n## 描述\n\n$TASK_DESC\n\n## PR Plan\n\n$PR_TITLE",
+  "payload": {
+    "from_okr": true,
+    "okr_file": "$OUTPUT_FILE",
+    "pr_plan_title": "$PR_TITLE",
+    "repository": "$REPO_NAME"
+  }
+}
+EOF
+)
+
+            if TASK_RESPONSE=$(retry_api_call POST "$BRAIN_API/api/brain/action/create-task" "$TASK_DATA"); then
+                TASK_ID=$(echo "$TASK_RESPONSE" | jq -r '.id // .task_id // empty')
+                if [ -n "$TASK_ID" ]; then
+                    log_success "    Task created: $TASK_ID ($TASK_TITLE)"
+                    TASK_COUNT=$((TASK_COUNT + 1))
+                else
+                    log_warn "    Task creation response unclear"
+                fi
+            else
+                log_error "    Failed to create Task"
+                FAILED_COUNT=$((FAILED_COUNT + 1))
+            fi
+        done <<< "$TASKS"
+
+        echo ""
+    done <<< "$PR_PLANS"
+
+    FEATURE_COUNT=$PR_PLAN_COUNT
+
+else
+    # ===== Original 2-Layer Format Processing (Backward Compatible) =====
+    log_info "Detected 2-layer format (Features → Tasks)"
+    echo ""
+
+    FEATURES=$(jq -c '.key_results[].features[]? // empty' "$OUTPUT_FILE")
+    FEATURE_COUNT=0
+    TASK_COUNT=0
+    FAILED_COUNT=0
+
+    if [ -z "$FEATURES" ]; then
+        log_warn "No features found in $OUTPUT_FILE"
+        exit 0
+    fi
+
+    while IFS= read -r feature; do
+        FEATURE_COUNT=$((FEATURE_COUNT + 1))
+
+        FEATURE_TITLE=$(echo "$feature" | jq -r '.title')
+        FEATURE_DESC=$(echo "$feature" | jq -r '.description')
+        REPO_NAME=$(echo "$feature" | jq -r '.repository')
+
+        log_info "Processing Feature $FEATURE_COUNT: $FEATURE_TITLE"
+
+        # Map repository to project_id
+        if ! PROJECT_ID=$(map_repo_to_project "$REPO_NAME"); then
+            log_error "Skipping feature (repo mapping failed)"
+            FAILED_COUNT=$((FAILED_COUNT + 1))
+            continue
+        fi
+
+        log_info "  Repository: $REPO_NAME → Project: $PROJECT_ID"
+
+        # Create Feature as SubProject
+        FEATURE_PROJECT_DATA=$(cat <<EOF
 {
   "name": "$FEATURE_TITLE",
   "parent_id": "$PROJECT_ID",
@@ -209,23 +366,23 @@ while IFS= read -r feature; do
 EOF
 )
 
-    if FEATURE_RESPONSE=$(retry_api_call POST "$TASKS_API/api/tasks/projects" "$FEATURE_PROJECT_DATA"); then
-        FEATURE_ID=$(echo "$FEATURE_RESPONSE" | jq -r '.id // empty')
-        if [ -n "$FEATURE_ID" ]; then
-            log_success "  Feature SubProject created: $FEATURE_ID"
+        if FEATURE_RESPONSE=$(retry_api_call POST "$TASKS_API/api/tasks/projects" "$FEATURE_PROJECT_DATA"); then
+            FEATURE_ID=$(echo "$FEATURE_RESPONSE" | jq -r '.id // empty')
+            if [ -n "$FEATURE_ID" ]; then
+                log_success "  Feature SubProject created: $FEATURE_ID"
+            else
+                log_error "  Failed to extract Feature ID from response"
+                FAILED_COUNT=$((FAILED_COUNT + 1))
+                continue
+            fi
         else
-            log_error "  Failed to extract Feature ID from response"
+            log_error "  Failed to create Feature SubProject"
             FAILED_COUNT=$((FAILED_COUNT + 1))
             continue
         fi
-    else
-        log_error "  Failed to create Feature SubProject"
-        FAILED_COUNT=$((FAILED_COUNT + 1))
-        continue
-    fi
 
-    # Create Task for this Feature
-    TASK_DATA=$(cat <<EOF
+        # Create Task for this Feature
+        TASK_DATA=$(cat <<EOF
 {
   "title": "$FEATURE_TITLE",
   "project_id": "$FEATURE_ID",
@@ -242,21 +399,22 @@ EOF
 EOF
 )
 
-    if TASK_RESPONSE=$(retry_api_call POST "$BRAIN_API/api/brain/action/create-task" "$TASK_DATA"); then
-        TASK_ID=$(echo "$TASK_RESPONSE" | jq -r '.id // .task_id // empty')
-        if [ -n "$TASK_ID" ]; then
-            log_success "  Task created: $TASK_ID"
-            TASK_COUNT=$((TASK_COUNT + 1))
+        if TASK_RESPONSE=$(retry_api_call POST "$BRAIN_API/api/brain/action/create-task" "$TASK_DATA"); then
+            TASK_ID=$(echo "$TASK_RESPONSE" | jq -r '.id // .task_id // empty')
+            if [ -n "$TASK_ID" ]; then
+                log_success "  Task created: $TASK_ID"
+                TASK_COUNT=$((TASK_COUNT + 1))
+            else
+                log_warn "  Task creation response unclear"
+            fi
         else
-            log_warn "  Task creation response unclear"
+            log_error "  Failed to create Task"
+            FAILED_COUNT=$((FAILED_COUNT + 1))
         fi
-    else
-        log_error "  Failed to create Task"
-        FAILED_COUNT=$((FAILED_COUNT + 1))
-    fi
 
-    echo ""
-done <<< "$FEATURES"
+        echo ""
+    done <<< "$FEATURES"
+fi
 
 # 6. Summary
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

@@ -136,6 +136,41 @@ cmd_create() {
         fi
     fi
 
+    # 🆕 Bug 2 修复：创建前先更新 base 分支
+    echo -e "${BLUE}更新 $base_branch 分支...${NC}" >&2
+
+    # 获取主仓库路径
+    local main_wt
+    main_wt=$(get_main_worktree)
+
+    # 在主仓库中更新 develop
+    if git -C "$main_wt" rev-parse --verify "$base_branch" &>/dev/null; then
+        # 检查当前分支
+        local current_branch
+        current_branch=$(git -C "$main_wt" rev-parse --abbrev-ref HEAD)
+
+        if [[ "$current_branch" == "$base_branch" ]]; then
+            # 如果当前在 base 分支上，用 pull
+            if git -C "$main_wt" pull origin "$base_branch" --ff-only 2>&2; then
+                echo -e "${GREEN}✅ $base_branch 已更新${NC}" >&2
+            else
+                echo -e "${YELLOW}⚠️  无法更新 $base_branch，使用当前版本${NC}" >&2
+            fi
+        else
+            # 不在 base 分支上，用 fetch + branch -f
+            if git -C "$main_wt" fetch origin "$base_branch" 2>&2; then
+                if git -C "$main_wt" branch -f "$base_branch" "origin/$base_branch" 2>&2; then
+                    echo -e "${GREEN}✅ $base_branch 已更新${NC}" >&2
+                else
+                    echo -e "${YELLOW}⚠️  无法更新 $base_branch，使用当前版本${NC}" >&2
+                fi
+            else
+                echo -e "${YELLOW}⚠️  无法 fetch，使用当前版本${NC}" >&2
+            fi
+        fi
+    fi
+    echo "" >&2
+
     echo -e "${BLUE}创建 Worktree...${NC}" >&2
     echo "  分支: $branch_name" >&2
     echo "  路径: $worktree_path" >&2

@@ -1,12 +1,12 @@
 ---
 id: optimal-paths
-version: 2.87.0
-created: 2026-02-08
-updated: 2026-02-08
+version: 2.90.0
+created: 2026-02-13
+updated: 2026-02-13
 source: features/feature-registry.yml
 generation: auto-generated (scripts/generate-path-views.sh)
 changelog:
-  - 2.87.0: 从 feature-registry.yml 自动生成
+  - 2.90.0: 从 feature-registry.yml 自动生成
 ---
 
 # Optimal Paths - 推荐体验路径
@@ -152,7 +152,7 @@ PR 创建 → CI 触发 → version-check + test + DevGate → 全部通过 → 
 ### P5: Worktree Parallel Development
 
 ```
-/dev 启动 → Step 0 检测 .dev-mode → 僵尸则清理 → 活跃则自动创建 worktree + cd → 继续正常流程
+/dev 启动 → Step 0 强制创建 worktree（更新 develop + 创建 + cd）→ 继续正常流程
 ```
 
 ---
@@ -202,6 +202,15 @@ Loop until >= 90 → anti-cheat-*.sh 验证 → 通过
 
 ---
 
+### S3: Exploratory Skill
+
+```
+/exploratory → 创建 worktree → hack 实现 → 验证跑通 →
+生成 PRD/DOD → 清理 worktree → PRD/DOD 保留
+```
+
+---
+
 ## 更新规则
 
 **本文件自动生成，不要手动编辑**。
@@ -214,5 +223,5 @@ Loop until >= 90 → anti-cheat-*.sh 验证 → 通过
 ---
 
 **来源**: features/feature-registry.yml
-**版本**: 2.87.0
-**生成时间**: 2026-02-08
+**版本**: 2.90.0
+**生成时间**: 2026-02-13
