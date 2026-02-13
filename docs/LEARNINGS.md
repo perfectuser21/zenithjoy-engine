@@ -2572,3 +2572,8 @@ runs:
 3. **Feature Registry 是 SSOT** - 修改后必须重新生成所有派生文档
 4. **配置文件修改需要标记** - PR title 包含 [CONFIG] 才能通过 Config Audit
 5. **向后兼容很重要** - 保持二层格式支持，让现有工作流不受影响
+
+### [2026-02-13] cleanup.sh 自动清理远程已删除的分支
+- **优化点**: 添加 Step 9.5，在删除当前工作分支后，自动检测并清理所有 `: gone]` 的本地分支。避免手动运行 `git fetch --prune && git branch -vv | grep ': gone]' | awk '{print $1}' | xargs git branch -D` 清理垃圾分支。
+- **实现**: 在 cleanup.sh 第 9 步后添加自动检测和批量删除逻辑，保持仓库干净。
+- **影响程度**: Low（体验优化，不影响核心功能）
