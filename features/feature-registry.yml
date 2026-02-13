@@ -906,14 +906,15 @@ product_features:
   # H9: Bash Guard - Bash 工具安全防护
   # --------------------------------------------------------------------------
   - id: H9
-    name: Bash Guard (Credential Leak + HK Deploy Protection)
+    name: Bash Guard (Credential Leak + File Exposure + HK Deploy Protection)
     status: Committed
     priority: P1
     version: "12.6.0"
-    updated: "2026-02-06"
+    updated: "2026-02-13"
     description: |
       防止通过 Bash 工具绕过 Write/Edit 层的安全防护：
       - 凭据泄露：检测命令行中的真实 token（复用 hook-utils.sh 共享正则）
+      - 凭据文件暴露：拦截 cp/mv/重定向 ~/.credentials/ 内容到其他位置
       - HK 部署防护：rsync/scp 到香港 IP 时强制 git 三连检（干净 + 已 push + 分支 allowlist）
       - 不做分支保护（交给 Write/Edit Hook + GitHub 远端）
       - 不拦 ssh hk（无法区分读写操作）
@@ -925,11 +926,14 @@ product_features:
         file: hooks/bash-guard.sh
 
     golden_path: |
-      Bash 命令 → token 扫描 (~1ms) → rsync/scp + HK 检测 (~1ms) →
-      未命中 → 放行 | 命中 HK → git 三连检 → 通过/阻止
+      Bash 命令 → token 扫描 (~1ms) → .credentials/ 暴露检测 (~1ms) →
+      rsync/scp + HK 检测 (~1ms) → 未命中 → 放行 | 命中 HK → git 三连检 → 通过/阻止
 
     minimal_paths:
       - "命令含真实 token → 被阻止"
+      - "cp/mv ~/.credentials/ → 被阻止"
+      - "cat ~/.credentials/ > file → 被阻止"
+      - "source ~/.credentials/ → 放行（安全加载）"
       - "rsync 到 HK + git dirty → 被阻止"
       - "rsync 到 HK + git clean + main → 放行"
       - "日常命令 (git/npm/echo) → 放行"
@@ -938,12 +942,13 @@ product_features:
     tests:
       - type: auto
         file: tests/hooks/bash-guard.test.ts
-        coverage: H9-001, H9-002, H9-003
+        coverage: H9-001, H9-002, H9-003, H9-004
 
     rcis:
       - H9-001  # 凭据泄露检测
       - H9-002  # HK 部署 git 检查
       - H9-003  # 日常命令放行
+      - H9-004  # 凭据文件暴露检测
 
   # --------------------------------------------------------------------------
   # G1: Gate Skill Family - 已删除 (v12.7.0)

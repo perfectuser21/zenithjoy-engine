@@ -661,7 +661,7 @@ hooks:
 
   - id: H3-002
     feature: H3
-    name: "bash-guard 凭据泄露 + HK 部署防护"
+    name: "bash-guard 凭据泄露 + 凭据文件暴露 + HK 部署防护"
     scope: hook
     priority: P1
     trigger: [PR]
@@ -670,7 +670,7 @@ hooks:
     owner: infra
     steps:
       given: "Bash 命令通过 PreToolUse Hook 检查"
-      when: "命令包含真实 token 或 rsync/scp 到 HK IP"
+      when: "命令包含真实 token、cp/mv/重定向 ~/.credentials/ 或 rsync/scp 到 HK IP"
       then: "拦截命令（exit 2），日常命令不受影响"
     evidence:
       type: test
